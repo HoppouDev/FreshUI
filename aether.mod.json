@@ -1,0 +1,23 @@
+{
+	"schemaVersion": 1,
+	"id": "fresh-ui",
+	"name": "FreshUI",
+	"version": "0.1.0",
+
+	"description": "Describe what your mod does.",
+	"authors": ["Me"],
+	"contributors": [],
+	"license": "MIT",
+	"homepage": "https://example.org",
+	"source": null,
+
+	"assembly": "FreshUI.dll",
+	"entrypoint": "FreshUI.Startup",
+	"mixins": ["FreshUI.Mixins.StartupMixin"],
+
+	"depends": {
+		"aether": "@aether-version@",
+		"terraria": "@terraria-version@",
+		"aether-api": "0.1.0"
+	}
+}

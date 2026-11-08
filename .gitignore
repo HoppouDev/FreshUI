@@ -1,0 +1,13 @@
+# Local Aether checkout and test saves
+/.aether/
+/.aether-root
+
+# .NET build output
+bin/
+obj/
+
+# Local IDE state
+.vs/
+.idea/
+*.user
+*.suo

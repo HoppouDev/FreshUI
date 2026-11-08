@@ -13,5 +13,10 @@
     <Compile Include="src/**/*.cs" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Shared host assembly (asset types); not packaged. -->
+    <Reference Include="ReLogic" HintPath="$(AetherClientDirectory)/ReLogic.dll" Private="false" />
+  </ItemGroup>
+
   <Import Project="build/Aether.Mod.targets" />
 </Project>

@@ -1,16 +1,17 @@
 # FreshUI
 
-This is a standalone .NET 10 mod for Aether.
+This is a standalone .NET 10 mod for Aether: a pixel-perfect, compact UI (see [README.md](README.md)).
+All of it is mixins; the initializer does nothing.
 
 | Path | Purpose |
 | --- | --- |
 | `FreshUI.slnx` | IDE solution for the mod project. |
 | `.gitignore` | Keeps the local client, test saves, build output, and IDE state out of Git. |
-| `src/Startup.cs` | Mod initializer and mod ID used by the starter code. |
-| `src/Mixins/` | C# mixins. Register new mixin types in the manifest. |
+| `src/Startup.cs` | Mod initializer (empty) and mod ID. |
+| `src/Sharp.cs`, `src/PixelScale.cs`, `src/PixelSlots.cs`, `src/Hud.cs` | Shared state and helpers: the pixel-snapping sampler, whole-number scales, nine-sliced slots and icon scales, and the hotbar and compact HUD layout. |
+| `src/Mixins/` | C# mixins, one per target class. Register new mixin types in the manifest. |
 | `aether.mod.json` | Mod ID, version constraints, entry assembly, initializer, mixins, and display metadata. |
 | `icon.png` | Optional mod icon, packaged at the archive root. |
-| `resources/` | Files packaged for runtime use. |
 | `build/Aether.Mod.targets` | Shared reference, validation, packaging, and install targets. |
 
 - Keep the mod ID, entry assembly, and type names in sync with the manifest.
@@ -56,3 +57,14 @@ The template references Aether API `0.1.0` by default.
 Distribute the mod archive and tell users to install a matching Aether API archive separately.
 To opt out, set `AetherUseApi` to `false` in the project and remove `aether-api` from `depends` in the manifest.
 See `docs/api/index.md` in the Aether checkout for the API guide.
+
+## How it works
+
+- `PixelArtMixin`: Aether's UI sampler (`Aether.Graphics.PixelArt.Sampler`) is point sampling while Aether's Sharp UI is on; FreshUI swaps in `Sharp.Snapped`, which also has FNA's SpriteBatch put sprites' edges on whole pixels (`SamplerState.PixelSnapEXT`, from Aether's patch to FNA), and records whether Sharp UI is on (`Sharp.Enabled`).
+- `MainMixin`: `Main.UIScale`'s setter stores a whole-number scale (at most what fits the screen).
+  The compact HUD ends the UI sprite batch, sets the UI scale to half (unrounded) and begins one at it around the life and mana display (`GUIBarsDrawInner`), the minimap (`DrawMap` in `DrawInterface_16_MapOrMinimap`, whose `mH` is halved to match) and, inventory closed, the info readouts (`DrawInfoAccs`).
+  They lay themselves out from the screen's right edge, so they stay in the top right corner, and the mouse is in the same smaller coordinates meanwhile.
+- `ItemSlotMixin`, `CoinSlotMixin`: `ItemSlot.Draw` draws slot backgrounds (52×52 textures at a slot's position) nine-sliced, and its item icons and coins at a multiple of ½ screen pixel per texel that fits the slot (`PixelSlots.Slot` tells `DrawItem_GetColorAndScale` and `DrawItemCoin` they're in one).
+- `UIHotbarMixin`, `UIHotbarSlotMixin`: Aether's retained hotbar, laid out again after its own layout at the bottom centre, all slots at the inventory's scale; its name is drawn instead of Aether's.
+- `UIBuffBarMixin`, `BigProgressBarHelperMixin`: the buff rows move up to the top left corner, and the boss health bar above the hotbar while it's shown.
+- Mixin code can't reference Aether's `internal` types, so it reaches them through selectors, `[Shadow]` and return values instead.

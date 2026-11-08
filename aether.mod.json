@@ -4,16 +4,25 @@
 	"name": "FreshUI",
 	"version": "0.1.0",
 
-	"description": "Describe what your mod does.",
-	"authors": ["Me"],
+	"description": "A pixel-perfect, compact UI: whole-number UI scales, even slots and icons, a bottom-centre hotbar and a compact HUD.",
+	"authors": ["HoppouDev"],
 	"contributors": [],
-	"license": "MIT",
-	"homepage": "https://example.org",
+	"license": "GPL-3.0-only",
+	"homepage": null,
 	"source": null,
 
 	"assembly": "FreshUI.dll",
 	"entrypoint": "FreshUI.Startup",
-	"mixins": ["FreshUI.Mixins.StartupMixin"],
+	"mixins": [
+		"FreshUI.Mixins.PixelArtMixin",
+		"FreshUI.Mixins.MainMixin",
+		"FreshUI.Mixins.ItemSlotMixin",
+		"FreshUI.Mixins.CoinSlotMixin",
+		"FreshUI.Mixins.UIHotbarMixin",
+		"FreshUI.Mixins.UIHotbarSlotMixin",
+		"FreshUI.Mixins.UIBuffBarMixin",
+		"FreshUI.Mixins.BigProgressBarHelperMixin"
+	],
 
 	"depends": {
 		"aether": "@aether-version@",

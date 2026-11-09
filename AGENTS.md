@@ -9,6 +9,7 @@ All of it is mixins and the resources they load; the initializer does nothing.
 | `.gitignore` | Keeps the local client, test saves, build output, and IDE state out of Git. |
 | `src/Startup.cs` | Mod initializer (empty) and mod ID. |
 | `src/Sharp.cs`, `src/GuiScale.cs`, `src/PixelSlots.cs`, `src/Hud.cs` | Shared state and helpers: the pixel-snapping sampler, the GUI scale setting, nine-sliced slots and icon scales, and the hotbar layout. |
+| `src/SettingsWindow.cs`, `src/SettingsTabs.cs`, `src/SettingsScreens.cs`, `src/AetherGraphics.cs` | The tabbed settings window: its layout and elements, what's on each tab, its title-menu and in-game screens, and Aether's internal graphics settings through an accessor. |
 | `src/PixelImages.cs` | Image buttons' art at even pixels: 2×2-texel art as drawn, single-texel art at whole screen pixels per texel (the list items' buttons as icons at the GUI scale's pixels per texel, laid out again). |
 | `src/SdfText.cs` | Text from a signed distance field: loads the shader and atlas, and replaces each font's Andy Bold glyphs with them. |
 | `src/Mixins/` | C# mixins, one per target class. Register new mixin types in the manifest. |
@@ -65,10 +66,19 @@ See `docs/api/index.md` in the Aether checkout for the API guide.
 ## How it works
 
 - `PixelArtMixin`: FreshUI's sharp UI, always on: Aether's UI sampler hook (`Aether.Graphics.PixelArt.Sampler`, the batch's own sampler, linear as in vanilla) answers `Sharp.Snapped` instead, point sampling that also has FNA's SpriteBatch put sprites' edges on whole pixels (`SamplerState.PixelSnapEXT`, from Aether's patch to FNA). Fonts keep linear filtering (Aether sets their textures' `SamplerEXT`).
-- `MainMixin`, `UIIngameOptionsMixin`: `Main.UIScale`'s setter stores FreshUI's GUI scale (`GuiScale`) whatever it's given, so the title menu and the game share it.
+- `MenuScreensMixin`, `UIIngameOptionsMixin`, `IngameOptionsMixin` (with `SettingsWindow`, `SettingsTabs`, `SettingsScreens`): one tabbed settings window for the title menu and the game, in place of Aether's in-game window and title-menu settings pages.
+  `MenuScreens.GetScreen` answers `MenuSettingsScreen` for Settings (mode 11) and every settings page's mode (112, 1112, 1111, 111, 28, 2008, 44110, 26, 1125, 25, 252, 1127), opening the tab that page's settings moved to, so code that opens a page by mode (Keybindings' Back) lands on the window; Language (1213) stays Aether's screen.
+  In game, `UIIngameOptions.DrawWindow` draws `GameSettingsScreen` instead of Aether's window (with the rest of what it draws), and `IngameOptions._GUIHover` is the window's area.
+  It's styled as Aether's Mods window (`UIModList`): a `UITextPanel` title over two `UIPanel`s, the tabs (General, Display, Graphics, Effects, Interface, Volume, Cursor, Controls) in the left one with the window's actions under them as large `UITextPanel`s (Language and Back; or Achievements, Invite, Close Menu and Save & Exit), and the open tab's rows (panels lit with a gold border when hovered, under muted group headers) in a scrolling `UIList` in the right one; the open tab is kept between openings.
+  Group headers and the Display and Graphics tab names are FreshUI's own English text; the rest is the game's and Aether's.
+  Row text is centred on Andy Bold's capitals (`SettingsWindow.DrawText`), not on the font's line height.
+  The game's UIs use up the wheel's turn for UIs before the window is drawn, so it scrolls its list itself, once per turn of the wheel (`ScrollOptions`).
+  Each setting appears once, with vanilla's texts and behaviour (Map Enabled only on the title menu; resolution and fullscreen applied after the frame, as in vanilla's in-game window); Aether's graphics settings are `internal`, so `IGraphicsSettingsAccess` and `AetherGraphics` reach them through accessors.
+  In game, the gamepad link points are vanilla's settings window's (2900+ for the left column, 2930+ for visible rows); gamepad use is untested.
+- `MainMixin`: `Main.UIScale`'s setter stores FreshUI's GUI scale (`GuiScale`) whatever it's given, so the title menu and the game share it.
   The GUI scale is Auto (one below the largest that fits, vanilla's UI scale limit; the largest crowds the screen) or 1, 2, 3… screen pixels per art pixel (2×2 texels), so the UI scale is a half-step.
   It's kept in Terraria's `config.json` as `FreshUIGuiScale` (until then, the vanilla UI scale's nearest step); `MainMixin` puts it back after `Main.SaveSettings` clears the config to write the game's own settings.
-  The settings window's UI scale slider (the fifth `Slider` call in `BuildGeneral`) is replaced by a button that cycles it: Auto, 1, 2… the largest, Auto.
+  The settings window's Display tab has a button that cycles it (in place of vanilla's UI scale slider): Auto, 1, 2… the largest, Auto.
 - `CursorMixin`: the cursor is drawn at the UI's size, its scale read as 1 where it's drawn (vanilla's `cursorScale` pulses between about 0.8 and 1.1).
 - `InventoryLabelMixin`: the open inventory's "Inventory", "Coins" and "Ammo" labels aren't drawn (the first three calls of that `DrawString` overload in `DrawInventory`): the coin and ammo row is told apart by its colours.
 - `ItemSlotMixin`, `CoinSlotMixin`: `ItemSlot.Draw` draws slot backgrounds (52×52 textures at a slot's position) nine-sliced (plain backgrounds swapped: coin slots' for `Inventory_Back6`, olive, ammo slots' for `Inventory_Back8`, teal, the inventory's selected hotbar slot's for `Inventory_Back10`, and the hotbar's for `Inventory_Back9` and, for its selected slot, `Inventory_Back10`, as the inventory's hotbar row; the context and slot come from injects at its head and return), and its item icons and coins at a multiple of ½ screen pixel per texel that fits the slot (`PixelSlots.Slot` tells `DrawItem_GetColorAndScale` and `DrawItemCoin` they're in one).

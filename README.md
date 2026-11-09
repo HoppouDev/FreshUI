@@ -2,7 +2,9 @@
 
 An Aether mod with the ID `fresh-ui` that gives Terraria's UI a pixel-perfect, compact look:
 
-- A stepped GUI scale in the settings window (General), in place of the UI scale slider: Auto (one step below the largest), or 1, 2, 3… screen pixels per pixel of the art, up to what fits the screen, for the title menu and the game alike.
+- One tabbed settings window for the title menu and the game, in the style of Aether's Mods window: General, Display, Graphics, Effects, Interface, Volume, Cursor and Controls in the left panel with the window's actions (Language and Back, or Achievements, Close Menu and Save & Exit) at its bottom, and the open tab's settings in groups in the right one, scrolling when they don't fit.
+  Every setting of the game's two settings menus and Aether's graphics page is on one tab: Display has the window, frame rate and scales, Graphics the lighting, terrain renderer, background and world options.
+- A stepped GUI scale in the settings window (Display), in place of the UI scale slider: Auto (one step below the largest), or 1, 2, 3… screen pixels per pixel of the art, up to what fits the screen, for the title menu and the game alike.
   Every pixel of the art covers the same number of screen pixels.
 - The cursor and the small icons (equipment page, hotbar lock, builder toggles, defense, empty slot silhouettes) at whole pixels; the cursor at the UI's scale, its pixels the same size as the rest of the UI's.
 - Inventory slots with even borders at any scale, and item icons at a whole number of pixels per art pixel.

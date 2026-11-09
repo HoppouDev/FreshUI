@@ -71,7 +71,7 @@ public static class GuiScale
         });
     }
 
-    // For the settings window's button (mixins can't hold the closures delegates compile to).
+    // For the settings window's button (kept, so its text isn't a new delegate each time it's built).
     public static readonly Func<string> LabelText = () => Label;
 
     public static readonly Action Cycle = Next;

@@ -1,22 +1,18 @@
 using Aether.Modding;
 using Aether.UI.Game;
-using Aether.UI.Menu;
-using Terraria;
+using Microsoft.Xna.Framework.Graphics;
 
 namespace FreshUI.Mixins;
 
-/// <summary>The settings window's UI scale slider, replaced by a button that cycles the GUI scale.</summary>
+/// <summary>The in-game settings window is FreshUI's tabbed one (<see cref="GameSettingsScreen" />), the same as the title menu's.</summary>
 [Mixin(typeof(UIIngameOptions))]
-public class UIIngameOptionsMixin
+public static class UIIngameOptionsMixin
 {
-    [Shadow]
-    private void Toggle(int slot, Func<string> text, Action change, float scale) => throw new NotSupportedException();
+    // Drawn where Aether's window was, with what it draws over it (the cursor, mouse text) as before.
+    [Redirect("DrawWindow(Microsoft.Xna.Framework.Graphics.SpriteBatch)", At.INVOKE, Target = "Aether.UI.Game.GameScreens::Draw(Aether.UI.Game.UIGameScreen,Microsoft.Xna.Framework.Graphics.SpriteBatch)")]
+    private static void DrawSettings(UIGameScreen screen, SpriteBatch spriteBatch) => GameScreens.Draw(GameSettingsScreen.Instance, spriteBatch);
 
-    // The fifth slider on the General page: music, sound, ambient, zoom, then the UI scale.
-    [Redirect("BuildGeneral()", At.INVOKE, Target = "Aether.UI.Game.UIIngameOptions::Slider(System.Int32,System.Func`1<System.String>,System.Func`1<System.Single>,System.Action`1<System.Single>,System.Int32,System.Single,System.Single,Terraria.Utils/ColorLerpMethod,System.Int32)", Ordinal = 4)]
-    private UIMenuSlider? GuiScaleButton(UIIngameOptions options, int slot, Func<string> label, Func<float> getValue, Action<float> setValue, int gamepadFeature, float labelScale, float barShift, Utils.ColorLerpMethod colorMethod, int tag)
-    {
-        Toggle(slot, GuiScale.LabelText, GuiScale.Cycle, labelScale);
-        return null;
-    }
+    // IngameOptions.Open: the next draw opens it afresh.
+    [Inject("Opened()", At.HEAD)]
+    private static void OpenSettings(CallbackInfo callback) => GameScreens.Close(GameSettingsScreen.Instance);
 }

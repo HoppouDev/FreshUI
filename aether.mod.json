@@ -18,6 +18,7 @@
 		"FreshUI.Mixins.MainMixin",
 		"FreshUI.Mixins.UIIngameOptionsMixin",
 		"FreshUI.Mixins.CursorMixin",
+		"FreshUI.Mixins.InventoryLabelMixin",
 		"FreshUI.Mixins.ItemSlotMixin",
 		"FreshUI.Mixins.CoinSlotMixin",
 		"FreshUI.Mixins.UIIconButtonMixin",

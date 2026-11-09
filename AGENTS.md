@@ -66,6 +66,7 @@ See `docs/api/index.md` in the Aether checkout for the API guide.
   It's kept in Terraria's `config.json` as `FreshUIGuiScale` (until then, the vanilla UI scale's nearest step).
   The settings window's UI scale slider (the fifth `Slider` call in `BuildGeneral`) is replaced by a button that cycles it: Auto, 1, 2… the largest, Auto.
 - `CursorMixin`: the cursor is drawn at the UI's size, its scale read as 1 where it's drawn (vanilla's `cursorScale` pulses between about 0.8 and 1.1).
+- `InventoryLabelMixin`: the open inventory's "Inventory" label isn't drawn (the first `DrawString` call in `DrawInventory`).
 - `ItemSlotMixin`, `CoinSlotMixin`: `ItemSlot.Draw` draws slot backgrounds (52×52 textures at a slot's position) nine-sliced, and its item icons and coins at a multiple of ½ screen pixel per texel that fits the slot (`PixelSlots.Slot` tells `DrawItem_GetColorAndScale` and `DrawItemCoin` they're in one).
 - `UIIconButtonMixin`, `DefenseCounterMixin`, and the rest of `ItemSlot.Draw`'s sprites (empty slot silhouettes, the trash can, overlays): pixel art drawn at fractional scales gets a whole number of screen pixels per art pixel through Aether's `SpriteBatch.PixelScaleEXT` (`Sharp.WholePixels`), set only while they draw: the nine-sliced slot backgrounds must keep their exact sizes.
 - `UIHotbarMixin`, `UIHotbarSlotMixin`: Aether's retained hotbar, laid out again after its own layout at the bottom centre, all slots at the inventory's scale; its name is drawn instead of Aether's.

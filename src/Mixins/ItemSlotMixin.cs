@@ -15,18 +15,8 @@ public static class ItemSlotMixin
     private const string SpriteDraw = "Microsoft.Xna.Framework.Graphics.SpriteBatch::Draw(Microsoft.Xna.Framework.Graphics.Texture2D,Microsoft.Xna.Framework.Vector2,System.Nullable`1<Microsoft.Xna.Framework.Rectangle>,Microsoft.Xna.Framework.Color,System.Single,Microsoft.Xna.Framework.Vector2,System.Single,Microsoft.Xna.Framework.Graphics.SpriteEffects,System.Single)";
 
     [Redirect(DrawSlot, At.INVOKE, Target = SpriteDraw)]
-    private static void DrawSprite(SpriteBatch spriteBatch, Texture2D texture, Vector2 position, Rectangle? source, Color color, float rotation, Vector2 origin, float scale, SpriteEffects effects, float depth)
-    {
-        if (PixelSlots.IsSlotBackground(texture, source, rotation, origin))
-        {
-            PixelSlots.DrawSlot(spriteBatch, texture, position, color, scale);
-            return;
-        }
-        // The rest (empty slot silhouettes, the trash can, overlays) at whole pixels.
-        Sharp.WholePixels(spriteBatch, true);
-        spriteBatch.Draw(texture, position, source, color, rotation, origin, scale, effects, depth);
-        Sharp.WholePixels(spriteBatch, false);
-    }
+    private static void DrawSprite(SpriteBatch spriteBatch, Texture2D texture, Vector2 position, Rectangle? source, Color color, float rotation, Vector2 origin, float scale, SpriteEffects effects, float depth) =>
+        PixelSlots.DrawSprite(spriteBatch, texture, position, source, color, rotation, origin, scale, effects, depth);
 
     // The slot's icon (drawn at the slot's scale; the glow behind a favourite is larger) knows its slot.
     [Redirect(DrawSlot, At.INVOKE, Target = "Terraria.UI.ItemSlot::DrawItemIcon(Terraria.Item,System.Int32,Microsoft.Xna.Framework.Graphics.SpriteBatch,Microsoft.Xna.Framework.Vector2,System.Single,System.Single,Microsoft.Xna.Framework.Color,System.Single,System.Boolean)")]

@@ -16,6 +16,12 @@ public static class PixelSlots
     // Space an icon keeps from its slot's edges (the 2-texel border and one more), in UI units.
     private const float Margin = 3f;
 
+    /// <summary>The inventory's slot pitch: 23 pixels of the art (2 texels each), a 22-pixel slot and a 1-pixel gap.</summary>
+    public const float Pitch = 46f;
+
+    /// <summary>A slot <paramref name="scale" /> of the 52-texel slot texture wide, in whole pixels of the art (UI units).</summary>
+    public static float Size(float scale) => MathF.Round(52f * scale / 2f) * 2f;
+
     /// <summary>The width of the slot whose item is being drawn (0: not in a slot).</summary>
     public static float Slot;
 
@@ -24,16 +30,44 @@ public static class PixelSlots
         !source.HasValue && rotation == 0f && origin == Vector2.Zero && texture.Width == 52 && texture.Height == 52;
 
     /// <summary>
+    /// Draws a sprite a slot draws: its background (<see cref="IsSlotBackground" />) nine-sliced, anything
+    /// else (an item, a silhouette, a head) at whole pixels.
+    /// </summary>
+    public static void DrawSprite(SpriteBatch spriteBatch, Texture2D texture, Vector2 position, Rectangle? source, Color color, float rotation, Vector2 origin, float scale, SpriteEffects effects, float depth)
+    {
+        if (IsSlotBackground(texture, source, rotation, origin))
+        {
+            DrawSlot(spriteBatch, texture, position, color, scale);
+            return;
+        }
+        if (origin == Vector2.Zero && rotation == 0f)
+        {
+            // Anchored at its top left corner (the trash can), so rounding its scale would move its
+            // centre: round it here, keeping the centre where it was.
+            float whole = Sharp.WholeScale(scale);
+            Vector2 size = (source?.Size() ?? texture.Size());
+            position += size * (scale - whole) / 2f;
+            scale = whole;
+        }
+        Sharp.WholePixels(spriteBatch, true);
+        spriteBatch.Draw(texture, position, source, color, rotation, origin, scale, effects, depth);
+        Sharp.WholePixels(spriteBatch, false);
+    }
+
+    /// <summary>
     /// Draws a slot background at <paramref name="scale" /> with its corners and border at their own
     /// size and only the flat parts between them stretched or shrunk.
     /// </summary>
     public static void DrawSlot(SpriteBatch spriteBatch, Texture2D texture, Vector2 position, Color color, float scale)
     {
         float ui = Main.UIScale;
+        // A whole number of the art's pixels across, so the slot's edges stay on its pixel grid.
+        float width = MathF.Round(texture.Width * scale / 2f) * 2f;
+        float height = MathF.Round(texture.Height * scale / 2f) * 2f;
         float left = MathF.Round(position.X * ui);
         float top = MathF.Round(position.Y * ui);
-        float right = MathF.Round((position.X + texture.Width * scale) * ui);
-        float bottom = MathF.Round((position.Y + texture.Height * scale) * ui);
+        float right = MathF.Round((position.X + width) * ui);
+        float bottom = MathF.Round((position.Y + height) * ui);
         float corner = MathF.Round(Corner * ui);
         if (!Sharp.Enabled || scale == 1f || right - left <= corner * 2f || bottom - top <= corner * 2f)
         {

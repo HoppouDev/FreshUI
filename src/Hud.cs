@@ -30,7 +30,7 @@ public static class Hud
     public const float HotbarGap = 10f;
 
     /// <summary>The space the hotbar and the name above it take up at the bottom of the screen.</summary>
-    public const float Height = BottomMargin + 52f * SlotScale + NameSpace;
+    public const float Height = BottomMargin + 44f + NameSpace;
 
     /// <summary>The hotbar's bottom edge, as last laid out (UI units).</summary>
     public static float Bottom;

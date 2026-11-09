@@ -64,8 +64,18 @@ public class UIHotbarMixin
         callback.Cancel();
         Player player = Main.LocalPlayer;
         Item selected = player.inventory[player.selectedItem];
+        // Whatever is held when the hotbar appears (entering a world, closing the inventory) is
+        // taken as is: only a change while it's shown shows the name.
+        bool appearing = _freshClock == 0;
         float ticks = Hud.TicksSince(ref _freshClock);
-        if (player.selectedItem != _freshNameSlot || selected.type != _freshNameType || selected.prefix != _freshNamePrefix)
+        if (appearing || ticks > Hud.HotbarGap)
+        {
+            _freshNameSlot = player.selectedItem;
+            _freshNameType = selected.type;
+            _freshNamePrefix = selected.prefix;
+            _freshNameTicks = Hud.NameShown + Hud.NameFade;
+        }
+        else if (player.selectedItem != _freshNameSlot || selected.type != _freshNameType || selected.prefix != _freshNamePrefix)
         {
             _freshNameSlot = player.selectedItem;
             _freshNameType = selected.type;

@@ -26,6 +26,9 @@ public static class Hud
 
     public const float NameFade = 30f;
 
+    /// <summary>How long (ticks) the hotbar can go undrawn before it counts as appearing again.</summary>
+    public const float HotbarGap = 10f;
+
     /// <summary>The space the hotbar and the name above it take up at the bottom of the screen.</summary>
     public const float Height = BottomMargin + 52f * SlotScale + NameSpace;
 

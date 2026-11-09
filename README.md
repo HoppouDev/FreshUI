@@ -7,7 +7,7 @@ An Aether mod with the ID `fresh-ui` that gives Terraria's UI a pixel-perfect, c
 - The cursor and the small icons (equipment page, hotbar lock, builder toggles, defense, empty slot silhouettes) at whole pixels; the cursor at the UI's scale, its pixels the same size as the rest of the UI's.
 - Inventory slots with even borders at any scale, and item icons at a whole number of pixels per art pixel.
 - With Aether's Sharp UI on, sprites are snapped to whole pixels.
-- The hotbar at the bottom centre: inventory-sized slots that stay put while scrolling, and the held item's name above them at half size, fading out.
+- The hotbar at the bottom centre: inventory-sized slots that stay put while scrolling, and the held item's name above them when you switch items, fading out (not when entering a world or closing the inventory).
 - No "Inventory" label above the open inventory.
 - Buffs in the top left corner, and the boss health bar above the hotbar.
 

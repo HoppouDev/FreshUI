@@ -8,9 +8,11 @@ using Terraria.UI;
 namespace FreshUI.Mixins;
 
 /// <summary>
-/// Slots drawn at fractional scales: nine-sliced backgrounds, icons and the rest at whole pixels. Coin
-/// and ammo slots have their own backgrounds (vanilla's are the inventory's), olive and brick red, so
-/// their row under the inventory needs no labels.
+/// Slots drawn at fractional scales: nine-sliced backgrounds, icons and the rest at whole pixels. Some
+/// slots have their own backgrounds: coin and ammo slots (vanilla's are the inventory's) olive and
+/// teal, so their row under the inventory needs no labels; the inventory's selected hotbar slot
+/// <c>Inventory_Back10</c>; and the hotbar's slots outlines, <c>Inventory_Back25</c>, and the selected
+/// one <c>Inventory_Back22</c> (vanilla: filled, the selected one yellow).
 /// </summary>
 [Mixin(typeof(ItemSlot))]
 public static class ItemSlotMixin
@@ -22,8 +24,14 @@ public static class ItemSlotMixin
     // The context of the slot being drawn (-1, or 0 before the first: none that has its own background).
     private static int _context;
 
+    private static int _slot;
+
     [Inject(DrawSlot, At.HEAD)]
-    private static void BeginSlot(SpriteBatch spriteBatch, Item[] inv, int context, int slot, Vector2 position, Color lightColor, CallbackInfo callback) => _context = context;
+    private static void BeginSlot(SpriteBatch spriteBatch, Item[] inv, int context, int slot, Vector2 position, Color lightColor, CallbackInfo callback)
+    {
+        _context = context;
+        _slot = slot;
+    }
 
     [Inject(DrawSlot, At.RETURN)]
     private static void EndSlot(SpriteBatch spriteBatch, Item[] inv, int context, int slot, Vector2 position, Color lightColor, CallbackInfo callback) => _context = -1;
@@ -31,10 +39,36 @@ public static class ItemSlotMixin
     [Redirect(DrawSlot, At.INVOKE, Target = SpriteDraw)]
     private static void DrawSprite(SpriteBatch spriteBatch, Texture2D texture, Vector2 position, Rectangle? source, Color color, float rotation, Vector2 origin, float scale, SpriteEffects effects, float depth)
     {
-        // The plain background only: a favourite's, a new item's and the rest keep theirs.
-        if (texture == TextureAssets.InventoryBack.Value && (_context == 1 || _context == 2))
-            texture = (_context == 1 ? TextureAssets.InventoryBack6 : TextureAssets.InventoryBack5).Value;
+        texture = Background(texture);
         PixelSlots.DrawSprite(spriteBatch, texture, position, source, color, rotation, origin, scale, effects, depth);
+    }
+
+    // The plain backgrounds only (the inventory's, its hotbar row's, the hotbar's and its selected
+    // slot's: the yellow one, or the blue one while another item is held): a favourite's, a new item's
+    // and the overlays keep theirs.
+    private static Texture2D Background(Texture2D texture)
+    {
+        switch (_context)
+        {
+        case 0:
+            if (texture == TextureAssets.InventoryBack9.Value && _slot == Main.LocalPlayer.selectedItem)
+                return TextureAssets.InventoryBack10.Value;
+            break;
+        case 1:
+        case 2:
+            if (texture == TextureAssets.InventoryBack.Value)
+                return (_context == 1 ? TextureAssets.InventoryBack6 : TextureAssets.InventoryBack8).Value;
+            break;
+        // The hotbar's slots, and (36) the held item's own slot when it isn't on the hotbar.
+        case 13:
+        case 36:
+            if (texture == TextureAssets.InventoryBack.Value)
+                return TextureAssets.InventoryBack25.Value;
+            if (texture == TextureAssets.InventoryBack14.Value || texture == TextureAssets.InventoryBack20.Value)
+                return TextureAssets.InventoryBack22.Value;
+            break;
+        }
+        return texture;
     }
 
     // The slot's icon (drawn at the slot's scale; the glow behind a favourite is larger) knows its slot.

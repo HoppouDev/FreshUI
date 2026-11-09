@@ -7,8 +7,14 @@ namespace FreshUI;
 /// <summary>The bottom-centre hotbar's layout.</summary>
 public static class Hud
 {
-    /// <summary>The scale every hotbar slot is drawn at: the inventory's.</summary>
+    /// <summary>The scale the inventory's slots are drawn at (44 UI units).</summary>
     public const float SlotScale = 0.85f;
+
+    /// <summary>The hotbar's slots' size: 4 UI units (2 pixels of the art) larger than the inventory's.</summary>
+    public const float HotbarSlotSize = 48f;
+
+    /// <summary>The scale every hotbar slot is drawn at, selected or not: <see cref="HotbarSlotSize" /> of the 52-texel slot.</summary>
+    public const float HotbarScale = HotbarSlotSize / 52f;
 
     /// <summary>Between hotbar slots: one pixel of the art (2 texels).</summary>
     public const float SlotGap = 2f;
@@ -30,7 +36,7 @@ public static class Hud
     public const float HotbarGap = 10f;
 
     /// <summary>The space the hotbar and the name above it take up at the bottom of the screen.</summary>
-    public const float Height = BottomMargin + 44f + NameSpace;
+    public const float Height = BottomMargin + HotbarSlotSize + NameSpace;
 
     /// <summary>The hotbar's bottom edge, as last laid out (UI units).</summary>
     public static float Bottom;

@@ -43,7 +43,7 @@ public class UIHotbarMixin
     private void LayOut(CallbackInfo callback)
     {
         // On the art's pixel grid (2 UI units a pixel), like the inventory's slots.
-        float width = PixelSlots.Size(Hud.SlotScale);
+        float width = Hud.HotbarSlotSize;
         float height = width;
         float total = width * 10f + Hud.SlotGap * 9f;
         float x = MathF.Round((Main.screenWidth - total) / 4f) * 2f;
@@ -93,15 +93,15 @@ public class UIHotbarMixin
         string text = !string.IsNullOrEmpty(selected.Name) ? SelectedName(selected) : Lang.inter[37].Value;
         DynamicSpriteFont font = FontAssets.MouseText.Value;
         float half = font.MeasureString(text).X * Hud.NameScale / 2f;
-        var position = new Vector2(MathF.Round(Main.screenWidth / 2f - half), Hud.Bottom - PixelSlots.Size(Hud.SlotScale) - Hud.NameSpace);
+        var position = new Vector2(MathF.Round(Main.screenWidth / 2f - half), Hud.Bottom - Hud.HotbarSlotSize - Hud.NameSpace);
         byte c = Main.mouseTextColor;
         spriteBatch.DrawString(font, text, position, new Color(c, c, c, c) * opacity, 0f, default, Hud.NameScale, SpriteEffects.None, 0f);
     }
 
     // The held item's own slot (when it isn't on the hotbar), after the slots at their size.
     [ModifyConstant("DrawChildren(Microsoft.Xna.Framework.Graphics.SpriteBatch)", "float:20")]
-    private static float HeldSlotTop(float top) => Hud.Bottom - PixelSlots.Size(Hud.SlotScale);
+    private static float HeldSlotTop(float top) => Hud.Bottom - Hud.HotbarSlotSize;
 
     [ModifyConstant("DrawChildren(Microsoft.Xna.Framework.Graphics.SpriteBatch)", "float:1")]
-    private static float HeldSlotScale(float scale) => Hud.SlotScale;
+    private static float HeldSlotScale(float scale) => Hud.HotbarScale;
 }

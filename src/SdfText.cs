@@ -27,6 +27,14 @@ public static class SdfText
         (() => FontAssets.CombatText[1], 25.75f, 1f, 20.88f)
     ];
 
+    /// <summary>
+    /// How far below the top of a line of MouseText the middle of its capitals is, in font units at
+    /// scale 1: Andy Bold's capitals (0.7 em at MouseText's 19 pixels per em) stand on its baseline,
+    /// 15.75 below the top (<see cref="Fonts" />). Text centred on this looks centred; the line's
+    /// height has room for descenders and accents below and above.
+    /// </summary>
+    public const float MouseTextCapMiddle = 15.75f - 0.7f * 19f / 2f;
+
     private static readonly HashSet<DynamicSpriteFont> Replaced = [];
 
     private static Texture2D? _atlas;

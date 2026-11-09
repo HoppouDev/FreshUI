@@ -53,6 +53,11 @@ public static class PixelImages
         spriteBatch.Draw(texture, position + offset, source, color, 0f, Vector2.Zero, scale, SpriteEffects.None, 0f);
     }
 
+    // A label's UIText, at scale 1: 16 units tall, its line drawn 2 units above its top.
+    private const float LabelLineHeight = 16f;
+
+    private const float LabelTextLift = 2f;
+
     /// <summary>
     /// Lays a character or world list item's buttons (single-texel art, 24 units apart along its
     /// bottom, delete at the right) out again at the size they're drawn at, 2 units apart, with the
@@ -86,7 +91,11 @@ public static class PixelImages
             if (child is UIImageButton && child.HAlign == 1f)
                 Resize(child, units);
             else if (child is UIText && child.VAlign == 1f)
+            {
                 child.Left.Set(child.HAlign == 1f ? -(units + 8f) : x + 2f, 0f);
+                // Its capitals level with the buttons' middle (they sit on the item's bottom).
+                child.Top.Set(LabelLineHeight + LabelTextLift - SdfText.MouseTextCapMiddle - units / 2f, 0f);
+            }
         }
     }
 

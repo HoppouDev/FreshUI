@@ -30,6 +30,7 @@
 		"FreshUI.Mixins.UIHousingIconMixin",
 		"FreshUI.Mixins.UIHousingPageMixin",
 		"FreshUI.Mixins.AchievementAdvisorMixin",
+		"FreshUI.Mixins.UIIconButtonScreenMixin",
 		"FreshUI.Mixins.UIIconButtonGroupMixin",
 		"FreshUI.Mixins.UIHotbarMixin",
 		"FreshUI.Mixins.UIHotbarSlotMixin",

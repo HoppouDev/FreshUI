@@ -4,7 +4,7 @@
 	"name": "FreshUI",
 	"version": "0.1.0",
 
-	"description": "A pixel-perfect, compact UI: whole-number UI scales, even slots and icons, a bottom-centre hotbar and a compact HUD.",
+	"description": "A pixel-perfect, compact UI: a stepped GUI scale, even slots and icons, and a bottom-centre hotbar.",
 	"authors": ["HoppouDev"],
 	"contributors": [],
 	"license": "GPL-3.0-only",
@@ -16,6 +16,7 @@
 	"mixins": [
 		"FreshUI.Mixins.PixelArtMixin",
 		"FreshUI.Mixins.MainMixin",
+		"FreshUI.Mixins.UIIngameOptionsMixin",
 		"FreshUI.Mixins.ItemSlotMixin",
 		"FreshUI.Mixins.CoinSlotMixin",
 		"FreshUI.Mixins.UIHotbarMixin",

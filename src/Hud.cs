@@ -4,7 +4,7 @@ using Terraria;
 
 namespace FreshUI;
 
-/// <summary>The bottom-centre hotbar's layout, and the compact top-right HUD.</summary>
+/// <summary>The bottom-centre hotbar's layout.</summary>
 public static class Hud
 {
     /// <summary>The scale every hotbar slot is drawn at: the inventory's.</summary>
@@ -28,9 +28,6 @@ public static class Hud
 
     /// <summary>The space the hotbar and the name above it take up at the bottom of the screen.</summary>
     public const float Height = BottomMargin + 52f * SlotScale + NameSpace;
-
-    /// <summary>The scale, relative to the UI's, of the minimap, life and mana and info readouts.</summary>
-    public const float CompactScale = 0.5f;
 
     /// <summary>The hotbar's bottom edge, as last laid out (UI units).</summary>
     public static float Bottom;

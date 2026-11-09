@@ -23,6 +23,7 @@
 		"FreshUI.Mixins.PlayerMixin",
 		"FreshUI.Mixins.IngameFancyUIMixin",
 		"FreshUI.Mixins.UIModListMixin",
+		"FreshUI.Mixins.UIModListLayoutMixin",
 		"FreshUI.Mixins.PlayerInputMixin",
 		"FreshUI.Mixins.CursorMixin",
 		"FreshUI.Mixins.InventoryLabelMixin",

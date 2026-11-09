@@ -69,7 +69,7 @@ public static class PixelSlots
         float right = MathF.Round((position.X + width) * ui);
         float bottom = MathF.Round((position.Y + height) * ui);
         float corner = MathF.Round(Corner * ui);
-        if (!Sharp.Enabled || scale == 1f || right - left <= corner * 2f || bottom - top <= corner * 2f)
+        if (scale == 1f || right - left <= corner * 2f || bottom - top <= corner * 2f)
         {
             spriteBatch.Draw(texture, position, null, color, 0f, default, scale, SpriteEffects.None, 0f);
             return;
@@ -97,7 +97,7 @@ public static class PixelSlots
     /// </summary>
     public static float IconScale(float scale, float size)
     {
-        if (!Sharp.Enabled || Slot <= 0f || size <= 0f || scale <= 0f)
+        if (Slot <= 0f || size <= 0f || scale <= 0f)
         {
             return scale;
         }

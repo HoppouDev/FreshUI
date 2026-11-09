@@ -63,7 +63,7 @@ See `docs/api/index.md` in the Aether checkout for the API guide.
 
 ## How it works
 
-- `PixelArtMixin`: Aether's UI sampler (`Aether.Graphics.PixelArt.Sampler`) is point sampling while Aether's Sharp UI is on; FreshUI swaps in `Sharp.Snapped`, which also has FNA's SpriteBatch put sprites' edges on whole pixels (`SamplerState.PixelSnapEXT`, from Aether's patch to FNA), and records whether Sharp UI is on (`Sharp.Enabled`).
+- `PixelArtMixin`: FreshUI's sharp UI, always on: Aether's UI sampler hook (`Aether.Graphics.PixelArt.Sampler`, the batch's own sampler, linear as in vanilla) answers `Sharp.Snapped` instead, point sampling that also has FNA's SpriteBatch put sprites' edges on whole pixels (`SamplerState.PixelSnapEXT`, from Aether's patch to FNA). Fonts keep linear filtering (Aether sets their textures' `SamplerEXT`).
 - `MainMixin`, `UIIngameOptionsMixin`: `Main.UIScale`'s setter stores FreshUI's GUI scale (`GuiScale`) whatever it's given, so the title menu and the game share it.
   The GUI scale is Auto (one below the largest that fits, vanilla's UI scale limit; the largest crowds the screen) or 1, 2, 3… screen pixels per art pixel (2×2 texels), so the UI scale is a half-step.
   It's kept in Terraria's `config.json` as `FreshUIGuiScale` (until then, the vanilla UI scale's nearest step); `MainMixin` puts it back after `Main.SaveSettings` clears the config to write the game's own settings.

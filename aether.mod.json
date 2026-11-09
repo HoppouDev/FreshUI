@@ -24,6 +24,7 @@
 		"FreshUI.Mixins.UIIconButtonMixin",
 		"FreshUI.Mixins.DefenseCounterMixin",
 		"FreshUI.Mixins.UIInventoryGridMixin",
+		"FreshUI.Mixins.UICoinAmmoSlotsMixin",
 		"FreshUI.Mixins.UITrashSlotMixin",
 		"FreshUI.Mixins.UIEquipmentSlotsMixin",
 		"FreshUI.Mixins.UIHousingIconMixin",

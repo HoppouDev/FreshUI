@@ -4,7 +4,10 @@ using Microsoft.Xna.Framework;
 
 namespace FreshUI.Mixins;
 
-/// <summary>The trash slot under the inventory's last column, on its pixel grid (with no chest open).</summary>
+/// <summary>
+/// The trash slot under the inventory's last column, on its pixel grid, at the end of the coin and
+/// ammo row; with a chest open, a row lower, with the chest (<see cref="MainMixin.ChestDrop" />).
+/// </summary>
 [Mixin(typeof(UITrashSlot))]
 public static class UITrashSlotMixin
 {
@@ -13,7 +16,9 @@ public static class UITrashSlotMixin
     {
         // Vanilla's (448, 258): the tenth column's, a sixth row down, at 47.6 a slot.
         if (topLeft == new Vector2(448f, 258f))
-            topLeft = new Vector2(20f + 9f * PixelSlots.Pitch, 20f + 5f * PixelSlots.Pitch);
+            topLeft = new Vector2(20f + 9f * PixelSlots.Pitch, UICoinAmmoSlotsMixin.Top);
+        else if (topLeft == new Vector2(453f, 426f))
+            topLeft.Y += MainMixin.ChestDrop;
         slot.Place(topLeft, scale);
     }
 }

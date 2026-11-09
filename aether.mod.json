@@ -35,7 +35,8 @@
 		"FreshUI.Mixins.UIHotbarMixin",
 		"FreshUI.Mixins.UIHotbarSlotMixin",
 		"FreshUI.Mixins.UIBuffBarMixin",
-		"FreshUI.Mixins.BigProgressBarHelperMixin"
+		"FreshUI.Mixins.BigProgressBarHelperMixin",
+		"FreshUI.Mixins.SdfTextMixin"
 	],
 
 	"depends": {

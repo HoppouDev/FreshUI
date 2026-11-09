@@ -1,7 +1,7 @@
 # FreshUI
 
 This is a standalone .NET 10 mod for Aether: a pixel-perfect, compact UI (see [README.md](README.md)).
-All of it is mixins; the initializer does nothing.
+All of it is mixins and the resources they load; the initializer does nothing.
 
 | Path | Purpose |
 | --- | --- |
@@ -9,7 +9,10 @@ All of it is mixins; the initializer does nothing.
 | `.gitignore` | Keeps the local client, test saves, build output, and IDE state out of Git. |
 | `src/Startup.cs` | Mod initializer (empty) and mod ID. |
 | `src/Sharp.cs`, `src/GuiScale.cs`, `src/PixelSlots.cs`, `src/Hud.cs` | Shared state and helpers: the pixel-snapping sampler, the GUI scale setting, nine-sliced slots and icon scales, and the hotbar layout. |
+| `src/SdfText.cs` | Text from a signed distance field: loads the shader and atlas, and replaces each font's Andy Bold glyphs with them. |
 | `src/Mixins/` | C# mixins, one per target class. Register new mixin types in the manifest. |
+| `shaders/SdfText.fx`, `resources/shaders/SdfText.fxb` | The SDF text shader's source, and the D3D9 effect FNA loads, compiled from it with the Windows SDK's `fxc` (see the source's header). |
+| `tools/sdf_font.py`, `resources/fonts/andy-sdf.*` | The SDF atlas generator (`uv run tools/sdf_font.py ANDYB.ttf resources/fonts`) and its output: the field and each glyph's rectangle and corner. |
 | `aether.mod.json` | Mod ID, version constraints, entry assembly, initializer, mixins, and display metadata. |
 | `icon.png` | Optional mod icon, packaged at the archive root. |
 | `build/Aether.Mod.targets` | Shared reference, validation, packaging, and install targets. |
@@ -75,5 +78,8 @@ See `docs/api/index.md` in the Aether checkout for the API guide.
 - `UIIconButtonScreenMixin` (with `SideButtons`), `AchievementAdvisorMixin`: the quick stack, sort, bestiary and emote buttons in a grid of two 32-unit columns 34 apart where vanilla's coin and ammo columns were, starting just under the advisor's card (with a chest open, beside it as vanilla's, a row lower with it; their areas are lambdas, so they're wrapped once, when each button first updates), and the hotbar lock moved from the screen's left edge into that grid, below them (`SideButtons.PlaceHotbarLock`); and the achievement advisor's card at whole pixels (its scales, 0.75 and 0.35, rounded), its border centred over the grid on whole screen pixels (at that scale its art doesn't share the slots' grid) with its top on the inventory's (`InventoryLabelMixin` places it).
 - `UIIconButtonGroupMixin` (with `PageIcons`, `SideButtons`): the camera, housing and equipment page icons above the equipment columns centred over the columns, on the art's pixel grid (so art an odd number of pixels wide sits half a pixel left of centre); and the builder toggles (block replacement, torch swapping, then the builder accessories') moved from the left edge into the side-button grid after the hotbar lock, two to a row, packed past hidden ones and following the bestiary row while a chest is open. Their areas are wrapped once, when each group first draws.
 - `UIHotbarMixin`, `UIHotbarSlotMixin`: Aether's retained hotbar, laid out again after its own layout at the bottom centre, all slots at one scale, 48 units (`Hud.HotbarSlotSize`, 4 more than the inventory's); its name is drawn instead of Aether's, only when the held item changes while the hotbar is shown (not when it appears: entering a world, closing the inventory).
+- `SdfTextMixin` (with `SdfText`): at the start of each frame's draw, each loaded font (`MouseText`, `ItemStack`, `DeathText` and the two combat fonts) not yet replaced gets Andy Bold's glyphs from the distance field atlas (`DynamicSpriteFont.SetCharacterImage`), at a size and offset fitted to that font's own glyphs (`SdfText.Fonts`), so text measures and wraps as before.
+  The atlas texture carries the shader (`Texture.EffectEXT`) and linear filtering (`Texture.SamplerEXT`); characters Andy Bold lacks keep the font's images.
+  Fonts load asynchronously and again with resource packs, hence the per-frame check.
 - `UIBuffBarMixin`, `BigProgressBarHelperMixin`: the buff rows move up to the top left corner, and the boss health bar above the hotbar while it's shown.
 - Mixin code can't reference Aether's `internal` types, so it reaches them through selectors, `[Shadow]` and return values instead.

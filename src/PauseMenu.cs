@@ -18,8 +18,8 @@ namespace FreshUI;
 /// The pause menu Esc opens in game (when it would have opened the inventory; the inventory is E):
 /// Back to Game, Achievements, Mods, Settings (the settings window), Invite Friends where invites
 /// work, and Save &amp; Exit. It is vanilla's settings window as far as the game is concerned
-/// (<c>Main.ingameOptionsWindow</c>, which pauses the game with Autopause), showing either view; the
-/// inventory's Settings button opens the settings directly.
+/// (<c>Main.ingameOptionsWindow</c>, which pauses the game with Autopause), showing either view.
+/// There's no Settings button by the inventory (MainMixin): Settings is the pause menu's.
 /// </summary>
 public static class PauseMenu
 {
@@ -117,10 +117,10 @@ public static class PauseMenu
         }
     }
 
-    /// <summary>IngameOptions.Open, done: the settings, unless the pause menu is asking (<see cref="Open" />).</summary>
+    /// <summary>IngameOptions.Open, done: the pause menu, afresh.</summary>
     public static void Opened()
     {
-        Current = View.Settings;
+        Current = View.Pause;
         _settingsFromPause = false;
         GameScreens.Close(PauseScreen.Instance);
         GameScreens.Close(GameSettingsScreen.Instance);
@@ -271,6 +271,8 @@ public sealed class PauseScreen : UIGameScreen
 
     public override void Recalculate()
     {
+        // The screen's own size first: the panel is placed in it (after a GUI scale change, the old one is stale).
+        base.Recalculate();
         if (_panel != null && _title != null)
         {
             CalculatedStyle screen = GetDimensions();
@@ -295,8 +297,8 @@ public sealed class PauseScreen : UIGameScreen
                 }
             }
             _title.Top.Set(top - 40f, 0f);
+            RecalculateChildren();
         }
-        base.Recalculate();
     }
 
     public override void UpdateState()

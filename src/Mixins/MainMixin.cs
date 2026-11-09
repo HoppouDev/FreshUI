@@ -6,7 +6,8 @@ namespace FreshUI.Mixins;
 
 /// <summary>
 /// The UI scale is FreshUI's GUI scale, whatever the game asks for (the title menu, the setting), and
-/// the GUI scale and key settings survive the game saving its settings; and
+/// the GUI scale and key settings survive the game saving its settings; there's no Settings button
+/// (the pause menu has Settings); and
 /// an open chest or shop is a row lower, under the coin and ammo row FreshUI adds below the inventory.
 /// </summary>
 [Mixin(typeof(Main))]
@@ -34,6 +35,13 @@ public static class MainMixin
     {
         GuiScale.Store();
         KeyDefaults.Store();
+    }
+
+    // No Settings button at the bottom right (inventory, dead, over the settings window): Esc's pause
+    // menu has Settings.
+    [Redirect("DrawInterface_29_SettingsButton()", At.INVOKE, Target = "Terraria.Main::DrawSettingButton(System.Boolean&,System.Single&,System.Int32,System.Int32,System.String,System.String,System.Action)")]
+    private static void NoSettingsButton(ref bool mouseOver, ref float scale, int posX, int posY, string text, string textSizeMatcher, Action clickAction)
+    {
     }
 
     /// <summary>How much lower FreshUI puts an open chest or shop (and what's beside it): one inventory row.</summary>

@@ -93,9 +93,8 @@ public class UIHotbarMixin
         string text = !string.IsNullOrEmpty(selected.Name) ? SelectedName(selected) : Lang.inter[37].Value;
         DynamicSpriteFont font = FontAssets.MouseText.Value;
         float half = font.MeasureString(text).X * Hud.NameScale / 2f;
-        var position = new Vector2(MathF.Round(Main.screenWidth / 2f - half), Hud.Bottom - Hud.HotbarSlotSize - Hud.NameSpace);
-        byte c = Main.mouseTextColor;
-        spriteBatch.DrawString(font, text, position, new Color(c, c, c, c) * opacity, 0f, default, Hud.NameScale, SpriteEffects.None, 0f);
+        var position = new Vector2(MathF.Round(Main.screenWidth / 2f - half), Hud.Bottom - Hud.HotbarSlotSize - Hud.NameSpace - Hud.NameLift);
+        spriteBatch.DrawString(font, text, position, Hud.NameColor(selected) * opacity, 0f, default, Hud.NameScale, SpriteEffects.None, 0f);
     }
 
     // The held item's own slot (when it isn't on the hotbar), after the slots at their size.

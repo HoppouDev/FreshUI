@@ -38,6 +38,38 @@ public static class Hud
     /// <summary>The space the hotbar and the name above it take up at the bottom of the screen.</summary>
     public const float Height = BottomMargin + HotbarSlotSize + NameSpace;
 
+    /// <summary>How far above the slots the held item's name is drawn (UI units).</summary>
+    public const float NameLift = 4f;
+
+    /// <summary>
+    /// An item's name colour, as vanilla's hover text and tooltips have it (Main's
+    /// <c>MouseText_DrawItemTooltip_GetItemNameColor</c>), pulsing with the mouse text.
+    /// </summary>
+    public static Microsoft.Xna.Framework.Color NameColor(Item item)
+    {
+        int rare = item.expert ? -12 : item.rare;
+        Microsoft.Xna.Framework.Color color = rare switch
+        {
+            -13 => new(255, (byte)(Main.masterColor * 200f), 0),
+            -12 => new((byte)Main.DiscoR, (byte)Main.DiscoG, (byte)Main.DiscoB),
+            -11 => new(255, 175, 0),
+            -1 => new(130, 130, 130),
+            1 => new(150, 150, 255),
+            2 => new(150, 255, 150),
+            3 => new(255, 200, 150),
+            4 => new(255, 150, 150),
+            5 => new(255, 150, 255),
+            6 => new(210, 160, 255),
+            7 => new(150, 255, 10),
+            8 => new(255, 255, 10),
+            9 => new(5, 200, 255),
+            10 => new(255, 40, 100),
+            >= 11 => new(180, 40, 255),
+            _ => Microsoft.Xna.Framework.Color.White
+        };
+        return color * (Main.mouseTextColor / 255f);
+    }
+
     /// <summary>The hotbar's bottom edge, as last laid out (UI units).</summary>
     public static float Bottom;
 

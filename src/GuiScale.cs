@@ -47,8 +47,11 @@ public static class GuiScale
     /// <summary>The largest scale that fits the screen (vanilla's UI scale limit, in steps).</summary>
     public static int Max => Math.Max(1, (int)MathF.Floor(Main.instance.UIScaleMax * 2f + 0.001f));
 
-    /// <summary>The scale in use: the setting, or Auto's (the largest), at most <see cref="Max" />.</summary>
-    public static int Current => Setting <= 0 || Setting > Max ? Max : Setting;
+    /// <summary>Auto's scale</summary>
+    public static int Auto => Math.Max(1, Max - 1);
+
+    /// <summary>The scale in use: the setting, or <see cref="Auto" />'s, at most <see cref="Max" />.</summary>
+    public static int Current => Setting <= 0 ? Auto : Math.Min(Setting, Max);
 
     public static float UIScale => Current / 2f;
 
@@ -81,7 +84,7 @@ public static class GuiScale
             {
                 _labelSetting = setting;
                 _labelMax = max;
-                _label = setting <= 0 ? $"GUI Scale: Auto ({max})" : $"GUI Scale: {Math.Min(setting, max)}";
+                _label = setting <= 0 ? $"GUI Scale: Auto ({Auto})" : $"GUI Scale: {Math.Min(setting, max)}";
             }
             return _label;
         }

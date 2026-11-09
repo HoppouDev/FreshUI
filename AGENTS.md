@@ -65,7 +65,7 @@ See `docs/api/index.md` in the Aether checkout for the API guide.
 
 - `PixelArtMixin`: Aether's UI sampler (`Aether.Graphics.PixelArt.Sampler`) is point sampling while Aether's Sharp UI is on; FreshUI swaps in `Sharp.Snapped`, which also has FNA's SpriteBatch put sprites' edges on whole pixels (`SamplerState.PixelSnapEXT`, from Aether's patch to FNA), and records whether Sharp UI is on (`Sharp.Enabled`).
 - `MainMixin`, `UIIngameOptionsMixin`: `Main.UIScale`'s setter stores FreshUI's GUI scale (`GuiScale`) whatever it's given, so the title menu and the game share it.
-  The GUI scale is Auto (the largest that fits: vanilla's UI scale limit) or 1, 2, 3… screen pixels per art pixel (2×2 texels), so the UI scale is a half-step.
+  The GUI scale is Auto (one below the largest that fits, vanilla's UI scale limit; the largest crowds the screen) or 1, 2, 3… screen pixels per art pixel (2×2 texels), so the UI scale is a half-step.
   It's kept in Terraria's `config.json` as `FreshUIGuiScale` (until then, the vanilla UI scale's nearest step).
   The settings window's UI scale slider (the fifth `Slider` call in `BuildGeneral`) is replaced by a button that cycles it: Auto, 1, 2… the largest, Auto.
 - `CursorMixin`: the cursor is drawn at the UI's size, its scale read as 1 where it's drawn (vanilla's `cursorScale` pulses between about 0.8 and 1.1).

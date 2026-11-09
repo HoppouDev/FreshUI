@@ -44,6 +44,9 @@ public static class GuiScale
         }
     }
 
+    /// <summary>Puts the setting back in Terraria's config after <c>Main.SaveSettings</c> clears it to write its own.</summary>
+    public static void Store() => Main.Configuration.Put(Key, Setting);
+
     /// <summary>The largest scale that fits the screen (vanilla's UI scale limit, in steps).</summary>
     public static int Max => Math.Max(1, (int)MathF.Floor(Main.instance.UIScaleMax * 2f + 0.001f));
 

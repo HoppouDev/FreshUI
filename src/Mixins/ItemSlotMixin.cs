@@ -11,8 +11,8 @@ namespace FreshUI.Mixins;
 /// Slots drawn at fractional scales: nine-sliced backgrounds, icons and the rest at whole pixels. Some
 /// slots have their own backgrounds: coin and ammo slots (vanilla's are the inventory's) olive and
 /// teal, so their row under the inventory needs no labels; the inventory's selected hotbar slot
-/// <c>Inventory_Back10</c>; and the hotbar's slots outlines, <c>Inventory_Back25</c>, and the selected
-/// one <c>Inventory_Back22</c> (vanilla: filled, the selected one yellow).
+/// <c>Inventory_Back10</c>; and the hotbar's slots like the inventory's hotbar row, <c>Inventory_Back9</c>,
+/// and the selected one <c>Inventory_Back10</c> (vanilla: plain, the selected one yellow).
 /// </summary>
 [Mixin(typeof(ItemSlot))]
 public static class ItemSlotMixin
@@ -63,9 +63,9 @@ public static class ItemSlotMixin
         case 13:
         case 36:
             if (texture == TextureAssets.InventoryBack.Value)
-                return TextureAssets.InventoryBack25.Value;
+                return TextureAssets.InventoryBack9.Value;
             if (texture == TextureAssets.InventoryBack14.Value || texture == TextureAssets.InventoryBack20.Value)
-                return TextureAssets.InventoryBack22.Value;
+                return TextureAssets.InventoryBack10.Value;
             break;
         }
         return texture;

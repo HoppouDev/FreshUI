@@ -5,7 +5,8 @@ using Terraria;
 namespace FreshUI.Mixins;
 
 /// <summary>
-/// The UI scale is FreshUI's GUI scale, whatever the game asks for (the title menu, the setting); and
+/// The UI scale is FreshUI's GUI scale, whatever the game asks for (the title menu, the setting), and
+/// the GUI scale setting survives the game saving its settings; and
 /// an open chest or shop is a row lower, under the coin and ammo row FreshUI adds below the inventory.
 /// </summary>
 [Mixin(typeof(Main))]
@@ -22,6 +23,14 @@ public static class MainMixin
 
     [Redirect("set_UIScale(System.Single)", At.FIELD, Target = "Terraria.Main::_uiScaleMatrix")]
     private static void SetScaleMatrix(Matrix matrix) => _uiScaleMatrix = Matrix.CreateScale(_uiScaleUsed, _uiScaleUsed, 1f);
+
+    // Main.SaveSettings clears the config and writes only the game's settings: read the GUI scale before
+    // (it's read lazily) and put it back after.
+    [Inject("SaveSettings()", At.HEAD)]
+    private static void LoadGuiScale(CallbackInfoReturnable<bool> callback) => _ = GuiScale.Setting;
+
+    [Inject("SaveSettings()", At.INVOKE, Target = "Terraria.IO.Preferences::Clear()", Shift = AtShift.AFTER)]
+    private static void KeepGuiScale(CallbackInfoReturnable<bool> callback) => GuiScale.Store();
 
     /// <summary>How much lower FreshUI puts an open chest or shop (and what's beside it): one inventory row.</summary>
     public const int ChestDrop = (int)PixelSlots.Pitch;

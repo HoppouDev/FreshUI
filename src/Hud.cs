@@ -14,12 +14,12 @@ public static class Hud
     public const float SlotGap = 2f;
 
     /// <summary>How far the hotbar's bottom edge is from the bottom of the screen.</summary>
-    public const float BottomMargin = 20f;
+    public const float BottomMargin = 4f;
 
     /// <summary>Room above the slots for the held item's name, drawn at <see cref="NameScale" />.</summary>
-    public const float NameSpace = 16f;
+    public const float NameSpace = 20f;
 
-    public const float NameScale = 0.5f;
+    public const float NameScale = 1.0f;
 
     /// <summary>How long the held item's name shows after it changes, then how long it fades, in ticks.</summary>
     public const float NameShown = 120f;

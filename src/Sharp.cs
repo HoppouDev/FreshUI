@@ -21,6 +21,13 @@ public static class Sharp
         PixelSnapEXT = true
     };
 
+    /// <summary>
+    /// Has <paramref name="spriteBatch" /> draw evenly scaled pixel art at a whole number of screen
+    /// pixels per pixel of the art (½ pixel per texel; Aether's <c>SpriteBatch.PixelScaleEXT</c>) while
+    /// <paramref name="on" /> and sharp UI are, for art drawn at fractional scales.
+    /// </summary>
+    public static void WholePixels(SpriteBatch spriteBatch, bool on) => spriteBatch.PixelScaleEXT = on && Enabled ? 0.5f : 0f;
+
     /// <summary>The sampler for a UI sprite batch that would otherwise use <paramref name="requested" />.</summary>
     public static SamplerState? Sampler(SamplerState? requested) => Enabled ? Snapped : requested;
 }

@@ -6,7 +6,7 @@ namespace FreshUI.Mixins;
 
 /// <summary>
 /// The UI scale is FreshUI's GUI scale, whatever the game asks for (the title menu, the setting), and
-/// the GUI scale setting survives the game saving its settings; and
+/// the GUI scale and key settings survive the game saving its settings; and
 /// an open chest or shop is a row lower, under the coin and ammo row FreshUI adds below the inventory.
 /// </summary>
 [Mixin(typeof(Main))]
@@ -30,7 +30,11 @@ public static class MainMixin
     private static void LoadGuiScale(CallbackInfoReturnable<bool> callback) => _ = GuiScale.Setting;
 
     [Inject("SaveSettings()", At.INVOKE, Target = "Terraria.IO.Preferences::Clear()", Shift = AtShift.AFTER)]
-    private static void KeepGuiScale(CallbackInfoReturnable<bool> callback) => GuiScale.Store();
+    private static void KeepGuiScale(CallbackInfoReturnable<bool> callback)
+    {
+        GuiScale.Store();
+        KeyDefaults.Store();
+    }
 
     /// <summary>How much lower FreshUI puts an open chest or shop (and what's beside it): one inventory row.</summary>
     public const int ChestDrop = (int)PixelSlots.Pitch;

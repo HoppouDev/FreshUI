@@ -8,7 +8,6 @@ using Terraria.GameContent.UI.BigProgressBar;
 using Terraria.GameInput;
 using Terraria.ID;
 using Terraria.Localization;
-using Terraria.Social;
 using Terraria.UI;
 
 namespace FreshUI;
@@ -29,8 +28,8 @@ public enum SettingsTab
 /// <summary>
 /// What's on each of the settings window's tabs: every setting of vanilla's in-game window and of the
 /// title menu's settings pages (and Aether's graphics page), each once, with the same texts, grouped
-/// under headers; and the window's actions (in game: achievements, invites, close, save and exit; on
-/// the title menu: language, back).
+/// under headers; and the window's actions (Back; on the title menu, Language too). In game, the rest
+/// of what vanilla's settings window had (achievements, invites, save and exit) is the pause menu's.
 /// </summary>
 public static class SettingsTabs
 {
@@ -65,43 +64,20 @@ public static class SettingsTabs
         _ => null
     };
 
-    /// <summary>The window's actions, under its tabs.</summary>
+    /// <summary>The window's actions, under its tabs: Back (to the pause menu, in game), and Language on the title menu.</summary>
     public static IEnumerable<(Func<string> Text, Action OnClick)> Actions(bool inGame)
     {
-        if (!inGame)
+        if (inGame)
         {
-            yield return (() => Lang.menu[103].Value, delegate
-            {
-                SoundEngine.PlaySound(SoundID.MenuOpen);
-                Main.menuMode = 1213;
-            });
-            yield return (() => Lang.menu[5].Value, MenuSettingsScreen.Back);
+            yield return (() => Lang.menu[5].Value, PauseMenu.Back);
             yield break;
         }
-        yield return (() => Lang.menu[131].Value, delegate
+        yield return (() => Lang.menu[103].Value, delegate
         {
-            IngameOptions.Close();
-            IngameFancyUI.OpenAchievements();
+            SoundEngine.PlaySound(SoundID.MenuOpen);
+            Main.menuMode = 1213;
         });
-        if (SocialAPI.Network != null && SocialAPI.Network.CanInvite())
-        {
-            yield return (() => Lang.menu[147].Value, delegate
-            {
-                IngameOptions.Close();
-                SocialAPI.Network.OpenInviteInterface();
-            });
-        }
-        yield return (() => Lang.menu[118].Value, delegate
-        {
-            IngameOptions.Close();
-        });
-        yield return (() => Lang.inter[35].Value, delegate
-        {
-            IngameOptions.Close();
-            Main.menuMode = 10;
-            Main.gameMenu = true;
-            WorldGen.SaveAndQuit();
-        });
+        yield return (() => Lang.menu[5].Value, MenuSettingsScreen.Back);
     }
 
     public static void Build(SettingsTab tab, SettingsWindow window)
@@ -356,6 +332,8 @@ public static class SettingsTabs
     private static Action OpenKeybinds(bool inGame) => inGame
         ? delegate
         {
+            // Back to the settings when the key bindings close.
+            PauseMenu.ReturnAfter(PauseMenu.View.Settings);
             IngameOptions.Close();
             IngameFancyUI.OpenKeybinds();
         }

@@ -1,5 +1,6 @@
 using Aether.UI.Game;
 using Aether.UI.Menu;
+using Microsoft.Xna.Framework.Graphics;
 using Terraria;
 using Terraria.Audio;
 using Terraria.ID;
@@ -52,7 +53,7 @@ public sealed class MenuSettingsScreen : UIMenuScreen
     }
 }
 
-/// <summary>The settings window in game, where vanilla's settings window (<c>IngameOptions</c>) was.</summary>
+/// <summary>The settings window in game (the pause menu's Settings, or the inventory's), over the game dimmed.</summary>
 public sealed class GameSettingsScreen : UIGameScreen
 {
     private static GameSettingsScreen? _instance;
@@ -69,4 +70,6 @@ public sealed class GameSettingsScreen : UIGameScreen
     }
 
     public override void UpdateState() => _window?.UpdateState();
+
+    protected override void DrawSelf(SpriteBatch spriteBatch) => PauseScreen.Dim(spriteBatch, this);
 }

@@ -14,10 +14,11 @@ using Terraria.UI.Gamepad;
 namespace FreshUI;
 
 /// <summary>
-/// The one settings window, in game (Esc, the Settings button) and on the title menu (Settings), in
-/// the style of Aether's Mods window: a title tab over two panels, the tabs in the left one and the
-/// open tab's options in the right one (scrolling when they don't fit), and the window's actions as
-/// large buttons at the bottom of the left one. Sizes are in whole pixels of the art (even UI units). What's on each tab is
+/// The one settings window, in game (the pause menu's Settings, the inventory's Settings button) and on
+/// the title menu (Settings), in the style of Aether's Mods window: a title tab over two panels, the
+/// tabs in the left one and the open tab's options in the right one (scrolling when they don't fit),
+/// and the window's actions (Back, and Language on the title menu) as large buttons at the bottom of
+/// the left one. Sizes are in whole pixels of the art (even UI units). What's on each tab is
 /// <see cref="SettingsTabs" />.
 /// </summary>
 public sealed class SettingsWindow : UIElement

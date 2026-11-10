@@ -47,7 +47,10 @@
 		"FreshUI.Mixins.SdfTextMixin",
 		"FreshUI.Mixins.UIImageButtonMixin",
 		"FreshUI.Mixins.UICharacterListItemMixin",
-		"FreshUI.Mixins.UIWorldListItemMixin"
+		"FreshUI.Mixins.UIWorldListItemMixin",
+		"FreshUI.Mixins.UIScrollbarMixin",
+		"FreshUI.Mixins.UIListMixin",
+		"FreshUI.Mixins.UIBestiaryEntryInfoPageMixin"
 	],
 
 	"depends": {

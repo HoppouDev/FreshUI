@@ -38,8 +38,8 @@ public static class MainMixin
     }
 
     // Esc, hard-coded: closes what's open, else opens the pause menu.
-    [Inject("DoUpdate_HandleInput()", At.TAIL)]
-    private static void Escape(CallbackInfo callback) => PauseMenu.HandleEscape();
+    [Inject("DoUpdate_HandleInput(Microsoft.Xna.Framework.GameTime)", At.TAIL)]
+    private static void Escape(GameTime gameTime, CallbackInfo callback) => PauseMenu.HandleEscape();
 
     // No Settings button at the bottom right (inventory, dead, over the settings window): Esc's pause
     // menu has Settings.

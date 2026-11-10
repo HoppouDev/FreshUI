@@ -2,8 +2,8 @@
 
 An Aether mod with the ID `fresh-ui` that gives Terraria's UI a pixel-perfect, compact look:
 
-- A pause menu on Esc in game, like Minecraft's in the Mods window's style: Back to Game, Achievements, Mods, Settings, Invite Friends (where invites work) and Save & Exit, over the game dimmed.
-  The inventory is on E and the grapple on Q (set once in every key profile; change them in Keybindings); Esc still closes the inventory, chests, NPC chat and the map first.
+- A pause menu on Esc in game (hard-coded), like Minecraft's in the Mods window's style: Back to Game, Achievements, Mods, Settings, Invite Friends (where invites work) and Save & Exit, over the game dimmed.
+  The inventory is on Q and the grapple on E (set once in every key profile; change them in Keybindings); Esc closes the inventory, chests, NPC chat and the map first.
 - One tabbed settings window for the title menu and the game, in the style of Aether's Mods window: General, Display, Graphics, Effects, Interface, Volume, Cursor and Controls in the left panel with Back (and Language, on the title menu) at its bottom, and the open tab's settings in groups in the right one, scrolling when they don't fit.
   Every setting of the game's two settings menus and Aether's graphics page is on one tab: Display has the window, frame rate and scales, Graphics the lighting, terrain renderer, background and world options.
 - A stepped GUI scale in the settings window (Display), in place of the UI scale slider: Auto (one step below the largest), or 1, 2, 3… screen pixels per pixel of the art, up to what fits the screen, for the title menu and the game alike.

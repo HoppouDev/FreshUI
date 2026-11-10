@@ -6,6 +6,7 @@ using Terraria;
 using Terraria.Audio;
 using Terraria.GameContent;
 using Terraria.GameContent.UI.Elements;
+using Terraria.GameInput;
 using Terraria.ID;
 using Terraria.Localization;
 using Terraria.Social;
@@ -15,7 +16,8 @@ using Terraria.UI.Gamepad;
 namespace FreshUI;
 
 /// <summary>
-/// The pause menu Esc opens in game (when it would have opened the inventory; the inventory is E):
+/// The pause menu Esc opens in game (Esc is hard-coded: it closes whatever is open, as the inventory
+/// key used to, and opens the menu when nothing is; the inventory is Q):
 /// Back to Game, Achievements, Mods, Settings (the settings window), Invite Friends where invites
 /// work, and Save &amp; Exit. It is vanilla's settings window as far as the game is concerned
 /// (<c>Main.ingameOptionsWindow</c>, which pauses the game with Autopause), showing either view.
@@ -42,12 +44,34 @@ public static class PauseMenu
     // The view to come back to when the fancy UI opened from the window (achievements, mods, key bindings) closes.
     private static View? _returnTo;
 
+    // Whether Esc is being handled (rather than the inventory key).
+    private static bool _escape;
+
     /// <summary>
-    /// Whether Esc (not another key bound to the inventory, nor a gamepad's button) is what's being
-    /// handled. The game's key bindings read the previous update's keyboard (<c>Main.oldKeyState</c>
-    /// by now), so a quick tap can already be up in <c>Main.keyState</c>.
+    /// Esc, every update after the keyboard is read (before chat, which closes on Esc itself): what the
+    /// inventory key does to close what's open (the inventory, a chest, NPC chat, the map, the window,
+    /// a fancy UI), except that with nothing open it opens the pause menu.
     /// </summary>
-    private static bool Escape => Main.oldKeyState.IsKeyDown(Keys.Escape) || Main.keyState.IsKeyDown(Keys.Escape);
+    public static void HandleEscape()
+    {
+        if (Main.gameMenu || !Main.keyState.IsKeyDown(Keys.Escape) || Main.oldKeyState.IsKeyDown(Keys.Escape))
+        {
+            return;
+        }
+        if (Main.drawingPlayerChat || Main.editSign || Main.editChest || Main.blockInput || PlayerInput.CurrentlyRebinding)
+        {
+            return;
+        }
+        _escape = true;
+        try
+        {
+            Main.LocalPlayer.ToggleInv();
+        }
+        finally
+        {
+            _escape = false;
+        }
+    }
 
     /// <summary>Opens the pause menu.</summary>
     public static void Open()
@@ -56,10 +80,10 @@ public static class PauseMenu
         Current = View.Pause;
     }
 
-    /// <summary>What the inventory key does when nothing else is open: Esc opens the pause menu, others the inventory.</summary>
+    /// <summary>What closing what's open does when nothing is: Esc opens the pause menu, the inventory key the inventory.</summary>
     public static void OpenInventoryOrPause(bool quiet)
     {
-        if (Escape)
+        if (_escape)
         {
             Open();
         }

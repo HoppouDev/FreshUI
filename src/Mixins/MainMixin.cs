@@ -6,8 +6,8 @@ namespace FreshUI.Mixins;
 
 /// <summary>
 /// The UI scale is FreshUI's GUI scale, whatever the game asks for (the title menu, the setting), and
-/// the GUI scale and key settings survive the game saving its settings; there's no Settings button
-/// (the pause menu has Settings); and
+/// the GUI scale and key settings survive the game saving its settings; Esc is hard-coded to close
+/// what's open and open the pause menu; there's no Settings button (the pause menu has Settings); and
 /// an open chest or shop is a row lower, under the coin and ammo row FreshUI adds below the inventory.
 /// </summary>
 [Mixin(typeof(Main))]
@@ -36,6 +36,10 @@ public static class MainMixin
         GuiScale.Store();
         KeyDefaults.Store();
     }
+
+    // Esc, hard-coded: closes what's open, else opens the pause menu.
+    [Inject("DoUpdate_HandleInput()", At.TAIL)]
+    private static void Escape(CallbackInfo callback) => PauseMenu.HandleEscape();
 
     // No Settings button at the bottom right (inventory, dead, over the settings window): Esc's pause
     // menu has Settings.

@@ -4,9 +4,10 @@ using Terraria;
 namespace FreshUI.Mixins;
 
 /// <summary>
-/// The inventory key (Esc, E) as FreshUI's pause menu has it (<see cref="PauseMenu" />): where it would
-/// open the inventory, Esc opens the pause menu instead; and in the window, it goes back from the
-/// settings to the pause menu they were opened from before it closes the window.
+/// Closing what's open (Player.ToggleInv: the inventory key, and Esc, see <see cref="PauseMenu" />) as
+/// FreshUI's pause menu has it: where it would open the inventory, Esc opens the pause menu instead;
+/// and in the window, it goes back from the settings to the pause menu they were opened from before it
+/// closes the window.
 /// </summary>
 [Mixin(typeof(Player))]
 public static class PlayerMixin

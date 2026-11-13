@@ -8,6 +8,7 @@ Most of it is mixins and the resources they load; the initializer sets up its Gu
 | `FreshUI.slnx` | IDE solution for the mod project. |
 | `.gitignore` | Keeps the local client, test saves, build output, and IDE state out of Git. |
 | `src/Startup.cs` | Mod initializer (Gum screens and their keys) and mod ID. |
+| `src/HotReload.cs` | Rebuilds FreshUI's screens after a .NET hot reload (`./aether watch`). |
 | `src/Sharp.cs`, `src/GuiScale.cs`, `src/PixelSlots.cs`, `src/Hud.cs` | Shared state and helpers: the pixel-snapping sampler, the GUI scale setting, nine-sliced slots and icon scales, and the hotbar layout. |
 | `src/PauseMenu.cs`, `src/KeyDefaults.cs` | The in-game pause menu (its state, actions, hard-coded Esc and screen), and FreshUI's keys (inventory on Q, grapple on E), set once. |
 | `src/SettingsWindow.cs`, `src/SettingsTabs.cs`, `src/SettingsScreens.cs`, `src/AetherGraphics.cs` | The tabbed settings window: its layout and elements, what's on each tab, its title-menu and in-game screens, and Aether's internal graphics settings through an accessor. |
@@ -55,6 +56,8 @@ Relative paths are resolved from the mod repo.
 - `dotnet build -t:PackMod` creates the archive in the build output.
 - `dotnet build -t:InstallMod` packages the mod and installs it alongside `aether-api.aethermod` into `.aether/saves/Mods`.
   Set `-p:AetherSaveDirectory=/path/to/test-saves` to install into a different profile.
+- `./aether watch` (Linux, macOS; needs the ASP.NET Core runtime, which `dotnet watch` runs on) launches the game under `dotnet watch` with .NET hot reload: saved edits to FreshUI's own code apply to the running game, and `HotReload` rebuilds every Gum screen, the pause menu and the settings window, for prototyping UI without restarting.
+  The project's `RunCommand` is the launcher, which keeps the agent's startup hook (`DOTNET_STARTUP_HOOKS`) out of its builds and passes it to the game; edits to mixins (merged into the game at startup) and rude edits restart it.
 - `./aether -- -mixindebug` builds, installs, and launches with the local test profile on Linux or macOS.
   On Windows use `.\aether.cmd -- -mixindebug` or `.\aether.ps1 -- -mixindebug`.
 

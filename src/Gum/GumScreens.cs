@@ -78,6 +78,18 @@ public sealed class GumScreen
         }
     }
 
+    /// <summary>Builds the screen again (after a hot reload), keeping whether it shows.</summary>
+    internal void Rebuild()
+    {
+        if (Root == null)
+        {
+            return;
+        }
+        Root.RemoveFromRoot();
+        Root = null;
+        Build();
+    }
+
     /// <summary>Builds the screen and adds it to Gum's root, the first time.</summary>
     internal void Build()
     {

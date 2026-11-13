@@ -51,6 +51,9 @@ class FreshItemSlot : FrameworkElement
     /// </summary>
     public static string? HighlightOverlayPath { get; set; }
 
+    /// <summary>Drawn instead of <see cref="HighlightOverlayPath"/> over the selected hotbar slot, or null for that.</summary>
+    public static string? SelectedOverlayPath { get; set; }
+
     // The slot art: 52 texels square (26 UI pixels), with rounded corners and a border 8 texels in
     // from each edge.
     private const int ArtSize = 52;
@@ -85,6 +88,7 @@ class FreshItemSlot : FrameworkElement
     private FreshItemSlotKind _kind;
     private string? _backgroundPath;
     private bool _isHighlighted;
+    private bool _isSelected;
     private Texture2D? _item;
     private Rectangle? _itemSource;
     private Texture2D? _placeholder;
@@ -96,7 +100,7 @@ class FreshItemSlot : FrameworkElement
 
     // What the slot last showed: SetItem runs every frame, and Gum's setters notify (and allocate) even
     // for unchanged values.
-    private (float, FreshItemSlotKind, string?, bool, Texture2D?, Rectangle?, Texture2D?, Rectangle?, Color, Color, int, int?, int)? _shown;
+    private (float, FreshItemSlotKind, string?, bool, bool, Texture2D?, Rectangle?, Texture2D?, Rectangle?, Color, Color, int, int?, int)? _shown;
 
     /// <summary>Live HUD activation for remote automation; physical input stays in Aether.</summary>
     internal Func<bool, bool>? HudAction { get; set; }
@@ -121,6 +125,7 @@ class FreshItemSlot : FrameworkElement
         bool hotbar = context is 13 or 36 || context == 0 && index < 10;
         bool selected = hotbar && index == Main.LocalPlayer.selectedItem && !Main.LocalPlayer.selectedItemState.HasActiveOverride;
         _hotbarIndex = hotbar && index < 10 ? index : null;
+        _isSelected = selected;
         _isHighlighted = selected || !item.IsAir && item.favorited ||
             ItemSlot.ShouldHighlightSlotForMouseItem(context, index, Main.mouseItem);
         int background = context switch
@@ -138,7 +143,7 @@ class FreshItemSlot : FrameworkElement
             _ => 0,
         };
         if (hotbar)
-            background = selected ? 10 : 9;
+            background = 9; // Selected: the same, under SelectedOverlayPath's outline.
         else if (!item.IsAir && item.favorited)
             background = context == 32 ? 19 : 10;
         else if (!item.IsAir && item.newAndShiny && ItemSlot.Options.HighlightNewItems)
@@ -337,7 +342,7 @@ class FreshItemSlot : FrameworkElement
 
     private void Refresh()
     {
-        var state = (_scale, _kind, _backgroundPath, _isHighlighted, _item, _itemSource, _placeholder,
+        var state = (_scale, _kind, _backgroundPath, _isHighlighted, _isSelected, _item, _itemSource, _placeholder,
             _placeholderSource, _iconColor, _backgroundColor, _count, _hotbarIndex, UiPixels.Scale);
         if (_shown is { } shown && shown.Equals(state))
         {
@@ -351,7 +356,8 @@ class FreshItemSlot : FrameworkElement
 
         _background.Texture = LoadTexture(_backgroundPath ?? BackgroundPaths.GetValueOrDefault(_kind));
         _background.Color = _backgroundColor;
-        _highlightOverlay.Texture = _isHighlighted ? LoadTexture(HighlightOverlayPath) : null;
+        _highlightOverlay.Texture = _isHighlighted
+            ? LoadTexture(_isSelected ? SelectedOverlayPath ?? HighlightOverlayPath : HighlightOverlayPath) : null;
         _highlightOverlay.Visible = _highlightOverlay.Texture != null;
 
         RefreshIcon(size);

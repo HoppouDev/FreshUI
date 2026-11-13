@@ -8,6 +8,8 @@ namespace FreshUI.Legacy.Mixins;
 [Mixin(typeof(Main))]
 public static class QuickCraftingLayoutMixin
 {
+    private static uint _lastUpdate;
+
     // DrawInventory computes the shared offset as (screenHeight - reference) / 2.
     // Using the sum of the list's top and bottom centres its complete visible extent.
     [ModifyConstant("DrawInventory()", "int:600")]
@@ -16,6 +18,10 @@ public static class QuickCraftingLayoutMixin
     {
         if (!Main.InPipCrafting || Main.PipsUseGrid || Main.InGuideCraftMenu || Main.InReforgeMenu)
             return reference;
+        // DrawInventory rebuilds the list after this; just opened, the list is still from when it closed.
+        if (Main.GameUpdateCount - _lastUpdate > 1)
+            Recipe.UpdateRecipeList();
+        _lastUpdate = Main.GameUpdateCount;
         float fraction = Main.screenHeight < 700 ? 200 : Main.screenHeight < 850 ? 225 : 250;
         int middle = (int)(Main.screenHeight / 600f * fraction);
         // The controls now flank the inventory; only the recipe list and ingredients need centring.

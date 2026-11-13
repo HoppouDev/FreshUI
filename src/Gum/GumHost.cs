@@ -60,25 +60,35 @@ public static class GumHost
         FreshItemSlot.BackgroundPaths[FreshItemSlotKind.Ammo] = "Images/Inventory_Back8";
         FreshItemSlot.BackgroundPaths[FreshItemSlotKind.Trash] = "Images/Inventory_Back7";
         FreshItemSlot.HighlightOverlayPath = "Images/Inventory_Back22";
+        // The thin gold outline the crafting window draws round its selected recipe.
+        FreshItemSlot.SelectedOverlayPath = "Images/Inventory_Back24";
         UiPixels.SetScale(GuiScale.Current);
         GumText.Initialize(Main.instance.GraphicsDevice);
     }
 
-    private static void Update(GameTime time)
+    /// <summary>
+    /// Sets Gum up and builds the screens, once: from the first update or draw in a world, whichever
+    /// comes first, so the first frame's HUD is already Gum's.
+    /// </summary>
+    internal static void EnsureReady()
     {
         if (!IsInitialized)
         {
             Initialize();
         }
-        if (GuiScale.Current != UiPixels.Scale)
-        {
-            UiPixels.SetScale(GuiScale.Current);
-        }
         foreach (GumScreen screen in GumScreens.All)
         {
             screen.Build();
         }
-        FreshUI.Screens.HudScreen.Update();
+    }
+
+    private static void Update(GameTime time)
+    {
+        EnsureReady();
+        if (GuiScale.Current != UiPixels.Scale)
+        {
+            UiPixels.SetScale(GuiScale.Current);
+        }
         // Gum ignores input while the window is inactive. Under remote automation, which drives an
         // unfocused window, the window counts as focused, as Aether's patch to FocusHelper makes it for
         // the game.

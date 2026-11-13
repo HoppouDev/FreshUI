@@ -123,11 +123,10 @@ public sealed class HudScreen : ContainerRuntime
                 (int)(GroupOrigin.Y * 2), (int)((10 * Pitch - 1) * 2), (int)((4 * Pitch - 1) * 2));
     }
 
-    internal static void Update()
+    // At draw time, not in Gum's update: that runs before the game handles the key opening the inventory.
+    private void PlaceHotbarLock()
     {
-        if (_current == null)
-            return;
-        FreshIconButton button = _current._hotbarLock;
+        FreshIconButton button = _hotbarLock;
         button.Visual.Visible = Main.playerInventory;
         button.IsChecked = Main.LocalPlayer.hbLocked;
         button.Visual.X = GroupOrigin.X + MathF.Round((Cell - button.Visual.Width) / 2);
@@ -137,6 +136,7 @@ public sealed class HudScreen : ContainerRuntime
     /// <summary>Drops the slots the last frame didn't present, and starts collecting this frame's.</summary>
     public static void BeginFrame()
     {
+        GumHost.EnsureReady();
         if (_current == null)
             return;
         _current._namePresented = false;
@@ -162,6 +162,7 @@ public sealed class HudScreen : ContainerRuntime
     {
         if (_current == null)
             return;
+        _current.PlaceHotbarLock();
         if (!_current._namePresented && _current._heldName.Visible)
             _current._heldName.Visible = false;
         foreach (SlotBinding slot in _current._slots.Values)

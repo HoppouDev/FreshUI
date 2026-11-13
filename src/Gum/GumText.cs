@@ -23,7 +23,7 @@ namespace FreshUI.GumUi;
 /// </para>
 /// <para>
 /// Each style drawn is its own texture, since the shader's parameters belong to the texture it is
-/// attached to; a style's texture is disposed once no text uses it.
+/// attached to; a style's texture is kept while unused until 16 newer ones are unused too.
 /// </para>
 /// </summary>
 static partial class GumText
@@ -225,18 +225,35 @@ static partial class GumText
             variant = CreateVariant(key);
             Variants[key] = variant;
         }
+        else if (variant.Users == 0)
+        {
+            Unused.Remove(key);
+        }
         variant.Users++;
         Assigned.AddOrUpdate(text, new StrongBox<StyleKey>(key));
         return variant.Font;
     }
 
+    // Unused styles kept, oldest first, before their textures are disposed: setting a new text's size,
+    // outline and shadow one at a time passes through styles that the next text needs again.
+    private const int UnusedKept = 16;
+    private static readonly List<StyleKey> Unused = [];
+
     private static void Release(StyleKey key)
     {
-        if (Variants.TryGetValue(key, out Variant? variant) && --variant.Users <= 0)
+        if (!Variants.TryGetValue(key, out Variant? variant) || --variant.Users > 0)
         {
-            Variants.Remove(key);
-            variant.Texture.EffectEXT?.Dispose();
-            variant.Texture.Dispose();
+            return;
+        }
+        Unused.Add(key);
+        if (Unused.Count > UnusedKept)
+        {
+            StyleKey oldest = Unused[0];
+            Unused.RemoveAt(0);
+            Variant disposed = Variants[oldest];
+            Variants.Remove(oldest);
+            disposed.Texture.EffectEXT?.Dispose();
+            disposed.Texture.Dispose();
         }
     }
 

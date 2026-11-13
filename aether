@@ -98,4 +98,6 @@ cd "$client_root"
 if [ -n "$startup_hooks" ]; then
     export DOTNET_STARTUP_HOOKS="$startup_hooks"
 fi
-exec ./aether launch --configuration "$configuration" --save-dir "$save_dir" -- "$@"
+# AETHER_LAUNCH_OPTIONS: extra `aether launch` options, such as --profile (split into words on purpose).
+# shellcheck disable=SC2086
+exec ./aether launch --configuration "$configuration" --save-dir "$save_dir" ${AETHER_LAUNCH_OPTIONS:-} -- "$@"

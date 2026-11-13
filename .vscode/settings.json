@@ -1,3 +1,6 @@
 {
-	"dotnet.defaultSolution": "FreshUI.slnx"
+	"dotnet.defaultSolution": "FreshUI.slnx",
+	// OmniSharp doesn't understand .NET 10 file-based app directives (#:package),
+	// used by tools/GenerateGumFont.cs; the Roslyn language server does.
+	"dotnet.server.useOmnisharp": false
 }

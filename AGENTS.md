@@ -6,6 +6,7 @@ Most of it is mixins and the resources they load; the initializer sets up its Gu
 | Path | Purpose |
 | --- | --- |
 | `FreshUI.slnx` | IDE solution for the mod project. |
+| `.vscode/`, `.mcp.json` | VS Code build, run and debug tasks (see Build and test), and the game's MCP server for agents. |
 | `.gitignore` | Keeps the local client, test saves, build output, and IDE state out of Git. |
 | `src/Startup.cs` | Mod initializer (Gum screens and their keys) and mod ID. |
 | `src/HotReload.cs` | Rebuilds FreshUI's screens after a .NET hot reload (`./aether watch`). |
@@ -63,6 +64,9 @@ Relative paths are resolved from the mod repo.
   The project's `RunCommand` is the launcher, which keeps the agent's startup hook (`DOTNET_STARTUP_HOOKS`) out of its builds and passes it to the game; edits to mixins (merged into the game at startup) and rude edits restart it.
 - `./aether -- -mixindebug` builds, installs, and launches with the local test profile on Linux or macOS.
   On Windows use `.\aether.cmd -- -mixindebug` or `.\aether.ps1 -- -mixindebug`.
+- `AETHER_LAUNCH_OPTIONS` passes extra `aether launch` options through the launcher (Linux, macOS), such as `--profile` for Aether's allocation profiler (Linux; record with the MCP tool `game_profile`).
+- In VS Code, the launch configurations (`.vscode/`) start the game from a task (Debug, Debug with hot reload under `./aether watch`, Debug with profiler), each serving the aether-game MCP server on port 47321 (`-aethermcp`, `.mcp.json`), and attach the debugger: pick `Aether.Bootstrap` from the list, since netcoredbg attaches only by process ID. Stopping the session ends the game.
+  `PackMod` packages `FreshUI.pdb`, which Aether loads with the assembly, so breakpoints bind in FreshUI's code (mixins are merged into the game, so likely not in them).
 
 For manual builds, `-p:AetherClientDirectory=/path/to/client-output` can point directly to the folder containing `Aether.Modding.dll` and `Terraria.dll`.
 Set `AetherApiDirectory` to use an API build from another directory.

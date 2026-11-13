@@ -21,4 +21,7 @@ public static class CursorMixin
 
     [Redirect("DrawInterface_36_Cursor()", At.FIELD, Target = CursorScale)]
     private static float OverrideCursorScale() => 1f;
+
+    [Redirect("DrawInterface_38_MouseCarriedObject()", At.FIELD, Target = CursorScale, Ordinal = 0)]
+    private static float CarriedItemScale() => 1f;
 }

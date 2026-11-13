@@ -1,6 +1,7 @@
 using Aether.Modding;
 using Microsoft.Xna.Framework;
 using Terraria;
+using FreshUI.Screens;
 
 namespace FreshUI.Legacy.Mixins;
 
@@ -13,6 +14,9 @@ namespace FreshUI.Legacy.Mixins;
 [Mixin(typeof(Main))]
 public static class MainMixin
 {
+    [Inject("DrawInterface(Microsoft.Xna.Framework.GameTime)", At.HEAD)]
+    private static void BeginHudFrame(GameTime gameTime, CallbackInfo callback) => HudScreen.BeginFrame();
+
     [Shadow]
     private static float _uiScaleUsed;
 

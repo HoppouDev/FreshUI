@@ -7,6 +7,9 @@ using Gum.Managers;
 using Gum.Wireframe;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using Terraria;
+using Terraria.GameContent;
+using Terraria.UI;
 
 namespace FreshUI.Components;
 
@@ -24,6 +27,10 @@ enum FreshItemSlotKind
     /// <see cref="FreshItemSlot.BackgroundPath"/>.
     /// </summary>
     Container,
+    Equipment,
+    Dye,
+    Shop,
+    Crafting,
 }
 
 /// <summary>
@@ -65,6 +72,8 @@ class FreshItemSlot : FrameworkElement
     private const float NumberLeft = 6, NumberTop = 4, SelectedNumberLift = 2;
 
     private static readonly Dictionary<string, Texture2D> Textures = [];
+    private static readonly string[] SlotBackgrounds = Enumerable.Range(0, 25)
+        .Select(index => "Images/Inventory_Back" + (index == 0 ? "" : index.ToString())).ToArray();
 
     private readonly NineSliceRuntime _background;
     private readonly NineSliceRuntime _highlightOverlay;
@@ -79,8 +88,113 @@ class FreshItemSlot : FrameworkElement
     private Texture2D? _item;
     private Rectangle? _itemSource;
     private Texture2D? _placeholder;
+    private Rectangle? _placeholderSource;
+    private Color _iconColor = Color.White;
+    private Color _backgroundColor = BackgroundColor;
     private int _count;
     private int? _hotbarIndex;
+
+    // What the slot last showed: SetItem runs every frame, and Gum's setters notify (and allocate) even
+    // for unchanged values.
+    private (float, FreshItemSlotKind, string?, bool, Texture2D?, Rectangle?, Texture2D?, Rectangle?, Color, Color, int, int?, int)? _shown;
+
+    /// <summary>Live HUD activation for remote automation; physical input stays in Aether.</summary>
+    internal Func<bool, bool>? HudAction { get; set; }
+
+    /// <summary>Updates a live item in one pass, including animated icons and empty equipment silhouettes.</summary>
+    internal void SetItem(Item item, int context, int index, float scale)
+    {
+        _scale = scale;
+        _kind = context switch
+        {
+            1 => FreshItemSlotKind.Coin,
+            2 => FreshItemSlotKind.Ammo,
+            3 or 4 or 32 => FreshItemSlotKind.Container,
+            6 => FreshItemSlotKind.Trash,
+            12 or 33 => FreshItemSlotKind.Dye,
+            8 or 9 or 10 or 11 or 16 or 17 or 18 or 19 or 20 => FreshItemSlotKind.Equipment,
+            13 or 36 => FreshItemSlotKind.Hotbar,
+            15 => FreshItemSlotKind.Shop,
+            22 or 35 => FreshItemSlotKind.Crafting,
+            _ => FreshItemSlotKind.Inventory,
+        };
+        bool hotbar = context is 13 or 36 || context == 0 && index < 10;
+        bool selected = hotbar && index == Main.LocalPlayer.selectedItem && !Main.LocalPlayer.selectedItemState.HasActiveOverride;
+        _hotbarIndex = hotbar && index < 10 ? index : null;
+        _isHighlighted = selected || !item.IsAir && item.favorited ||
+            ItemSlot.ShouldHighlightSlotForMouseItem(context, index, Main.mouseItem);
+        int background = context switch
+        {
+            1 or 15 => 6,
+            2 => 8,
+            3 => 5,
+            4 or 32 => 2,
+            5 or 7 or 22 => 4,
+            35 => 2,
+            6 => 7,
+            8 or 9 or 10 or 11 or 12 => 13,
+            16 or 17 or 18 or 19 or 20 => 3,
+            33 => 12,
+            _ => 0,
+        };
+        if (hotbar)
+            background = selected ? 10 : 9;
+        else if (!item.IsAir && item.favorited)
+            background = context == 32 ? 19 : 10;
+        else if (!item.IsAir && item.newAndShiny && ItemSlot.Options.HighlightNewItems)
+            background = 15;
+        if (context is 22 or 35 && ItemSlot.DrawGoldBGForCraftingMaterial)
+        {
+            background = 14;
+            ItemSlot.DrawGoldBGForCraftingMaterial = false;
+        }
+        _backgroundPath = SlotBackgrounds[background];
+        _backgroundColor = context is 8 or 9 or 10 or 11 or 12
+            ? ItemSlot.GetColorByLoadout(index, context) : Main.inventoryBack;
+        _count = item.IsAir ? 0 : item.stack;
+        _item = null;
+        _itemSource = null;
+        _placeholder = null;
+        _placeholderSource = null;
+        if (!item.IsAir)
+        {
+            Main.instance.LoadItem(item.type);
+            _item = TextureAssets.Item[item.type].Value;
+            _itemSource = Main.itemAnimations[item.type]?.GetFrame(_item) ?? _item.Bounds;
+            Color light = Color.White;
+            ItemSlot.GetItemLight(ref light, item);
+            _iconColor = item.GetAlpha(light);
+        }
+        else if (context == 6)
+            _placeholder = TextureAssets.Trash.Value;
+        else
+        {
+            int silhouette = context switch
+            {
+                8 when index < 3 => index * 6,
+                9 when index is >= 10 and < 13 => (index - 10) * 6 + 3,
+                10 => 11,
+                11 => 2,
+                12 or 33 => 1,
+                16 => 4,
+                17 => 13,
+                18 => 7,
+                19 => 10,
+                20 => 17,
+                7 => 18,
+                _ => -1,
+            };
+            if (silhouette >= 0)
+            {
+                _placeholder = TextureAssets.Extra[54].Value;
+                Rectangle frame = _placeholder.Frame(3, 7, silhouette % 3, silhouette / 3);
+                frame.Width -= 2;
+                frame.Height -= 2;
+                _placeholderSource = frame;
+            }
+        }
+        Refresh();
+    }
 
     public FreshItemSlot() : base(new ContainerRuntime())
     {
@@ -223,11 +337,20 @@ class FreshItemSlot : FrameworkElement
 
     private void Refresh()
     {
+        var state = (_scale, _kind, _backgroundPath, _isHighlighted, _item, _itemSource, _placeholder,
+            _placeholderSource, _iconColor, _backgroundColor, _count, _hotbarIndex, UiPixels.Scale);
+        if (_shown is { } shown && shown.Equals(state))
+        {
+            return;
+        }
+        _shown = state;
+
         float size = Size;
         Visual.Width = size;
         Visual.Height = size;
 
         _background.Texture = LoadTexture(_backgroundPath ?? BackgroundPaths.GetValueOrDefault(_kind));
+        _background.Color = _backgroundColor;
         _highlightOverlay.Texture = _isHighlighted ? LoadTexture(HighlightOverlayPath) : null;
         _highlightOverlay.Visible = _highlightOverlay.Texture != null;
 
@@ -247,7 +370,7 @@ class FreshItemSlot : FrameworkElement
             return;
         }
 
-        Rectangle frame = _item != null && _itemSource is Rectangle source ? source : texture.Bounds;
+        Rectangle frame = (_item != null ? _itemSource : _placeholderSource) ?? texture.Bounds;
         _icon.Texture = texture;
         _icon.TextureAddress = TextureAddress.Custom;
         _icon.TextureLeft = frame.X;
@@ -265,7 +388,7 @@ class FreshItemSlot : FrameworkElement
         _icon.X = snap((size - width) / 2);
         _icon.Y = snap((size - height) / 2);
         // A placeholder is a silhouette: white at about 40%.
-        _icon.Color = _item != null ? Color.White : new Color(255, 255, 255, 100);
+        _icon.Color = _item != null ? _iconColor : new Color(255, 255, 255, 100);
     }
 
     /// <summary>

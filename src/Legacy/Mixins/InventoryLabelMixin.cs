@@ -8,8 +8,7 @@ using Terraria.UI;
 namespace FreshUI.Legacy.Mixins;
 
 /// <summary>
-/// No "Inventory", "Coins" or "Ammo" labels on the open inventory; the achievement advisor's card over
-/// the side-button grid.
+/// No "Inventory", "Coins" or "Ammo" labels; the achievement card sits in the bottom-right corner.
 /// </summary>
 [Mixin(typeof(Main))]
 public static class InventoryLabelMixin
@@ -34,16 +33,19 @@ public static class InventoryLabelMixin
     {
     }
 
-    // The achievement advisor's card above the side-button grid, where vanilla's coin and ammo columns
-    // were (vanilla: 5 right of its wider inventory, at the top): its border centred over the grid, on
-    // whole screen pixels (at its scale the card's art doesn't share the slots' pixel grid), its top on
-    // the inventory's top row.
+    // Keep the card clear of the crafting panel and independent of the inventory's position.
     [Redirect("DrawInventory()", At.INVOKE, Target = "Terraria.UI.AchievementAdvisor::DrawOneAchievement(Microsoft.Xna.Framework.Graphics.SpriteBatch,Microsoft.Xna.Framework.Vector2,System.Boolean)", Ordinal = 0)]
     private static void DrawAdvisor(AchievementAdvisor advisor, SpriteBatch spriteBatch, Vector2 position, bool large)
     {
         // The card's 64-texel icon is drawn 8 texels in from the position, and its 72-texel border
         // 4 out from the icon.
         float scale = Sharp.WholeScale(0.75f);
+        if (FreshUI.Screens.HudScreen.IsReady)
+        {
+            advisor.DrawOneAchievement(spriteBatch,
+                new Vector2(Main.screenWidth - 10 - 76 * scale, Main.screenHeight - 20 - 76 * scale), large);
+            return;
+        }
         float columnsCentre = SideButtons.ColumnX + (SideButtons.Pitch + 32f) / 2f;
         float ui = Main.UIScale;
         float left = MathF.Round((columnsCentre - 36f * scale) * ui) / ui;

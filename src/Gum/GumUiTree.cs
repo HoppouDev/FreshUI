@@ -70,6 +70,12 @@ public sealed class GumUiTree : IUiTree
             return false;
         }
         FrameworkElement? control = ControlOf(element!);
+        if (control is FreshItemSlot { HudAction: { } act } && action is "activate" or "secondary")
+        {
+            bool acted = act(action == "secondary");
+            error = acted ? "" : "the slot cannot be used right now";
+            return acted;
+        }
         switch (action)
         {
         case "activate":
@@ -145,7 +151,7 @@ public sealed class GumUiTree : IUiTree
         {
             return actions;
         }
-        bool clickable = interactive.HasEvents && (control is ButtonBase or ListBoxItem or FreshItemSlot or FreshIconButton ||
+        bool clickable = control is FreshItemSlot { HudAction: not null } || interactive.HasEvents && (control is ButtonBase or ListBoxItem or FreshItemSlot or FreshIconButton ||
             ClickHandlers?.GetValue(interactive) != null);
         if (clickable)
         {

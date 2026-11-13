@@ -10,6 +10,8 @@ An Aether mod with the ID `fresh-ui` that gives Terraria's UI a pixel-perfect, c
   Every pixel of the art covers the same number of screen pixels.
 - The cursor and the small icons (equipment page, hotbar lock, builder toggles, defense, empty slot silhouettes) at whole pixels; the cursor at the UI's scale, its pixels the same size as the rest of the UI's.
 - Inventory slots with even borders at any scale, and item icons at a whole number of pixels per art pixel.
+  The live inventory, equipment, containers, shops, crafting slots and hotbar draw through Gum's `HudScreen`; Aether keeps their game interactions. The inventory keeps its original Gum layout at the bottom centre: coins on the left, ammo on the right, containers above, and the hotbar below between its lock and trash. Q opens the inventory and Esc closes it before opening the pause menu.
+  Crafting controls, quick stack and sort flank the inventory on the left; builder toggles, bestiary and emotes flank it on the right. The crafting controls keep their positions when the crafting window opens. The achievement card sits in the bottom-right corner. The quick-crafting list is vertically centred without its default title.
 - Sharp pixel art (point sampling, where the game blurs its scaled UI), sprites snapped to whole pixels, and the character and world list buttons as plain icons, their pixels the size of the rest of the UI's.
 - The hotbar at the bottom centre: slots a little larger than the inventory's that stay put while scrolling, and the held item's name above them when you switch items, fading out (not when entering a world or closing the inventory).
 - No "Inventory" label above the open inventory.

@@ -3,19 +3,25 @@ using FreshUI.Legacy.Mixins;
 using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.GameContent;
+using FreshUI.Screens;
 
 namespace FreshUI.Legacy;
 
 /// <summary>
-/// The grid of inventory side buttons beside the inventory, where vanilla's coin and ammo columns were
-/// (FreshUI moved them under it): two 32-unit columns 34 apart, under the achievement advisor's card.
-/// Vanilla's quick stack, sort, bestiary and emote buttons start it, and the icons vanilla keeps at the
-/// screen's left edge (the hotbar lock and the builder toggles: block replacement, torch swapping and
-/// the builder accessories') are packed in below. With a chest or shop open, the buttons stay beside
-/// it, as vanilla's, a row lower with it.
+/// Utility icons in slot-sized columns flanking the inventory. Before Gum is ready, the legacy
+/// layout remains available.
 /// </summary>
 public static class SideButtons
 {
+    /// <summary>The right utility column follows the inventory's ammo column.</summary>
+    public static bool TryOrigin(out Vector2 origin)
+    {
+        origin = default;
+        if (!HudScreen.TrySlotPosition(2, 54, out Vector2 ammo))
+            return false;
+        origin = ammo + new Vector2(46, 0);
+        return true;
+    }
     /// <summary>The grid's first column's left edge (one art pixel right of the inventory's last column).</summary>
     public const float ColumnX = 482f;
 
@@ -48,6 +54,18 @@ public static class SideButtons
         button.Area = () =>
         {
             Rectangle rectangle = area();
+            if (TryOrigin(out Vector2 origin))
+            {
+                bool leftSide = button == InventoryButtons.QuickStackAll.Button || button == InventoryButtons.SortInventory.Button;
+                if (leftSide && HudScreen.TrySlotPosition(1, 50, out Vector2 coins))
+                    origin = coins - new Vector2(46, 0);
+                int row = button == InventoryButtons.SortInventory.Button ? 3
+                    : button == InventoryButtons.QuickStackAll.Button ? 2
+                    : button == InventoryButtons.Emotes.Button ? 1 : 0;
+                rectangle.X = (int)MathF.Round(origin.X + (44 - rectangle.Width) / 2);
+                rectangle.Y = (int)MathF.Round(origin.Y + row * 46 + (44 - rectangle.Height) / 2);
+                return rectangle;
+            }
             // Centred under the 32-unit column, on even UI units.
             int left = (int)columnX + (32 - rectangle.Width) / 2;
             rectangle.X += left - (left & 1) - vanillaColumnX;
@@ -84,7 +102,7 @@ public static class SideButtons
             };
             Place(group.Buttons[order[i]], () =>
             {
-                int cell = 1;
+                int cell = HudScreen.IsReady ? 0 : 1;
                 for (int j = 0; j < index; j++)
                 {
                     if (!areas[j]().IsEmpty)
@@ -114,6 +132,14 @@ public static class SideButtons
                 return rectangle;
             Point drawn = size(rectangle);
             int index = cell();
+            if (TryOrigin(out Vector2 origin))
+            {
+                // Keep the top two cells for bestiary/emotes; extra toggles continue to the right.
+                int row = 2 + index % 3;
+                float x = origin.X + index / 3 * 46 + (44 - drawn.X) / 2;
+                float y = origin.Y + row * 46 + (44 - drawn.Y) / 2;
+                return new Rectangle((int)MathF.Round(x), (int)MathF.Round(y), drawn.X, drawn.Y);
+            }
             // Vanilla's bestiary row: 30 tall from 278, 168 lower (and 5 right) with a chest or shop
             // open, 24 more while renaming a chest; moved as the buttons are.
             bool chest = Main.ChestOrShopUIVisible;

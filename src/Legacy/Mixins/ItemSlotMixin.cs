@@ -26,6 +26,9 @@ public static class ItemSlotMixin
 
     private static int _slot;
 
+    [Redirect(DrawSlot, At.FIELD, Target = "Terraria.Main::DoGlowingMouseItemDraw")]
+    private static bool NoPickupGlow() => false;
+
     [Inject(DrawSlot, At.HEAD)]
     private static void BeginSlot(SpriteBatch spriteBatch, Item[] inv, int context, int slot, Vector2 position, Color lightColor, CallbackInfo callback)
     {

@@ -81,8 +81,8 @@ See `docs/api/index.md` in the Aether checkout for the API guide.
 
 FreshUI hosts [Gum](https://docs.flatredball.com/gum) screens in game, alongside the game's own UI (`src/Gum/`).
 
-- **Adding a screen:** build its root element (a `ContainerRuntime` with Gum controls and FreshUI's components) in a class under `src/Screens/`, and register it from `Startup.Initialize` with `GumScreens.Register("fresh-ui:name", () => new MyScreen(), initiallyVisible)`; the returned `GumScreen`'s `IsVisible` shows and hides it (from a key with the Aether API's `Keybinds.Register`, as the sample inventory, `fresh-ui:inventory`, does on F9).
-  Screens are built once, on the first frame in a world, and kept between worlds.
+- **Adding a screen:** build its root element (a `ContainerRuntime` with Gum controls and FreshUI's components) in a class under `src/Screens/`, and register it from `Startup.Initialize` with `GumScreens.Register("fresh-ui:name", () => new MyScreen(), initiallyVisible)`; the returned `GumScreen`'s `IsVisible` shows and hides it (for example, from a key with the Aether API's `Keybinds.Register`).
+  Screens are built once, on the first frame in a world, and kept between worlds. `fresh-ui:hud` is the live `HudScreen`, always registered; Aether's inventory state determines which slots it presents, with Q and Esc handled by the game and `PauseMenu`.
 - **Drawing:** `GumHost` registers one retained mod UI layer (`fresh-ui:gum`, Aether's `RetainedUi`), so Gum draws over the HUD and under mouse text and the cursor, and is suspended where the game's mod UI is (menus, settings, the full-screen map, hidden HUD).
   Its surface updates Gum every update and draws it every frame, ending and restarting the game's sprite batch around it.
   It takes the mouse only over an interactive Gum element, so elsewhere the game gets the click.

@@ -43,7 +43,7 @@ public static class Hud
 
     /// <summary>
     /// An item's name colour, as vanilla's hover text and tooltips have it (Main's
-    /// <c>MouseText_DrawItemTooltip_GetItemNameColor</c>), pulsing with the mouse text.
+    /// <c>MouseText_DrawItemTooltip_GetItemNameColor</c>), without the mouse text's brightness pulse.
     /// </summary>
     public static Microsoft.Xna.Framework.Color NameColor(Item item)
     {
@@ -67,7 +67,7 @@ public static class Hud
             >= 11 => new(180, 40, 255),
             _ => Microsoft.Xna.Framework.Color.White
         };
-        return color * (Main.mouseTextColor / 255f);
+        return color;
     }
 
     /// <summary>The hotbar's bottom edge, as last laid out (UI units).</summary>

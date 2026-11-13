@@ -78,6 +78,7 @@ public static class GumHost
         {
             screen.Build();
         }
+        FreshUI.Screens.HudScreen.Update();
         // Gum ignores input while the window is inactive. Under remote automation, which drives an
         // unfocused window, the window counts as focused, as Aether's patch to FocusHelper makes it for
         // the game.
@@ -105,6 +106,7 @@ public static class GumHost
         {
             return;
         }
+        FreshUI.Screens.HudScreen.EndFrame();
         object?[] state = BatchState.Select(field => field.GetValue(batch)).ToArray();
         batch.End();
         try

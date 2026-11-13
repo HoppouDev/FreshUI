@@ -5,6 +5,8 @@ using Microsoft.Xna.Framework.Graphics;
 using ReLogic.Graphics;
 using Terraria;
 using Terraria.GameContent;
+using Terraria.UI;
+using FreshUI.Screens;
 
 namespace FreshUI.Legacy.Mixins;
 
@@ -94,7 +96,9 @@ public class UIHotbarMixin
         DynamicSpriteFont font = FontAssets.MouseText.Value;
         float half = font.MeasureString(text).X * Hud.NameScale / 2f;
         var position = new Vector2(MathF.Round(Main.screenWidth / 2f - half), Hud.Bottom - Hud.HotbarSlotSize - Hud.NameSpace - Hud.NameLift);
-        spriteBatch.DrawString(font, text, position, Hud.NameColor(selected) * opacity, 0f, default, Hud.NameScale, SpriteEffects.None, 0f);
+        Color color = Hud.NameColor(selected) * opacity;
+        if (!HudScreen.PresentName(text, position.Y, color))
+            spriteBatch.DrawString(font, text, position, color, 0f, default, Hud.NameScale, SpriteEffects.None, 0f);
     }
 
     // The held item's own slot (when it isn't on the hotbar), after the slots at their size.
@@ -103,4 +107,12 @@ public class UIHotbarMixin
 
     [ModifyConstant("DrawChildren(Microsoft.Xna.Framework.Graphics.SpriteBatch)", "float:1")]
     private static float HeldSlotScale(float scale) => Hud.HotbarScale;
+
+    [Redirect("DrawChildren(Microsoft.Xna.Framework.Graphics.SpriteBatch)", At.INVOKE,
+        Target = "Terraria.UI.ItemSlot::Draw(Microsoft.Xna.Framework.Graphics.SpriteBatch,Terraria.Item[],System.Int32,System.Int32,Microsoft.Xna.Framework.Vector2,Microsoft.Xna.Framework.Color)")]
+    private void DrawHeldSlot(SpriteBatch batch, Item[] items, int context, int index, Vector2 position, Color color)
+    {
+        if (!HudScreen.Present(this, items, context, index, position))
+            ItemSlot.Draw(batch, items, context, index, position, color);
+    }
 }

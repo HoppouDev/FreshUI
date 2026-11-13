@@ -1,6 +1,9 @@
 using Aether.Modding;
 using Aether.UI.Game;
 using Microsoft.Xna.Framework;
+using FreshUI.Screens;
+using Terraria;
+using Terraria.GameInput;
 
 namespace FreshUI.Legacy.Mixins;
 
@@ -12,6 +15,18 @@ namespace FreshUI.Legacy.Mixins;
 [Mixin(typeof(UIInventoryGrid))]
 public static class UIInventoryGridMixin
 {
+    [Inject("UpdateState()", At.HEAD, Cancellable = true)]
+    private static void UpdateGrid(CallbackInfo callback)
+    {
+        if (!HudScreen.TrySlotPosition(0, 10, out Vector2 first))
+            return;
+        callback.Cancel();
+        Main.inventoryScale = Hud.SlotScale;
+        var area = new Rectangle((int)first.X - 46, (int)first.Y, 550, 228);
+        if (area.Contains(Main.mouseX, Main.mouseY) && !PlayerInput.IgnoreMouseInterface)
+            Main.LocalPlayer.mouseInterface = true;
+    }
+
     private const float Origin = 20f;
 
     private const float VanillaPitch = 56f * 0.85f;

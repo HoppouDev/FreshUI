@@ -1,13 +1,13 @@
 # FreshUI
 
 This is a standalone .NET 10 mod for Aether: a pixel-perfect, compact UI (see [README.md](README.md)).
-All of it is mixins and the resources they load; the initializer does nothing.
+Most of it is mixins and the resources they load; the initializer sets up its Gum screens (`src/Gum/`).
 
 | Path | Purpose |
 | --- | --- |
 | `FreshUI.slnx` | IDE solution for the mod project. |
 | `.gitignore` | Keeps the local client, test saves, build output, and IDE state out of Git. |
-| `src/Startup.cs` | Mod initializer (empty) and mod ID. |
+| `src/Startup.cs` | Mod initializer (Gum screens and their keys) and mod ID. |
 | `src/Sharp.cs`, `src/GuiScale.cs`, `src/PixelSlots.cs`, `src/Hud.cs` | Shared state and helpers: the pixel-snapping sampler, the GUI scale setting, nine-sliced slots and icon scales, and the hotbar layout. |
 | `src/PauseMenu.cs`, `src/KeyDefaults.cs` | The in-game pause menu (its state, actions, hard-coded Esc and screen), and FreshUI's keys (inventory on Q, grapple on E), set once. |
 | `src/SettingsWindow.cs`, `src/SettingsTabs.cs`, `src/SettingsScreens.cs`, `src/AetherGraphics.cs` | The tabbed settings window: its layout and elements, what's on each tab, its title-menu and in-game screens, and Aether's internal graphics settings through an accessor. |
@@ -16,6 +16,8 @@ All of it is mixins and the resources they load; the initializer does nothing.
 | `src/SdfText.cs` | Text from a signed distance field: loads the shader and atlas, and replaces each font's Andy Bold glyphs with them. |
 | `src/Mixins/` | C# mixins, one per target class. Register new mixin types in the manifest. |
 | `shaders/SdfText.fx`, `resources/shaders/SdfText.fxb` | The SDF text shader's source, and the D3D9 effect FNA loads, compiled from it with the Windows SDK's `fxc` (see the source's header). |
+| `src/Gum/` | Gum in game: the host layer and screen registry (`GumHost`, `GumScreens`), its distance-field text (`GumText`), pixel grid (`UiPixels`), textures (`GumTextures`), components (`FreshButton`, `FreshLabel`, `FreshItemSlot`, `FreshIconButton`, `FreshTooltip`), the automation tree (`GumUiTree`) and screens (`Screens/`). |
+| `shaders/GumText.fx`, `resources/gum/`, `tools/GenerateGumFont.cs` | Gum text's shader source, its compiled effect and font atlas (`TextSdf.*`), and the atlas's generator (`dotnet run --file tools/GenerateGumFont.cs -- --font ANDYB.ttf`). |
 | `tools/sdf_font.py`, `resources/fonts/andy-sdf.*` | The SDF atlas generator (`uv run tools/sdf_font.py ANDYB.ttf resources/fonts`) and its output: the field and each glyph's rectangle and corner. |
 | `aether.mod.json` | Mod ID, version constraints, entry assembly, initializer, mixins, and display metadata. |
 | `icon.png` | Optional mod icon, packaged at the archive root. |
@@ -64,6 +66,21 @@ The template references Aether API `0.1.0` by default.
 Distribute the mod archive and tell users to install a matching Aether API archive separately.
 To opt out, set `AetherUseApi` to `false` in the project and remove `aether-api` from `depends` in the manifest.
 See `docs/api/index.md` in the Aether checkout for the API guide.
+
+## Gum screens
+
+FreshUI hosts [Gum](https://docs.flatredball.com/gum) screens in game, alongside the game's own UI (`src/Gum/`).
+
+- **Adding a screen:** build its root element (a `ContainerRuntime` with Gum controls and FreshUI's components) in a class under `src/Gum/Screens/`, and register it from `Startup.Initialize` with `GumScreens.Register("fresh-ui:name", () => new MyScreen(), initiallyVisible)`; the returned `GumScreen`'s `IsVisible` shows and hides it (from a key with the Aether API's `Keybinds.Register`, as the sample inventory, `fresh-ui:inventory`, does on F9).
+  Screens are built once, on the first frame in a world, and kept between worlds.
+- **Drawing:** `GumHost` registers one retained mod UI layer (`fresh-ui:gum`, Aether's `RetainedUi`), so Gum draws over the HUD and under mouse text and the cursor, and is suspended where the game's mod UI is (menus, settings, the full-screen map, hidden HUD).
+  Its surface updates Gum every update and draws it every frame, ending and restarting the game's sprite batch around it.
+  It takes the mouse only over an interactive Gum element, so elsewhere the game gets the click.
+- **Pixels and art:** layout is in UI pixels, one pixel of the game's UI art (2×2 texels), and Gum's camera draws each as `GuiScale.Current` screen pixels (`UiPixels`), so the art stays even and follows the GUI scale setting.
+  Components name the game's textures by asset name (`Images/Inventory_Back`, `Images/Item_22`), loaded through `GumTextures`.
+- **Text** is drawn from a signed distance field (`GumText`: Gum's font loading goes to one atlas, in FreshUI's resources), with procedural weights, italics, outlines, gradients and drop shadows.
+- **Remote automation:** `GumUiTree` lists the Gum elements in Aether's `game_ui_layout` as their own tree (`gum`, owner `fresh-ui`), separate from the game's retained UI, with IDs like `gum:12`, each component's screen, values (slots' items and counts, toggles' state, sliders' position) and actions (`activate`, `secondary`, `set_value`, `set_text`); `game_ui_action` and component screenshots (`game_screenshot` with `component_id`) work on them.
+  Gum skips input while the window is inactive, so under Aether's synthetic input `GumHost` counts the window as focused for Gum's update.
 
 ## How it works
 

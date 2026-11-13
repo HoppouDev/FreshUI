@@ -14,6 +14,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Gum, the UI toolkit of FreshUI's Gum screens (src/Gum); packaged with the mod. -->
+    <PackageReference Include="Gum.FNA" Version="2026.11.2.1" />
+  </ItemGroup>
+
+  <ItemGroup>
     <!-- Shared host assembly (asset types); not packaged. -->
     <Reference Include="ReLogic" HintPath="$(AetherClientDirectory)/ReLogic.dll" Private="false" />
   </ItemGroup>

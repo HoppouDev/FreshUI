@@ -16,6 +16,7 @@ An Aether mod with the ID `fresh-ui` that gives Terraria's UI a pixel-perfect, c
 - Scrollbars that glide after a turn of the mouse wheel, a smaller step than the game's.
 - Buffs in the top left corner, and the boss health bar above the hotbar.
 - Text drawn from a signed distance field of Andy Bold, sharp at any size, with the game's spacing.
+- A chat input like Minecraft's: command completion in a list above it (Tab, Up and Down, the mouse) with the rest of the selected suggestion in grey and the usage or error when there's nothing to suggest, a cursor that the arrow keys and the mouse move, selection (Shift, dragging, double click, Ctrl+A), Ctrl+C/X/V, Ctrl+Backspace and Ctrl+Delete by words, and Up and Down through the messages sent; the chat scrolls with Page Up, Page Down and the wheel.
 
 It needs an Aether build whose FNA has `SamplerState.PixelSnapEXT`, `SpriteBatch.PixelScaleEXT` and `Texture.EffectEXT`, and whose ReLogic has `DynamicSpriteFont.SetCharacterImage`.
 Open `FreshUI.slnx` in your IDE.

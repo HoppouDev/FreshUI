@@ -50,7 +50,8 @@
 		"FreshUI.Mixins.UIWorldListItemMixin",
 		"FreshUI.Mixins.UIScrollbarMixin",
 		"FreshUI.Mixins.UIListMixin",
-		"FreshUI.Mixins.UIBestiaryEntryInfoPageMixin"
+		"FreshUI.Mixins.UIBestiaryEntryInfoPageMixin",
+		"FreshUI.Mixins.ChatMixin"
 	],
 
 	"depends": {

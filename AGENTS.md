@@ -9,15 +9,18 @@ Most of it is mixins and the resources they load; the initializer sets up its Gu
 | `.gitignore` | Keeps the local client, test saves, build output, and IDE state out of Git. |
 | `src/Startup.cs` | Mod initializer (Gum screens and their keys) and mod ID. |
 | `src/HotReload.cs` | Rebuilds FreshUI's screens after a .NET hot reload (`./aether watch`). |
-| `src/Sharp.cs`, `src/GuiScale.cs`, `src/PixelSlots.cs`, `src/Hud.cs` | Shared state and helpers: the pixel-snapping sampler, the GUI scale setting, nine-sliced slots and icon scales, and the hotbar layout. |
-| `src/PauseMenu.cs`, `src/KeyDefaults.cs` | The in-game pause menu (its state, actions, hard-coded Esc and screen), and FreshUI's keys (inventory on Q, grapple on E), set once. |
-| `src/SettingsWindow.cs`, `src/SettingsTabs.cs`, `src/SettingsScreens.cs`, `src/AetherGraphics.cs` | The tabbed settings window: its layout and elements, what's on each tab, its title-menu and in-game screens, and Aether's internal graphics settings through an accessor. |
-| `src/PixelImages.cs` | Image buttons' art at even pixels: 2×2-texel art as drawn, single-texel art at whole screen pixels per texel (the list items' buttons as icons at the GUI scale's pixels per texel, laid out again). |
-| `src/MomentumScroll.cs` | Scrollbar momentum: wheel turns as velocity, glides stepped each frame. |
-| `src/SdfText.cs` | Text from a signed distance field: loads the shader and atlas, and replaces each font's Andy Bold glyphs with them. |
-| `src/Mixins/` | C# mixins, one per target class. Register new mixin types in the manifest. |
+| `src/GuiScale.cs` | The GUI scale setting, shared by the legacy UI and Gum. |
+| `src/Legacy/` | The legacy UI: the game's own UI, patched by mixins, and the helpers below (namespace `FreshUI.Legacy`). |
+| `src/Legacy/Sharp.cs`, `src/Legacy/PixelSlots.cs`, `src/Legacy/Hud.cs` | Shared state and helpers: the pixel-snapping sampler, nine-sliced slots and icon scales, and the hotbar layout. |
+| `src/Legacy/PauseMenu.cs`, `src/Legacy/KeyDefaults.cs` | The in-game pause menu (its state, actions, hard-coded Esc and screen), and FreshUI's keys (inventory on Q, grapple on E), set once. |
+| `src/Legacy/SettingsWindow.cs`, `src/Legacy/SettingsTabs.cs`, `src/Legacy/SettingsScreens.cs`, `src/Legacy/AetherGraphics.cs` | The tabbed settings window: its layout and elements, what's on each tab, its title-menu and in-game screens, and Aether's internal graphics settings through an accessor. |
+| `src/Legacy/PixelImages.cs` | Image buttons' art at even pixels: 2×2-texel art as drawn, single-texel art at whole screen pixels per texel (the list items' buttons as icons at the GUI scale's pixels per texel, laid out again). |
+| `src/Legacy/MomentumScroll.cs` | Scrollbar momentum: wheel turns as velocity, glides stepped each frame. |
+| `src/Legacy/SdfText.cs` | Text from a signed distance field: loads the shader and atlas, and replaces each font's Andy Bold glyphs with them. |
+| `src/Legacy/Mixins/` | C# mixins (namespace `FreshUI.Legacy.Mixins`), one per target class. Register new mixin types in the manifest. |
 | `shaders/SdfText.fx`, `resources/shaders/SdfText.fxb` | The SDF text shader's source, and the D3D9 effect FNA loads, compiled from it with the Windows SDK's `fxc` (see the source's header). |
-| `src/Gum/` | Gum in game: the host layer and screen registry (`GumHost`, `GumScreens`), its distance-field text (`GumText`), pixel grid (`UiPixels`), textures (`GumTextures`), components (`FreshButton`, `FreshLabel`, `FreshItemSlot`, `FreshIconButton`, `FreshTooltip`), the automation tree (`GumUiTree`) and screens (`Screens/`). |
+| `src/Gum/` | Gum in game: the host layer and screen registry (`GumHost`, `GumScreens`), its distance-field text (`GumText`), pixel grid (`UiPixels`), textures (`GumTextures`) and the automation tree (`GumUiTree`). |
+| `src/Components/`, `src/Screens/` | Gum components (`FreshButton`, `FreshLabel`, `FreshItemSlot`, `FreshIconButton`, `FreshTooltip`) and screens. |
 | `shaders/GumText.fx`, `resources/gum/`, `tools/GenerateGumFont.cs` | Gum text's shader source, its compiled effect and font atlas (`TextSdf.*`), and the atlas's generator (`dotnet run --file tools/GenerateGumFont.cs -- --font ANDYB.ttf`). |
 | `tools/sdf_font.py`, `resources/fonts/andy-sdf.*` | The SDF atlas generator (`uv run tools/sdf_font.py ANDYB.ttf resources/fonts`) and its output: the field and each glyph's rectangle and corner. |
 | `aether.mod.json` | Mod ID, version constraints, entry assembly, initializer, mixins, and display metadata. |
@@ -74,7 +77,7 @@ See `docs/api/index.md` in the Aether checkout for the API guide.
 
 FreshUI hosts [Gum](https://docs.flatredball.com/gum) screens in game, alongside the game's own UI (`src/Gum/`).
 
-- **Adding a screen:** build its root element (a `ContainerRuntime` with Gum controls and FreshUI's components) in a class under `src/Gum/Screens/`, and register it from `Startup.Initialize` with `GumScreens.Register("fresh-ui:name", () => new MyScreen(), initiallyVisible)`; the returned `GumScreen`'s `IsVisible` shows and hides it (from a key with the Aether API's `Keybinds.Register`, as the sample inventory, `fresh-ui:inventory`, does on F9).
+- **Adding a screen:** build its root element (a `ContainerRuntime` with Gum controls and FreshUI's components) in a class under `src/Screens/`, and register it from `Startup.Initialize` with `GumScreens.Register("fresh-ui:name", () => new MyScreen(), initiallyVisible)`; the returned `GumScreen`'s `IsVisible` shows and hides it (from a key with the Aether API's `Keybinds.Register`, as the sample inventory, `fresh-ui:inventory`, does on F9).
   Screens are built once, on the first frame in a world, and kept between worlds.
 - **Drawing:** `GumHost` registers one retained mod UI layer (`fresh-ui:gum`, Aether's `RetainedUi`), so Gum draws over the HUD and under mouse text and the cursor, and is suspended where the game's mod UI is (menus, settings, the full-screen map, hidden HUD).
   Its surface updates Gum every update and draws it every frame, ending and restarting the game's sprite batch around it.

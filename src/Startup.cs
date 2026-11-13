@@ -1,7 +1,7 @@
 using Aether.Api;
 using Aether.Modding;
 using FreshUI.GumUi;
-using FreshUI.GumUi.Screens;
+using FreshUI.Screens;
 
 namespace FreshUI;
 

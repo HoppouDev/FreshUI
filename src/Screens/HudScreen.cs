@@ -324,6 +324,7 @@ public sealed partial class HudScreen : ContainerRuntime
         _current.PresentCrafting();
         _current._crafting.Present();
         _current.PresentShopInfo();
+        _current.PresentNpcChat();
         _current.PlaceHotbarLock();
         if (!_current._namePresented && _current._heldName.Visible)
             _current._heldName.Visible = false;

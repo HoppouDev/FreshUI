@@ -236,7 +236,7 @@ internal sealed class CraftingWindow : ContainerRuntime
     private static bool Hovered(GraphicalUiElement element) =>
         Units(element).Contains(Main.mouseX, Main.mouseY) && !PlayerInput.IgnoreMouseInterface;
 
-    // The gamepad's cursor on a point at the element: lit, and A (the game's click there) is true.
+    // The gamepad's focus on the element's point (the game's): lit, and A on it is true.
     private static bool GamepadPoint(GraphicalUiElement element, int point, out bool focused)
     {
         float centre = float.NaN;
@@ -258,7 +258,7 @@ internal sealed class CraftingWindow : ContainerRuntime
         }
         UILinkPointNavigator.SetPosition(point, at);
         focused = PlayerInput.UsingGamepadUI && UILinkPointNavigator.InUse && UILinkPointNavigator.CurrentPoint == point;
-        if (!focused || !Main.mouseLeft || !Main.mouseLeftRelease || !area.Contains(Main.mouseX, Main.mouseY))
+        if (!focused || !Main.mouseLeft || !Main.mouseLeftRelease)
             return false;
         Main.mouseLeftRelease = false;
         return true;

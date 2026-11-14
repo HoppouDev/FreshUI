@@ -33,7 +33,6 @@
 		"FreshUI.Legacy.Mixins.ItemSlotMixin",
 		"FreshUI.Legacy.Mixins.CoinSlotMixin",
 		"FreshUI.Legacy.Mixins.UIIconButtonMixin",
-		"FreshUI.Legacy.Mixins.UINpcChatMixin",
 		"FreshUI.Legacy.Mixins.UtilsMixin",
 		"FreshUI.Legacy.Mixins.UIPanelMixin",
 		"FreshUI.Legacy.Mixins.UIImageMixin",

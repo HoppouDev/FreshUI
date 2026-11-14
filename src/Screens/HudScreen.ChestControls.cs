@@ -81,8 +81,8 @@ public sealed partial class HudScreen
             var area = new Rectangle((int)(x * 2), (int)(y * 2), (int)(button.Visual.GetAbsoluteWidth() * 2), (int)(ChestButtonPitch * 2));
             bool hovered = area.Contains(Main.mouseX, Main.mouseY) && !PlayerInput.IgnoreMouseInterface;
             UILinkPointNavigator.SetPosition(ChestLinkPoints[id], area.Center.ToVector2());
-            // The gamepad's cursor is the game's, not Gum's: A at a button is the game's click there.
-            bool focused = gamepad && UILinkPointNavigator.CurrentPoint == ChestLinkPoints[id] && hovered;
+            // The gamepad's focus is the game's (its points), not Gum's: A on a button acts.
+            bool focused = gamepad && UILinkPointNavigator.CurrentPoint == ChestLinkPoints[id];
             button.IsLit = focused;
             ChestUI.UpdateHover(id, hovered);
             if (focused && Main.mouseLeft && Main.mouseLeftRelease)

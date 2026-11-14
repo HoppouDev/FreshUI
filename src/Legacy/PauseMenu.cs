@@ -157,9 +157,17 @@ public static class PauseMenu
     {
         Current = View.Pause;
         _settingsFromPause = false;
-        GameScreens.Close(PauseScreen.Instance);
-        GameScreens.Close(GameSettingsScreen.Instance);
+        OpenCount++;
     }
+
+    /// <summary>How many times the window has opened: the Gum pause menu rebuilds its buttons for each.</summary>
+    public static int OpenCount { get; private set; }
+
+    /// <summary>Whether the pause menu (<see cref="FreshUI.Screens.PauseScreen"/>) shows: the game's settings window is open as the pause menu, with no fancy UI over it.</summary>
+    public static bool ShowsPause => !Main.gameMenu && Main.ingameOptionsWindow && Current == View.Pause && !Main.InGameUI.IsVisible;
+
+    /// <summary>Whether the in-game settings (<see cref="FreshUI.Screens.SettingsScreen"/>) show: the game's settings window is open as the settings.</summary>
+    public static bool ShowsSettings => !Main.gameMenu && Main.ingameOptionsWindow && Current == View.Settings && !Main.InGameUI.IsVisible;
 
     /// <summary>IngameOptions.Close: the inventory as it was before the window opened.</summary>
     public static void Closed()
@@ -187,8 +195,15 @@ public static class PauseMenu
         Current = view;
     }
 
-    /// <summary>The screen to draw for the window.</summary>
-    public static UIGameScreen Screen => Current == View.Pause ? PauseScreen.Instance : GameSettingsScreen.Instance;
+    /// <summary>Where the open window is, title included, in the game's UI units (for IngameOptions' checks of the mouse being over it).</summary>
+    public static Rectangle Area;
+
+    /// <summary>Sets <see cref="Area"/> to a Gum window's (UI pixels, two UI units each).</summary>
+    internal static void SetArea(Gum.Wireframe.GraphicalUiElement window)
+    {
+        float lift = FreshUI.Components.FreshWindow.TitleLift;
+        Area = new Rectangle((int)(window.AbsoluteLeft * 2), (int)((window.AbsoluteTop - lift) * 2), (int)(window.AbsoluteWidth * 2), (int)((window.AbsoluteHeight + lift) * 2));
+    }
 
     // --- actions -------------------------------------------------------------------------------
 
@@ -230,141 +245,5 @@ public static class PauseMenu
         Main.menuMode = 10;
         Main.gameMenu = true;
         WorldGen.SaveAndQuit();
-    }
-}
-
-/// <summary>The pause menu's screen: the game dimmed, and the menu's buttons in a panel under a title tab, as the Mods window's.</summary>
-public sealed class PauseScreen : UIGameScreen
-{
-    private static PauseScreen? _instance;
-
-    public static PauseScreen Instance => _instance ??= new PauseScreen();
-
-    private const float Width_ = 500f;
-
-    private const float Padding = 16f;
-
-    private const float Gap = 10f;
-
-    private UIPanel? _panel;
-
-    private UITextPanel<string>? _title;
-
-    private readonly List<List<UITextPanel<string>>> _rows = new();
-
-    public override void OnActivate()
-    {
-        RemoveAllChildren();
-        _rows.Clear();
-        _panel = new UIPanel
-        {
-            BackgroundColor = SettingsWindow.PanelColor
-        };
-        _panel.SetPadding(Padding);
-        Append(_panel);
-        Row(("Back to Game", () => IngameOptions.Close()));
-        if (PauseMenu.HasMods)
-        {
-            Row((Lang.menu[131].Value, PauseMenu.Achievements), (Language.GetTextValue("AetherMods.Title"), PauseMenu.Mods));
-        }
-        else
-        {
-            Row((Lang.menu[131].Value, PauseMenu.Achievements));
-        }
-        if (PauseMenu.CanInvite)
-        {
-            Row((Lang.menu[14].Value, PauseMenu.ShowSettings), (Lang.menu[147].Value, PauseMenu.Invite));
-        }
-        else
-        {
-            Row((Lang.menu[14].Value, PauseMenu.ShowSettings));
-        }
-        Row((Lang.inter[35].Value, PauseMenu.SaveAndExit));
-        _title = new UITextPanel<string>("Game Menu", 0.8f, large: true)
-        {
-            HAlign = 0.5f,
-            BackgroundColor = SettingsWindow.HoverColor,
-            IgnoresMouseInteraction = true
-        };
-        _title.SetPadding(12f);
-        Append(_title);
-    }
-
-    private void Row(params (string Text, Action OnClick)[] buttons)
-    {
-        List<UITextPanel<string>> row = new();
-        foreach ((string text, Action onClick) in buttons)
-        {
-            UITextPanel<string> button = SettingsWindow.ActionButton(text, onClick);
-            row.Add(button);
-            _panel!.Append(button);
-        }
-        _rows.Add(row);
-    }
-
-    private static float Even(float value) => MathF.Floor(value / 2f) * 2f;
-
-    public override void Recalculate()
-    {
-        // The screen's own size first: the panel is placed in it (after a GUI scale change, the old one is stale).
-        base.Recalculate();
-        if (_panel != null && _title != null)
-        {
-            CalculatedStyle screen = GetDimensions();
-            float inner = Width_ - Padding * 2f;
-            float height = Padding * 2f + _rows.Count * SettingsWindow.ActionHeight + (_rows.Count - 1) * Gap;
-            float top = Even((screen.Height - height) / 2f);
-            _panel.Left.Set(Even((screen.Width - Width_) / 2f), 0f);
-            _panel.Top.Set(top, 0f);
-            _panel.Width.Set(Width_, 0f);
-            _panel.Height.Set(height, 0f);
-            for (int i = 0; i < _rows.Count; i++)
-            {
-                List<UITextPanel<string>> row = _rows[i];
-                float width = Even((inner - Gap * (row.Count - 1)) / row.Count);
-                for (int j = 0; j < row.Count; j++)
-                {
-                    // The last one ends at the right edge, whatever rounding left over.
-                    row[j].Left.Set(j == row.Count - 1 ? inner - width : j * (width + Gap), 0f);
-                    row[j].Top.Set(i * (SettingsWindow.ActionHeight + Gap), 0f);
-                    row[j].Width.Set(width, 0f);
-                    row[j].Height.Set(SettingsWindow.ActionHeight, 0f);
-                }
-            }
-            _title.Top.Set(top - 40f, 0f);
-            RecalculateChildren();
-        }
-    }
-
-    public override void UpdateState()
-    {
-        if (_panel == null || _title == null)
-        {
-            return;
-        }
-        CalculatedStyle panel = _panel.GetDimensions();
-        CalculatedStyle title = _title.GetDimensions();
-        SettingsWindow.Area = new Rectangle((int)panel.X, (int)title.Y, (int)panel.Width, (int)(panel.Y + panel.Height - title.Y));
-        if (SettingsWindow.Area.Contains(Main.MouseScreen.ToPoint()))
-        {
-            Main.LocalPlayer.mouseInterface = true;
-        }
-        // The gamepad: each button, linked to its neighbours by where it is (GamepadMenu).
-        foreach (List<UITextPanel<string>> row in _rows)
-        {
-            foreach (UITextPanel<string> button in row)
-            {
-                GamepadMenu.Add(button);
-            }
-        }
-        GamepadMenu.Publish(this, _ => GamepadMenu.Hint(Lang.misc[53].Value, "MouseLeft") + GamepadMenu.Hint(Lang.misc[56].Value, "Inventory"));
-    }
-
-    protected override void DrawSelf(SpriteBatch spriteBatch) => Dim(spriteBatch, this);
-
-    /// <summary>Darkens the game behind the window.</summary>
-    public static void Dim(SpriteBatch spriteBatch, UIElement screen)
-    {
-        spriteBatch.Draw(TextureAssets.MagicPixel.Value, screen.GetDimensions().ToRectangle(), Color.Black * 0.5f);
     }
 }

@@ -36,12 +36,8 @@ public sealed class GalleryScreen : ContainerRuntime
     /// <summary>The gallery that shows, if one has been built.</summary>
     public static GalleryScreen? Current { get; private set; }
 
-    /// <summary>Focuses the first control (the gamepad's starting point).</summary>
-    public static void FocusFirst()
-    {
-        if (_first != null)
-            _first.IsFocused = true;
-    }
+    /// <summary>The first control (the gamepad's starting point).</summary>
+    public static Gum.Forms.Controls.FrameworkElement? First() => _first;
 
     public GalleryScreen()
     {
@@ -49,21 +45,8 @@ public sealed class GalleryScreen : ContainerRuntime
         HeightUnits = DimensionUnitType.RelativeToParent;
         Width = Height = 0;
         HasEvents = false;
-        Children.Add(new RectangleRuntime
-        {
-            WidthUnits = DimensionUnitType.RelativeToParent,
-            HeightUnits = DimensionUnitType.RelativeToParent,
-            Width = 0,
-            Height = 0,
-            IsFilled = true,
-            FillColor = Backdrop,
-        });
-        var zone = new Gum.Forms.Controls.Panel { GamepadNavigationMode = Gum.Forms.Controls.GamepadNavigationMode.Spatial };
-        _zone = zone.Visual;
-        _zone.HasEvents = false;
-        _zone.WidthUnits = DimensionUnitType.RelativeToParent;
-        _zone.HeightUnits = DimensionUnitType.RelativeToParent;
-        _zone.Width = _zone.Height = 0;
+        Children.Add(FreshStyle.Backdrop(Backdrop));
+        _zone = GumGamepad.SpatialZone();
         Children.Add(_zone);
         BuildToolbar();
 
@@ -92,7 +75,10 @@ public sealed class GalleryScreen : ContainerRuntime
         Cell(1, 1, "Slider", Sliders);
         Cell(2, 1, "Scroll area (smooth)", stack => ScrollArea(stack, smooth: true));
         Cell(3, 1, "Scroll area (stepped)", stack => ScrollArea(stack, smooth: false));
-        _grid.Height = 2 * (CellHeight + Gap) - Gap;
+        Cell(0, 2, "Panel button", PanelButtons);
+        Cell(1, 2, "Window", Window);
+        Cell(2, 2, "Colour bars", ColorBars);
+        _grid.Height = 3 * (CellHeight + Gap) - Gap;
         // Gum's spatial navigation passes over controls inside another candidate, and from the toolbar
         // the page (a scroll area) is one: down goes to the first control instead.
         _scale!.SpatialNavigationDown = _first;
@@ -141,8 +127,8 @@ public sealed class GalleryScreen : ContainerRuntime
             Height = CellHeight,
             HasEvents = false,
         };
-        panel.Children.Add(Panel("Images/UI/PanelBackground", PanelColor));
-        panel.Children.Add(Panel("Images/UI/PanelBorder", Color.Black));
+        panel.Children.Add(FreshPanel.Slice(FreshStyle.PanelBackground, PanelColor));
+        panel.Children.Add(FreshPanel.Slice(FreshStyle.PanelBorder, Color.Black));
         var stack = new ContainerRuntime
         {
             X = 6,
@@ -164,20 +150,6 @@ public sealed class GalleryScreen : ContainerRuntime
         panel.Children.Add(stack);
         _grid.Children.Add(panel);
     }
-
-    // The game's panel art: 28 texels square with corners 12 deep, 2×2 texels a pixel.
-    private static NineSliceRuntime Panel(string texture, Color color) => new()
-    {
-        Texture = GumTextures.Load(texture),
-        TextureAddress = TextureAddress.EntireTexture,
-        CustomFrameTextureCoordinateWidth = 12,
-        BorderScale = 0.5f,
-        WidthUnits = DimensionUnitType.RelativeToParent,
-        HeightUnits = DimensionUnitType.RelativeToParent,
-        Width = 0,
-        Height = 0,
-        Color = color,
-    };
 
     // A row of items centred on its middle, as tall as given: a control and its label line up. Give it
     // a height of the same parity as its pixel art (odd for the 9-pixel switches and sliders), so the art
@@ -357,6 +329,77 @@ public sealed class GalleryScreen : ContainerRuntime
 
         var disabled = new FreshSlider { Minimum = 0, Maximum = 1, Value = 0.7, IsEnabled = false };
         stack.Children.Add(disabled.Visual);
+    }
+
+    private static void PanelButtons(ContainerRuntime stack)
+    {
+        var row = Row(14);
+        foreach ((string text, bool chosen, bool enabled) in new[] { ("At rest", false, true), ("Chosen", true, true), ("Disabled", false, false) })
+        {
+            var button = new FreshPanelButton { Text = text, FontSize = 8, IsChosen = chosen, IsEnabled = enabled };
+            Size(button, 44, 14);
+            row.Children.Add(button.Visual);
+        }
+        row.StackSpacing = 2;
+        stack.Children.Add(row);
+        // A settings row: its text at the left, its state changing as it's clicked.
+        bool on = true;
+        var setting = new FreshPanelButton { Text = "Autosave On", FontSize = 8 };
+        setting.AlignTextLeft(5);
+        Size(setting, 136, 14);
+        setting.Click += (_, _) => setting.Text = (on = !on) ? "Autosave On" : "Autosave Off";
+        stack.Children.Add(setting.Visual);
+    }
+
+    private static void Window(ContainerRuntime stack)
+    {
+        // Room above for the title tab, which sits over the window's top edge.
+        var area = new ContainerRuntime { Width = 136, Height = 72, HasEvents = false };
+        var window = new FreshWindow("Title") { Y = FreshWindow.TitleLift, Width = 136, Height = 52 };
+        window.Add(new FreshPanel { WidthUnits = DimensionUnitType.RelativeToParent, HeightUnits = DimensionUnitType.RelativeToParent, Width = 0, Height = 0 });
+        var text = Text("A window's panels under its title", 7, Muted);
+        text.Visual.X = 6;
+        text.Visual.Y = 30;
+        window.Children.Add(text.Visual);
+        area.Children.Add(window);
+        stack.Children.Add(area);
+        window.Layout();
+    }
+
+    private static void ColorBars(ContainerRuntime stack)
+    {
+        // Hue, saturation and lightness, each bar's track the colour along it with the others as they are.
+        float[] hsl = [0.6f, 0.8f, 0.5f];
+        Color Color(int part, float value)
+        {
+            float[] at = (float[])hsl.Clone();
+            at[part] = value;
+            return Main.hslToRgb(at[0], at[1], at[2]);
+        }
+        var swatch = FreshStyle.Backdrop(Color(0, hsl[0]));
+        swatch.WidthUnits = swatch.HeightUnits = DimensionUnitType.Absolute;
+        swatch.Width = 20;
+        swatch.Height = 20;
+        var bars = new List<FreshSlider>();
+        for (int i = 0; i < 3; i++)
+        {
+            int part = i;
+            var bar = new FreshSlider { Minimum = 0, Maximum = 1, Value = hsl[part] };
+            bar.Ramp = value => Color(part, value);
+            bar.ValueChanged += (_, _) =>
+            {
+                hsl[part] = (float)bar.Value;
+                swatch.FillColor = Color(part, hsl[part]);
+                foreach (FreshSlider other in bars)
+                    other.UpdateRamp();
+            };
+            bars.Add(bar);
+            var row = Row(11);
+            row.Children.Add(bar.Visual);
+            if (i == 0)
+                row.Children.Add(swatch);
+            stack.Children.Add(row);
+        }
     }
 
     private static void ScrollArea(ContainerRuntime stack, bool smooth)

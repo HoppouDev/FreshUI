@@ -42,7 +42,7 @@ public sealed class GumUiTree : IUiTree
         var components = new List<JsonObject>();
         if (GumHost.IsInitialized)
         {
-            foreach (GraphicalUiElement root in new[] { GumService.Default.Root, GumService.Default.PopupRoot, GumService.Default.ModalRoot })
+            foreach (GraphicalUiElement root in new[] { GumService.Default.Root, GumHost.OverlayRoot, GumService.Default.PopupRoot, GumService.Default.ModalRoot })
             {
                 Walk(root, null, interactiveOnly, components);
             }

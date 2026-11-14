@@ -1,6 +1,5 @@
-using Aether.UI.Game;
 using Aether.UI.Menu;
-using Microsoft.Xna.Framework.Graphics;
+using FreshUI.Screens;
 using Terraria;
 using Terraria.Audio;
 using Terraria.ID;
@@ -8,7 +7,7 @@ using Terraria.ID;
 namespace FreshUI.Legacy;
 
 /// <summary>
-/// The settings window on the title menu: the screen for Settings (<c>menuMode</c> 11) and for each of
+/// The settings window on the title menu (a Gum screen, <see cref="SettingsScreen"/>, over this empty one): the screen for Settings (<c>menuMode</c> 11) and for each of
 /// the settings pages it replaces (opening the page's tab), so code that still opens a page by its
 /// mode (Keybindings' Back opens Controls) lands on the window.
 /// </summary>
@@ -18,15 +17,14 @@ public sealed class MenuSettingsScreen : UIMenuScreen
 
     public static MenuSettingsScreen Instance => _instance ??= new MenuSettingsScreen();
 
-    private SettingsWindow? _window;
-
     // The menuMode last seen: a change to a page's mode opens its tab.
     private int _mode = -1;
 
+    /// <summary>Whether the title menu shows the settings (<see cref="FreshUI.Screens.SettingsScreen"/>, drawn by Gum over this empty screen).</summary>
+    public static bool Shows => Main.gameMenu && (Main.menuMode == 11 || SettingsTabs.ForMenuMode(Main.menuMode).HasValue);
+
     protected override void BuildItems()
     {
-        _window = new SettingsWindow(inGame: false);
-        Append(_window);
     }
 
     public override void UpdateState()
@@ -36,10 +34,9 @@ public sealed class MenuSettingsScreen : UIMenuScreen
             _mode = Main.menuMode;
             if (SettingsTabs.ForMenuMode(_mode) is SettingsTab tab)
             {
-                SettingsWindow.Tab = tab;
+                SettingsTabs.Tab = tab;
             }
         }
-        _window?.UpdateState();
     }
 
     public override void GoBack() => Back();
@@ -51,25 +48,4 @@ public sealed class MenuSettingsScreen : UIMenuScreen
         Main.menuMode = 0;
         Main.SaveSettings();
     }
-}
-
-/// <summary>The settings window in game (the pause menu's Settings, or the inventory's), over the game dimmed.</summary>
-public sealed class GameSettingsScreen : UIGameScreen
-{
-    private static GameSettingsScreen? _instance;
-
-    public static GameSettingsScreen Instance => _instance ??= new GameSettingsScreen();
-
-    private SettingsWindow? _window;
-
-    public override void OnActivate()
-    {
-        RemoveAllChildren();
-        _window = new SettingsWindow(inGame: true);
-        Append(_window);
-    }
-
-    public override void UpdateState() => _window?.UpdateState();
-
-    protected override void DrawSelf(SpriteBatch spriteBatch) => PauseScreen.Dim(spriteBatch, this);
 }

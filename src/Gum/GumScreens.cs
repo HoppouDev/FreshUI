@@ -16,14 +16,26 @@ public static class GumScreens
 
     internal static IReadOnlyList<GumScreen> All => Registered;
 
-    /// <summary>Adds a screen, shown at first if <paramref name="initiallyVisible" />.</summary>
-    public static GumScreen Register(string id, Func<GraphicalUiElement> create, bool initiallyVisible = true)
+    /// <summary>
+    /// Adds a screen, shown at first if <paramref name="initiallyVisible" />, on <paramref name="layer" />:
+    /// the HUD (in a world, where the game draws its HUD) or the overlay (menus: over everything but
+    /// mouse text and the cursor, on the title menu and in game, the pause menu and settings included).
+    /// </summary>
+    public static GumScreen Register(string id, Func<GraphicalUiElement> create, bool initiallyVisible = true, GumLayer layer = GumLayer.Hud,
+        Func<bool>? showWhen = null, Func<Gum.Forms.Controls.FrameworkElement?>? defaultFocus = null, Func<string>? hints = null,
+        Action<int>? pageMove = null)
     {
         if (Registered.Any(screen => screen.Id == id))
         {
             throw new ArgumentException($"A Gum screen {id} is already registered.", nameof(id));
         }
-        var registered = new GumScreen(id, create, initiallyVisible);
+        var registered = new GumScreen(id, create, initiallyVisible, layer)
+        {
+            ShowWhen = showWhen,
+            DefaultFocus = defaultFocus,
+            Hints = hints,
+            PageMove = pageMove,
+        };
         Registered.Add(registered);
         return registered;
     }
@@ -45,6 +57,19 @@ public static class GumScreens
     }
 }
 
+/// <summary>A screen's root with per-update work (laying itself out, reading the game's state) while it shows.</summary>
+public interface IGumScreenUpdate
+{
+    void UpdateScreen();
+}
+
+/// <summary>Where a Gum screen draws (see <see cref="GumScreens.Register" />).</summary>
+public enum GumLayer
+{
+    Hud,
+    Overlay,
+}
+
 /// <summary>A registered Gum screen (see <see cref="GumScreens" />).</summary>
 public sealed class GumScreen
 {
@@ -52,12 +77,33 @@ public sealed class GumScreen
 
     private bool _visible;
 
-    internal GumScreen(string id, Func<GraphicalUiElement> create, bool visible)
+    internal GumScreen(string id, Func<GraphicalUiElement> create, bool visible, GumLayer layer)
     {
         Id = id;
         _create = create;
         _visible = visible;
+        Layer = layer;
     }
+
+    public GumLayer Layer { get; }
+
+    /// <summary>When set, the screen shows only while this holds too (checked every update): a menu that follows the game's state.</summary>
+    public Func<bool>? ShowWhen { get; init; }
+
+    /// <summary>
+    /// The control the gamepad's focus starts on; a screen with one takes the gamepad while it shows on
+    /// the overlay (see <see cref="GumGamepad"/>).
+    /// </summary>
+    public Func<Gum.Forms.Controls.FrameworkElement?>? DefaultFocus { get; init; }
+
+    /// <summary>The screen's own instruction bar entries (as <c>PlayerInput.BuildCommand</c> makes them), after the focused control's.</summary>
+    public Func<string>? Hints { get; init; }
+
+    /// <summary>The gamepad's previous or next page (−1, 1: the gamepad UI's HotbarMinus and HotbarPlus, LT and RT), as between a window's tabs.</summary>
+    public Action<int>? PageMove { get; init; }
+
+    /// <summary>Whether the screen shows now.</summary>
+    public bool IsShown => Root is { Visible: true };
 
     public string Id { get; }
 
@@ -71,10 +117,7 @@ public sealed class GumScreen
         set
         {
             _visible = value;
-            if (Root != null)
-            {
-                Root.Visible = value;
-            }
+            Sync();
         }
     }
 
@@ -85,7 +128,14 @@ public sealed class GumScreen
         {
             return;
         }
-        Root.RemoveFromRoot();
+        if (Layer == GumLayer.Overlay)
+        {
+            GumHost.OverlayRoot.Children.Remove(Root);
+        }
+        else
+        {
+            Root.RemoveFromRoot();
+        }
         Root = null;
         Build();
     }
@@ -98,7 +148,24 @@ public sealed class GumScreen
             return;
         }
         Root = _create();
-        Root.Visible = _visible;
-        Root.AddToRoot();
+        if (Layer == GumLayer.Overlay)
+        {
+            GumHost.OverlayRoot.Children.Add(Root);
+        }
+        else
+        {
+            Root.AddToRoot();
+        }
+        Sync();
+    }
+
+    /// <summary>Shows the root while the screen is visible, a HUD screen only in a world (its layer isn't drawn on the title menu, and its elements would take the mouse there).</summary>
+    internal void Sync()
+    {
+        bool shown = _visible && (Layer != GumLayer.Hud || !Terraria.Main.gameMenu) && (ShowWhen?.Invoke() ?? true);
+        if (Root != null && Root.Visible != shown)
+        {
+            Root.Visible = shown;
+        }
     }
 }

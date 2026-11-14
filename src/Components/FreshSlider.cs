@@ -7,6 +7,7 @@ using Gum.Forms.DefaultVisuals.V3;
 using Gum.GueDeriving;
 using Gum.Managers;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using RenderingLibrary.Graphics;
 
 namespace FreshUI.Components;
@@ -37,6 +38,9 @@ class FreshSlider : Slider
     private readonly FreshPill _track;
     private readonly FreshPill _fill;
     private readonly SpriteRuntime _knob;
+    private SpriteRuntime? _ramp;
+    private Func<float, Color>? _rampColor;
+    private Color[]? _rampColors;
     private int _hovered;
     private bool _pushed, _disabled;
 
@@ -165,6 +169,61 @@ class FreshSlider : Slider
             }
         }
         return true;
+    }
+
+    // The ramp's texture is this many texels across, one a step.
+    private const int RampSteps = 64;
+
+    /// <summary>
+    /// A colour bar (as the cursor colour settings): the track shows this function's colour at each value
+    /// (0 to 1) in place of the teal fill, under the knob. Call <see cref="UpdateRamp"/> when what it
+    /// depends on changes (another bar of the same colour).
+    /// </summary>
+    public Func<float, Color>? Ramp
+    {
+        get => _rampColor;
+        set
+        {
+            _rampColor = value;
+            if (value != null && _ramp == null)
+            {
+                var visual = (SliderVisual)Visual;
+                _ramp = new SpriteRuntime
+                {
+                    Texture = new Texture2D(Terraria.Main.instance.GraphicsDevice, RampSteps, 1),
+                    TextureAddress = TextureAddress.EntireTexture,
+                    WidthUnits = DimensionUnitType.RelativeToParent,
+                    HeightUnits = DimensionUnitType.Absolute,
+                    Width = 0,
+                    // Inside the pill's rim, a pixel clear of it.
+                    Height = TrackHeight - 4,
+                    YUnits = GeneralUnitType.PixelsFromMiddle,
+                    YOrigin = VerticalAlignment.Center,
+                };
+                visual.TrackInstance.Children.Insert(visual.TrackInstance.Children.IndexOf(_fill) + 1, _ramp);
+            }
+            if (_ramp != null)
+                _ramp.Visible = value != null;
+            _fill.Visible = value == null;
+            UpdateRamp();
+        }
+    }
+
+    /// <summary>Redraws the colour bar's ramp (<see cref="Ramp"/>) if its colours changed.</summary>
+    public void UpdateRamp()
+    {
+        if (_rampColor == null || _ramp == null)
+            return;
+        _rampColors ??= new Color[RampSteps];
+        bool changed = false;
+        for (int i = 0; i < RampSteps; i++)
+        {
+            Color color = _rampColor(i / (float)(RampSteps - 1));
+            changed |= color != _rampColors[i];
+            _rampColors[i] = color;
+        }
+        if (changed)
+            _ramp.Texture!.SetData(_rampColors);
     }
 
     // The scrollbar's pill, 9 pixels tall, from the left end of the travel (under the knob's half).

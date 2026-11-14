@@ -14,7 +14,7 @@
 	"assembly": "FreshUI.dll",
 	"entrypoint": "FreshUI.Startup",
 	"mixins": [
-		"FreshUI.GumUi.GalleryMixin",
+		"FreshUI.GumUi.GumHostMixin",
 		"FreshUI.Legacy.Mixins.PixelArtMixin",
 		"FreshUI.Legacy.Mixins.MainMixin",
 		"FreshUI.Legacy.Mixins.QuickCraftingLayoutMixin",

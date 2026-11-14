@@ -1,5 +1,6 @@
 using Aether.Modding;
 using Aether.UI.Menu;
+using FreshUI.Screens;
 
 namespace FreshUI.Legacy.Mixins;
 

@@ -6,9 +6,11 @@ using Aether.Api;
 using Aether.Testing;
 using Gum;
 using Gum.Forms.Controls;
+using Gum.GueDeriving;
 using Gum.Wireframe;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using RenderingLibrary;
 using RenderingLibrary.Graphics;
 using BlendState = Microsoft.Xna.Framework.Graphics.BlendState;
 using Terraria;
@@ -34,6 +36,8 @@ public static class GumHost
     {
         "sortMode", "blendState", "samplerState", "depthStencilState", "rasterizerState", "customEffect", "transformMatrix"
     }.Select(name => typeof(SpriteBatch).GetField(name, BindingFlags.NonPublic | BindingFlags.Instance)!).ToArray();
+
+    private static readonly FieldInfo BatchBegun = typeof(SpriteBatch).GetField("beginCalled", BindingFlags.NonPublic | BindingFlags.Instance)!;
 
     // FNA's Game.IsActive, set without its events (see Update).
     private static readonly FieldInfo GameIsActive =
@@ -92,6 +96,18 @@ public static class GumHost
         Finished.Clear();
     }
 
+    /// <summary>The Gum layer of menus, drawn over the HUD (see <see cref="GumLayer.Overlay"/>).</summary>
+    public static Layer OverlayLayer { get; private set; } = null!;
+
+    /// <summary>
+    /// The overlay screens' parent: a root of its own on <see cref="OverlayLayer"/> (Gum's main root's
+    /// children draw with it, on the main layer), updated (input) with the main root, after it, so it's on top.
+    /// </summary>
+    public static ContainerRuntime OverlayRoot { get; private set; } = null!;
+
+    private static readonly List<GraphicalUiElement> Roots = [];
+    private static readonly Matrix OffCanvas = Matrix.CreateTranslation(-1e6f, -1e6f, 0);
+
     /// <summary>Registers the layer and the automation tree; from the mod initializer.</summary>
     public static void Install()
     {
@@ -105,6 +121,9 @@ public static class GumHost
         // The game's textures (and GumText's shader) are premultiplied.
         Renderer.UsePremultipliedAlpha = true;
         GumService.Default.Initialize(Main.instance);
+        OverlayLayer = SystemManagers.Default.Renderer.AddLayer();
+        OverlayRoot = new ContainerRuntime { Name = "Overlay Root" };
+        OverlayRoot.AddToManagers(SystemManagers.Default, OverlayLayer);
         FreshButton.BackingPath = "Images/UI/ButtonBacking";
         FreshItemSlot.BackgroundPaths[FreshItemSlotKind.Inventory] = "Images/Inventory_Back";
         FreshItemSlot.BackgroundPaths[FreshItemSlotKind.Hotbar] = "Images/Inventory_Back";
@@ -134,10 +153,36 @@ public static class GumHost
         }
     }
 
+    // Whether Gum has updated since the last game update ended (UpdateIfIdle).
+    private static bool _updated;
+
+    /// <summary>
+    /// After each game update: Gum's update, if the HUD's layer didn't run it (the game suspends that
+    /// layer on the title menu, in the pause menu and settings, in fancy UIs and on the full map, where
+    /// overlay screens still need it). Not before the game has loaded.
+    /// </summary>
+    public static void UpdateIfIdle(GameTime time)
+    {
+        if (!_updated && !Main.showSplash && !Main.dedServ)
+        {
+            Update(time);
+        }
+        _updated = false;
+    }
+
     /// <summary>Updates Gum (layout, input) once per game update.</summary>
     internal static void Update(GameTime time)
     {
+        _updated = true;
         EnsureReady();
+        foreach (GumScreen screen in GumScreens.All)
+        {
+            screen.Sync();
+            if (screen.IsShown && screen.Root is IGumScreenUpdate updating)
+            {
+                updating.UpdateScreen();
+            }
+        }
         int scale = ScaleOverride ?? GuiScale.Current;
         if (scale != UiPixels.Scale)
         {
@@ -153,7 +198,21 @@ public static class GumHost
         }
         try
         {
-            GumService.Default.Update(time);
+            // As GumService.Update(time) does for its root: each root covers the canvas.
+            foreach (GraphicalUiElement root in new GraphicalUiElement[] { GumService.Default.Root, OverlayRoot })
+            {
+                root.X = root.Y = 0;
+                root.WidthUnits = root.HeightUnits = Gum.DataTypes.DimensionUnitType.Absolute;
+                root.Width = GraphicalUiElement.CanvasWidth;
+                root.Height = GraphicalUiElement.CanvasHeight;
+            }
+            // While the gamepad drives a menu, the mouse (left wherever it was) hovers nothing: the focus is what's lit.
+            if (FrameworkElement.MainCursor is Gum.Input.Cursor cursor)
+                cursor.TransformMatrix = GamepadEnabled && Terraria.GameInput.PlayerInput.UsingGamepadUI ? OffCanvas : Matrix.Identity;
+            Roots.Clear();
+            Roots.Add(GumService.Default.Root);
+            Roots.Add(OverlayRoot);
+            GumService.Default.Update(time, Roots);
         }
         finally
         {
@@ -162,9 +221,10 @@ public static class GumHost
                 GameIsActive.SetValue(Main.instance, false);
             }
         }
+        GumGamepad.Update();
     }
 
-    /// <summary>Draws Gum within the game's sprite batch, restarting the batch as it was afterwards.</summary>
+    /// <summary>Draws the HUD's Gum layer within the game's sprite batch (the retained layer, in a world).</summary>
     public static void Draw(SpriteBatch batch)
     {
         if (!IsInitialized)
@@ -172,12 +232,42 @@ public static class GumHost
             return;
         }
         FreshUI.Screens.HudScreen.EndFrame();
+        DrawLayer(batch, SystemManagers.Default.Renderer.MainLayer);
+    }
+
+    // Whether the overlay has drawn this frame (it's drawn at the first of its draw points reached).
+    private static bool _overlayDrawn;
+
+    /// <summary>A frame starts: the overlay hasn't drawn yet.</summary>
+    public static void BeginFrame() => _overlayDrawn = false;
+
+    /// <summary>Draws the overlay's Gum layer (menus) within the game's sprite batch, once a frame: on the title menu and in game, under mouse text and the cursor.</summary>
+    public static void DrawOverlay(SpriteBatch batch)
+    {
+        if (IsInitialized && !_overlayDrawn && (bool)BatchBegun.GetValue(batch)!)
+        {
+            _overlayDrawn = true;
+            // Over an overlay screen (a menu, or a modal one's dimmed backdrop), the game takes no clicks.
+            if (!Main.gameMenu && IsOverGum())
+            {
+                Main.LocalPlayer.mouseInterface = true;
+            }
+            DrawLayer(batch, OverlayLayer);
+        }
+    }
+
+    // One layer, ending the game's sprite batch and restarting it as it was afterwards.
+    private static void DrawLayer(SpriteBatch batch, Layer layer)
+    {
         StepAnimations();
         object?[] state = BatchState.Select(field => field.GetValue(batch)).ToArray();
         batch.End();
         try
         {
-            GumService.Default.Draw();
+            Renderer renderer = SystemManagers.Default.Renderer;
+            renderer.Draw(SystemManagers.Default, layer);
+            renderer.ForceEnd();
+            renderer.EndFrame();
         }
         finally
         {
@@ -188,7 +278,7 @@ public static class GumHost
 
     // Over an element that takes input (a control, or anything with events), not empty canvas.
     private static bool IsOverGum() =>
-        IsInitialized && FrameworkElement.MainCursor.VisualOver is InteractiveGue over && over != GumService.Default.Root;
+        IsInitialized && FrameworkElement.MainCursor.VisualOver is InteractiveGue over && over != GumService.Default.Root && over != OverlayRoot;
 
     private sealed class GumState : UIState
     {

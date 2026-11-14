@@ -1,5 +1,6 @@
 using Aether.Graphics.Terrain;
 using Aether.UI;
+using FreshUI.Legacy;
 using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.Audio;
@@ -10,7 +11,7 @@ using Terraria.ID;
 using Terraria.Localization;
 using Terraria.UI;
 
-namespace FreshUI.Legacy;
+namespace FreshUI.Screens;
 
 /// <summary>The settings window's tabs, in order.</summary>
 public enum SettingsTab
@@ -37,6 +38,19 @@ public static class SettingsTabs
     private const string DisplayName = "Display";
 
     private const string GraphicsName = "Graphics";
+
+    /// <summary>The open tab, kept between openings and shared by the title menu and the game.</summary>
+    public static SettingsTab Tab;
+
+    /// <summary>Opens a tab (a click on it), with the menus' tick.</summary>
+    public static void Open(SettingsTab tab)
+    {
+        if (Tab != tab)
+        {
+            SoundEngine.PlaySound(SoundID.MenuTick);
+        }
+        Tab = tab;
+    }
 
     public static string Name(SettingsTab tab) => tab switch
     {
@@ -80,7 +94,7 @@ public static class SettingsTabs
         yield return (() => Lang.menu[5].Value, MenuSettingsScreen.Back);
     }
 
-    public static void Build(SettingsTab tab, SettingsWindow window)
+    public static void Build(SettingsTab tab, SettingsScreen window)
     {
         switch (tab)
         {
@@ -115,7 +129,7 @@ public static class SettingsTabs
 
     private static string AetherOnOff(string key, bool enabled) => CachedText.Format(key, Language.GetTextValue(enabled ? "AetherGraphics.On" : "AetherGraphics.Off"));
 
-    private static void General(SettingsWindow w)
+    private static void General(SettingsScreen w)
     {
         w.Header(() => Language.GetTextValue("GameUI.Gameplay"));
         w.Toggle(() => Language.GetTextValue(Main.SettingsEnabled_AutoReuseAllItems ? "UI.AutoReuseAllOn" : "UI.AutoReuseAllOff"), () => Main.SettingsEnabled_AutoReuseAllItems = !Main.SettingsEnabled_AutoReuseAllItems);
@@ -139,7 +153,7 @@ public static class SettingsTabs
         w.Toggle(() => Lang.menu[Main.HidePassword ? 212 : 211].Value, () => Main.HidePassword = !Main.HidePassword);
     }
 
-    private static void Display(SettingsWindow w)
+    private static void Display(SettingsScreen w)
     {
         w.Header(() => "Window");
         // Resizing the window mid-draw isn't safe, so these wait for the next update.
@@ -150,7 +164,7 @@ public static class SettingsTabs
         Flag(w, AetherGraphics.SmoothEntityMovement);
         w.Header(() => "Scale");
         w.Toggle(GuiScale.LabelText, GuiScale.Cycle);
-        w.Slider(() => CachedText.Format("GameUI.GameZoom", CachedText.Number(Math.Round(Main.GameZoomTarget * 100f)), CachedText.Number(Math.Round(Main.GameViewMatrix.Zoom.X * 100f))), () => Main.GameZoomTarget - 1f, v => Main.GameZoomTarget = v + 1f, 10);
+        w.Slider(() => CachedText.Format("GameUI.GameZoom", CachedText.Number(Math.Round(Main.GameZoomTarget * 100f)), CachedText.Number(Math.Round(Main.GameViewMatrix.Zoom.X * 100f))), () => Main.GameZoomTarget - 1f, v => Main.GameZoomTarget = v + 1f);
     }
 
     // The next display mode, applied once the frame is done (as vanilla's in-game window does).
@@ -171,7 +185,7 @@ public static class SettingsTabs
         Main.QueueMainThreadAction(() => Main.SetResolution(Main.PendingResolutionWidth, Main.PendingResolutionHeight));
     }
 
-    private static void Graphics(SettingsWindow w)
+    private static void Graphics(SettingsScreen w)
     {
         w.Header(() => "Lighting");
         w.Toggle(() => Language.GetTextValue(CachedText.Concat("UI.LightMode_", CachedText.Name(Lighting.Mode))), Lighting.NextLightMode);
@@ -194,19 +208,19 @@ public static class SettingsTabs
         {
             Main.bgScroll = (int)(v * 100f);
             Main.caveParallax = 1f - Main.bgScroll / 500f;
-        }, 1);
+        });
         w.Header(() => "World");
         w.Toggle(() => Lang.menu[ChildSafety.Disabled ? 132 : 133].Value, () => ChildSafety.Disabled = !ChildSafety.Disabled);
         w.Toggle(() => Language.GetTextValue(Main.SettingsEnabled_TilesSwayInWind ? "UI.TilesSwayInWindOn" : "UI.TilesSwayInWindOff"), () => Main.SettingsEnabled_TilesSwayInWind = !Main.SettingsEnabled_TilesSwayInWind);
         w.Toggle(() => Lang.menu[Main.SettingsEnabled_MinersWobble ? 250 : 251].Value, () => Main.SettingsEnabled_MinersWobble = !Main.SettingsEnabled_MinersWobble);
     }
 
-    private static void Flag(SettingsWindow w, AetherGraphics.Flag flag)
+    private static void Flag(SettingsScreen w, AetherGraphics.Flag flag)
     {
         w.Toggle(() => AetherOnOff(flag.Key, flag.Get()), () => flag.Set(!flag.Get()));
     }
 
-    private static void Effects(SettingsWindow w)
+    private static void Effects(SettingsScreen w)
     {
         w.Toggle(() => OnOff("GameUI.StormEffects", Main.UseStormEffects), () => Main.UseStormEffects = !Main.UseStormEffects);
         w.Toggle(() => OnOff("GameUI.ForegroundSunlightEffects", Main.ForegroundSunlightEffects), () => Main.ForegroundSunlightEffects = !Main.ForegroundSunlightEffects);
@@ -222,12 +236,12 @@ public static class SettingsTabs
         w.Toggle(() => Language.GetTextValue(Main.FlashyEffectsWorld ? "UI.FlashyEffectsWorldOn" : "UI.FlashyEffectsWorldOff"), () => Main.FlashyEffectsWorld = !Main.FlashyEffectsWorld);
     }
 
-    private static void Interface(SettingsWindow w)
+    private static void Interface(SettingsScreen w)
     {
         w.Header(() => "HUD");
         w.Toggle(() => CachedText.Format("UI.SelectHealthStyle", Language.GetTextValue(CachedText.Concat("UI.HealthManaStyle_", Main.ResourceSetsManager.ActiveSetKeyName))), Main.ResourceSetsManager.CycleResourceSet);
         w.Toggle(() => CachedText.Format("UI.SelectMapBorder", Language.GetTextValue(CachedText.Concat("UI.MinimapFrame_", Main.MinimapFrameManagerInstance.ActiveSelectionKeyName))), Main.MinimapFrameManagerInstance.CycleSelection);
-        w.Slider(() => CachedText.Format("GameUI.MapScale", CachedText.Number(Math.Round(Main.MapScale * 100f))), () => (Main.MapScale - 0.5f) / 0.5f, v => Main.MapScale = v * 0.5f + 0.5f, 12);
+        w.Slider(() => CachedText.Format("GameUI.MapScale", CachedText.Number(Math.Round(Main.MapScale * 100f))), () => (Main.MapScale - 0.5f) / 0.5f, v => Main.MapScale = v * 0.5f + 0.5f);
         w.Toggle(() => CachedText.Concat(Lang.menu[123].Value, " ", Lang.menu[124 + Main.invasionProgressMode].Value), () => Main.invasionProgressMode = (Main.invasionProgressMode + 1) % 3);
         w.Toggle(() => Language.GetTextValue(BigProgressBarSystem.ShowText ? "UI.ShowBossLifeTextOn" : "UI.ShowBossLifeTextOff"), BigProgressBarSystem.ToggleShowText);
         w.Toggle(() => Lang.menu[Main.showItemText ? 71 : 72].Value, () => Main.showItemText = !Main.showItemText);
@@ -248,30 +262,30 @@ public static class SettingsTabs
         w.Toggle(() => Language.GetTextValue(Main.SettingsEnabled_OpaqueBoxBehindTooltips ? "GameUI.HoverTextBoxesOn" : "GameUI.HoverTextBoxesOff"), () => Main.SettingsEnabled_OpaqueBoxBehindTooltips = !Main.SettingsEnabled_OpaqueBoxBehindTooltips);
     }
 
-    private static void Volume(SettingsWindow w)
+    private static void Volume(SettingsScreen w)
     {
-        w.Slider(() => CachedText.Concat(Lang.menu[99].Value, " ", CachedText.Number(Math.Round(Main.musicVolume * 100f)), "%"), () => Main.musicVolume, v => Main.musicVolume = v, 2);
-        w.Slider(() => CachedText.Concat(Lang.menu[98].Value, " ", CachedText.Number(Math.Round(Main.soundVolume * 100f)), "%"), () => Main.soundVolume, v => Main.soundVolume = v, 3);
-        w.Slider(() => CachedText.Concat(Lang.menu[119].Value, " ", CachedText.Number(Math.Round(Main.ambientVolume * 100f)), "%"), () => Main.ambientVolume, v => Main.ambientVolume = v, 4);
+        w.Slider(() => CachedText.Concat(Lang.menu[99].Value, " ", CachedText.Number(Math.Round(Main.musicVolume * 100f)), "%"), () => Main.musicVolume, v => Main.musicVolume = v);
+        w.Slider(() => CachedText.Concat(Lang.menu[98].Value, " ", CachedText.Number(Math.Round(Main.soundVolume * 100f)), "%"), () => Main.soundVolume, v => Main.soundVolume = v);
+        w.Slider(() => CachedText.Concat(Lang.menu[119].Value, " ", CachedText.Number(Math.Round(Main.ambientVolume * 100f)), "%"), () => Main.ambientVolume, v => Main.ambientVolume = v);
     }
 
-    private static void Cursor(SettingsWindow w)
+    private static void Cursor(SettingsScreen w)
     {
         w.Header(() => Lang.menu[64].Value);
-        ColorBar(w, 5, 25, DelegateMethods.ColorLerp_HSL_H, () => Main.mouseColorSlider.Hue, v => Main.mouseColorSlider.Hue = v, () => Main.mouseColorSlider.GetHSLVector());
-        ColorBar(w, 6, 25, DelegateMethods.ColorLerp_HSL_S, () => Main.mouseColorSlider.Saturation, v => Main.mouseColorSlider.Saturation = v, () => Main.mouseColorSlider.GetHSLVector());
+        ColorBar(w, DelegateMethods.ColorLerp_HSL_H, () => Main.mouseColorSlider.Hue, v => Main.mouseColorSlider.Hue = v, () => Main.mouseColorSlider.GetHSLVector());
+        ColorBar(w, DelegateMethods.ColorLerp_HSL_S, () => Main.mouseColorSlider.Saturation, v => Main.mouseColorSlider.Saturation = v, () => Main.mouseColorSlider.GetHSLVector());
         // The cursor's own luminance is kept at 0.15 or more, so it stays visible.
-        ColorBar(w, 7, 25, DelegateMethods.ColorLerp_HSL_L, () => Utils.GetLerpValue(0.15f, 1f, Main.mouseColorSlider.Luminance, clamped: true), v => Main.mouseColorSlider.Luminance = v * 0.85f + 0.15f, delegate
+        ColorBar(w, DelegateMethods.ColorLerp_HSL_L, () => Utils.GetLerpValue(0.15f, 1f, Main.mouseColorSlider.Luminance, clamped: true), v => Main.mouseColorSlider.Luminance = v * 0.85f + 0.15f, delegate
         {
             Vector3 hsl = Main.mouseColorSlider.GetHSLVector();
             hsl.Z = Utils.GetLerpValue(0.15f, 1f, hsl.Z, clamped: true);
             return hsl;
         });
         w.Header(() => Lang.menu[217].Value);
-        ColorBar(w, 5, 252, DelegateMethods.ColorLerp_HSL_H, () => Main.mouseBorderColorSlider.Hue, v => Main.mouseBorderColorSlider.Hue = v, () => Main.mouseBorderColorSlider.GetHSLVector());
-        ColorBar(w, 6, 252, DelegateMethods.ColorLerp_HSL_S, () => Main.mouseBorderColorSlider.Saturation, v => Main.mouseBorderColorSlider.Saturation = v, () => Main.mouseBorderColorSlider.GetHSLVector());
-        ColorBar(w, 7, 252, DelegateMethods.ColorLerp_HSL_L, () => Main.mouseBorderColorSlider.Luminance, v => Main.mouseBorderColorSlider.Luminance = v, () => Main.mouseBorderColorSlider.GetHSLVector());
-        ColorBar(w, 8, 252, DelegateMethods.ColorLerp_HSL_O, () => Main.mouseBorderColorSlider.Alpha, v => Main.mouseBorderColorSlider.Alpha = v, () => Main.mouseBorderColorSlider.GetHSLVector());
+        ColorBar(w, DelegateMethods.ColorLerp_HSL_H, () => Main.mouseBorderColorSlider.Hue, v => Main.mouseBorderColorSlider.Hue = v, () => Main.mouseBorderColorSlider.GetHSLVector());
+        ColorBar(w, DelegateMethods.ColorLerp_HSL_S, () => Main.mouseBorderColorSlider.Saturation, v => Main.mouseBorderColorSlider.Saturation = v, () => Main.mouseBorderColorSlider.GetHSLVector());
+        ColorBar(w, DelegateMethods.ColorLerp_HSL_L, () => Main.mouseBorderColorSlider.Luminance, v => Main.mouseBorderColorSlider.Luminance = v, () => Main.mouseBorderColorSlider.GetHSLVector());
+        ColorBar(w, DelegateMethods.ColorLerp_HSL_O, () => Main.mouseBorderColorSlider.Alpha, v => Main.mouseBorderColorSlider.Alpha = v, () => Main.mouseBorderColorSlider.GetHSLVector());
         w.Header(() => Lang.menu[218].Value);
         w.Toggle(() => LockOnHelper.UseMode switch
         {
@@ -285,35 +299,18 @@ public static class SettingsTabs
         w.Toggle(() => Lang.menu[Player.SmartCursorSettings.SmartAxeAfterPickaxe ? 214 : 213].Value, () => Player.SmartCursorSettings.SmartAxeAfterPickaxe = !Player.SmartCursorSettings.SmartAxeAfterPickaxe);
     }
 
-    /// <summary>
-    /// One of the cursor's colour bars. In game, while focused it sets <c>menuMode</c> to 25 (cursor) or
-    /// 252 (border): that's how vanilla's gamepad handling knows which colour it's adjusting. (On the
-    /// title menu <c>menuMode</c> picks the screen, so it's left alone there.)
-    /// </summary>
-    private static void ColorBar(SettingsWindow w, int gamepadFeature, int menuMode, Utils.ColorLerpMethod ramp, Func<float> getValue, Action<float> setValue, Func<Vector3> rampColor)
-    {
-        SettingsSliderRow row = w.Slider(() => "", getValue, setValue, gamepadFeature, ramp);
-        row.Tag = menuMode;
-        row.Slider.BeforeDraw = () => DelegateMethods.v3_1 = rampColor();
-        if (w.InGame)
+    /// <summary>One of the cursor's colour bars: its track shows <paramref name="ramp"/> for the colour as it is (<paramref name="rampColor"/>, HSL).</summary>
+    private static void ColorBar(SettingsScreen w, Utils.ColorLerpMethod ramp, Func<float> getValue, Action<float> setValue, Func<Vector3> rampColor) =>
+        w.ColorBar(getValue, setValue, percent =>
         {
-            row.Slider.WhileFocused = () => Main.menuMode = menuMode;
-        }
-    }
+            DelegateMethods.v3_1 = rampColor();
+            return ramp(percent);
+        });
 
-    /// <summary>The cursor tab's per-frame work (vanilla's): the gamepad edits Main.hBar etc., so keep them on the bars, and apply the colours.</summary>
-    public static void UpdateCursorColors(SettingsWindow w)
+    /// <summary>The cursor tab's per-update work (vanilla's): keep the legacy bars in step, and apply the colours.</summary>
+    public static void UpdateCursorColors()
     {
         Main.mouseColorSlider.ApplyToMainLegacyBars();
-        bool cursorFocused = false;
-        foreach (SettingsSliderRow row in w.SliderRows)
-        {
-            cursorFocused |= row.IsFocused && row.Tag == 25;
-        }
-        if (PlayerInput.UsingGamepad && !cursorFocused)
-        {
-            Main.mouseBorderColorSlider.ApplyToMainLegacyBars();
-        }
         if (Main.mouseColorSlider.Luminance < 0.15f)
         {
             Main.mouseColorSlider.Luminance = 0.15f;
@@ -322,7 +319,7 @@ public static class SettingsTabs
         Main.MouseBorderColor = Main.mouseBorderColorSlider.GetColor();
     }
 
-    private static void Controls(SettingsWindow w)
+    private static void Controls(SettingsScreen w)
     {
         w.Button(() => Lang.menu[222].Value, OpenKeybinds(w.InGame));
         w.Toggle(() => Lang.menu[Main.ReversedUpDownArmorSetBonuses ? 220 : 221].Value, () => Main.ReversedUpDownArmorSetBonuses = !Main.ReversedUpDownArmorSetBonuses);

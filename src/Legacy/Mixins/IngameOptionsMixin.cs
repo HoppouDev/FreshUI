@@ -16,7 +16,7 @@ public static class IngameOptionsMixin
     private static Rectangle _GUIHover;
 
     [Inject("Draw(Terraria.Main,Microsoft.Xna.Framework.Graphics.SpriteBatch)", At.HEAD)]
-    private static void Hover(CallbackInfo callback) => _GUIHover = SettingsWindow.Area;
+    private static void Hover(CallbackInfo callback) => _GUIHover = PauseMenu.Area;
 
     [Inject("Open()", At.HEAD)]
     private static void Opening(CallbackInfo callback) => PauseMenu.Opening();

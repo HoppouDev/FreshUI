@@ -1,6 +1,4 @@
-using FreshUI.Legacy;
 using System.Reflection.Metadata;
-using Aether.UI.Game;
 using FreshUI.GumUi;
 using Terraria;
 
@@ -10,8 +8,7 @@ namespace FreshUI;
 
 /// <summary>
 /// After a .NET hot reload (<c>./aether watch</c>) changes FreshUI's code, its screens are built again
-/// on the game thread, so an edit to how they're built shows at once: every Gum screen, and the pause
-/// menu and settings window (rebuilt when next drawn). Mixin method bodies are merged into the game when
+/// on the game thread, so an edit to how they're built shows at once: every Gum screen. Mixin method bodies are merged into the game when
 /// it starts, so edits to them need a restart.
 /// </summary>
 internal static class HotReload
@@ -25,8 +22,6 @@ internal static class HotReload
         {
             screen.Rebuild();
         }
-        GameScreens.Close(PauseScreen.Instance);
-        GameScreens.Close(GameSettingsScreen.Instance);
         Console.WriteLine("FreshUI: hot reload applied, screens rebuilt");
     }
 }

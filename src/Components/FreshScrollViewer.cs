@@ -39,6 +39,12 @@ class FreshScrollViewer : ScrollViewer
     /// <summary>UI pixels a notch of the wheel scrolls.</summary>
     public float WheelStep { get; set; } = 16;
 
+    /// <summary>
+    /// Whether the gamepad's focus stays on the area itself (its right stick scrolling it); off where its
+    /// content takes the focus (a list's rows), the focus coming onto it goes on to its first control in view.
+    /// </summary>
+    public bool IsFocusable { get; set; } = true;
+
 
     public FreshScrollViewer()
     {
@@ -59,7 +65,13 @@ class FreshScrollViewer : ScrollViewer
         };
         Restyle(bar);
         bar.ThumbInstance.Push += (_, _) => _glide.Stop();
-        GotFocus += (_, _) => bar.ThumbInstance.BackgroundColor = FreshButton.FocusColor;
+        GotFocus += (_, _) =>
+        {
+            if (!IsFocusable && FirstInView() is FrameworkElement first)
+                first.IsFocused = true;
+            else
+                bar.ThumbInstance.BackgroundColor = FreshButton.FocusColor;
+        };
         LostFocus += (_, _) => bar.ThumbInstance.BackgroundColor = ThumbColor;
     }
 
@@ -96,6 +108,24 @@ class FreshScrollViewer : ScrollViewer
             thumb.TextInstance.Visible = false;
         // As the game's handle: a little dim at rest; Gum's button states lighten it while hovered.
         thumb.BackgroundColor = ThumbColor;
+    }
+
+    // The first enabled control wholly in view, in the content's order.
+    private FrameworkElement? FirstInView()
+    {
+        float top = ClipContainer.AbsoluteTop, bottom = top + ClipContainer.AbsoluteHeight;
+        foreach (GraphicalUiElement child in InnerPanel.Children.OfType<GraphicalUiElement>())
+        {
+            if (child.AbsoluteTop < top || child.AbsoluteTop + child.AbsoluteHeight > bottom)
+                continue;
+            // The child, or a control in it (a row's slider); labels don't take the focus.
+            foreach (InteractiveGue? part in child.Children.OfType<InteractiveGue>().Prepend(child as InteractiveGue))
+            {
+                if (part?.FormsControlAsObject is FrameworkElement { IsEnabled: true } control and not Label)
+                    return control;
+            }
+        }
+        return null;
     }
 
     private void OnWheel(object? sender, RoutedEventArgs args)

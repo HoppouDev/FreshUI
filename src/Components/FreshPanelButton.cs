@@ -19,7 +19,12 @@ namespace FreshUI.Components;
 class FreshPanelButton : Button
 {
     private readonly NineSliceRuntime _border;
+    private SpriteRuntime? _icon;
+    private Color _textColor = Color.White, _iconColor = Color.White;
     private bool _chosen, _lit, _disabled;
+
+    // As the world creation's option buttons: an icon is dimmed towards the panel while the button is neither lit nor chosen.
+    private static readonly Color IdleIcon = Color.Lerp(new Color(63, 65, 151), Color.White, 0.7f) * 0.7f;
 
     public FreshPanelButton()
     {
@@ -75,6 +80,60 @@ class FreshPanelButton : Button
         text.HorizontalAlignment = RenderingLibrary.Graphics.HorizontalAlignment.Left;
     }
 
+    /// <summary>The text's colour while enabled (an option's own colour, as the world creation's difficulties).</summary>
+    public Color TextColor
+    {
+        get => _textColor;
+        set { _textColor = value; Refresh(); }
+    }
+
+    /// <summary>
+    /// An icon at the button's left, as the world creation's option buttons have: the game's 2×2-texel
+    /// art at half a UI pixel per texel (<paramref name="source"/>: its frame, or all of it), a texel in from
+    /// the corner, dimmed while the button is neither lit nor chosen.
+    /// </summary>
+    public void SetIcon(Microsoft.Xna.Framework.Graphics.Texture2D? texture, Rectangle? source = null, Color? color = null)
+    {
+        var visual = (ButtonVisual)Visual;
+        if (texture == null)
+        {
+            if (_icon != null)
+            {
+                _icon.Visible = false;
+                if (visual.TextInstance.XOrigin == RenderingLibrary.Graphics.HorizontalAlignment.Center)
+                    visual.TextInstance.X = 0;
+            }
+            return;
+        }
+        if (_icon == null)
+        {
+            _icon = new SpriteRuntime
+            {
+                X = FreshStyle.Texel,
+                Y = FreshStyle.Texel,
+                TextureAddress = Gum.Managers.TextureAddress.Custom,
+                WidthUnits = Gum.DataTypes.DimensionUnitType.Absolute,
+                HeightUnits = Gum.DataTypes.DimensionUnitType.Absolute,
+            };
+            visual.Children.Insert(visual.Children.IndexOf(_border) + 1, _icon);
+        }
+        Rectangle frame = source ?? texture.Bounds;
+        _icon.Texture = texture;
+        _icon.TextureLeft = frame.X;
+        _icon.TextureTop = frame.Y;
+        _icon.TextureWidth = frame.Width;
+        _icon.TextureHeight = frame.Height;
+        _icon.Width = frame.Width * FreshStyle.Texel;
+        _icon.Height = frame.Height * FreshStyle.Texel;
+        _icon.Visible = true;
+        _iconColor = color ?? Color.White;
+        // Centred text centres in the space after the icon.
+        TextRuntime text = visual.TextInstance;
+        if (text.XOrigin == RenderingLibrary.Graphics.HorizontalAlignment.Center)
+            text.X = MathF.Round((_icon.Width + FreshStyle.Texel) / 2);
+        Refresh();
+    }
+
     /// <summary>Lit as if hovered, while it stands for what's chosen (the open tab).</summary>
     public bool IsChosen
     {
@@ -88,6 +147,8 @@ class FreshPanelButton : Button
         bool lit = (_lit || _chosen) && !_disabled;
         visual.Background.Color = lit ? FreshStyle.ButtonLit : _disabled ? FreshStyle.Button * 0.6f : FreshStyle.Button;
         _border.Color = lit ? FreshStyle.Gold : Color.Black;
-        visual.TextInstance.Color = _disabled ? FreshStyle.Disabled : Color.White;
+        visual.TextInstance.Color = _disabled ? FreshStyle.Disabled : _textColor;
+        if (_icon != null)
+            _icon.Color = _disabled ? FreshStyle.Disabled : lit ? _iconColor : IdleIcon;
     }
 }

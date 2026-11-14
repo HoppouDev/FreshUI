@@ -79,7 +79,9 @@ public sealed class GalleryScreen : ContainerRuntime
         Cell(1, 2, "Window", Window);
         Cell(2, 2, "Colour bars", ColorBars);
         Cell(3, 2, "Game view", GameView);
-        _grid.Height = 3 * (CellHeight + Gap) - Gap;
+        Cell(0, 3, "Option buttons", OptionButtons);
+        Cell(1, 3, "Text field", TextFields);
+        _grid.Height = 4 * (CellHeight + Gap) - Gap;
         // Gum's spatial navigation passes over controls inside another candidate, and from the toolbar
         // the page (a scroll area) is one: down goes to the first control instead.
         _scale!.SpatialNavigationDown = _first;
@@ -421,6 +423,44 @@ public sealed class GalleryScreen : ContainerRuntime
         over.Visual.Y = 2;
         area.Children.Add(over.Visual);
         stack.Children.Add(area);
+    }
+
+    private static void OptionButtons(ContainerRuntime stack)
+    {
+        // As the world creation's sizes and evils: an icon and the option's colour, one chosen at a time.
+        (string Text, string Icon, Color Color)[][] groups =
+        [
+            [("Small", "IconSizeSmall", Color.Cyan), ("Medium", "IconSizeMedium", Color.Lerp(Color.Cyan, Color.LimeGreen, 0.5f)), ("Large", "IconSizeLarge", Color.LimeGreen)],
+            [("Random", "IconEvilRandom", Color.White), ("Corrupt", "IconEvilCorruption", Color.MediumPurple), ("Crimson", "IconEvilCrimson", Color.IndianRed)],
+        ];
+        for (int g = 0; g < groups.Length; g++)
+        {
+            if (g > 0)
+                stack.Children.Add(new FreshSeparator());
+            var row = Row(17);
+            row.StackSpacing = 2;
+            var buttons = new List<FreshPanelButton>();
+            foreach ((string text, string icon, Color color) in groups[g])
+            {
+                var button = new FreshPanelButton { Text = text, FontSize = 8, TextColor = color, IsChosen = buttons.Count == 1 };
+                button.SetIcon(GumTextures.Load("Images/UI/WorldCreation/" + icon));
+                Size(button, 44, 17);
+                button.Click += (_, _) => buttons.ForEach(other => other.IsChosen = other == button);
+                buttons.Add(button);
+                row.Children.Add(button.Visual);
+            }
+            stack.Children.Add(row);
+        }
+    }
+
+    private static void TextFields(ContainerRuntime stack)
+    {
+        var name = new FreshTextBox { Label = "Name:", Text = "Brilliant Isle" };
+        name.Visual.Width = 136;
+        var seed = new FreshTextBox { Label = "Seed:", Placeholder = "<Leave Blank For Random>" };
+        seed.Visual.Width = 136;
+        stack.Children.Add(name.Visual);
+        stack.Children.Add(seed.Visual);
     }
 
     private static void ScrollArea(ContainerRuntime stack, bool smooth)

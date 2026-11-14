@@ -40,6 +40,7 @@
 		"FreshUI.Legacy.Mixins.UINpcChatMixin",
 		"FreshUI.Legacy.Mixins.UtilsMixin",
 		"FreshUI.Legacy.Mixins.UIEquipToggleMixin",
+		"FreshUI.Legacy.Mixins.UIPanelMixin",
 		"FreshUI.Legacy.Mixins.GameScreensMixin",
 		"FreshUI.Legacy.Mixins.UICraftingIconMixin",
 		"FreshUI.Legacy.Mixins.UICoinAmmoSlotsMixin",

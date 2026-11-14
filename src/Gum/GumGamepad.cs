@@ -39,7 +39,8 @@ public static class GumGamepad
         object? focused = InteractiveGue.CurrentInputReceiver;
         if (PlayerInput.UsingGamepad && focused == null && _active.DefaultFocus!() is FrameworkElement start)
             start.IsFocused = true;
-        else if (!PlayerInput.UsingGamepad && focused is FrameworkElement control)
+        // The mouse clears the gamepad's focus, but not a text field's, which a click gives it to type in.
+        else if (!PlayerInput.UsingGamepad && focused is FrameworkElement control and not TextBoxBase)
             control.IsFocused = false;
         FollowFocus();
     }

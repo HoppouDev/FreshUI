@@ -88,7 +88,7 @@ public sealed partial class HudScreen : ContainerRuntime
     public static void RegisterRoutes() => _ = GridAsked;
 
     // The slots' owners (stable keys for their bindings), and the trash's one-item array.
-    private readonly object[] _owners = Enumerable.Range(0, 100).Select(_ => new object()).ToArray();
+    private readonly object[] _owners = Enumerable.Range(0, 120).Select(_ => new object()).ToArray();
     private readonly Item[] _trash = new Item[1];
 
     // The inventory's slots, from Aether's screens (UIInventoryGrid, UICoinAmmoSlots, UITrashSlot): presented,
@@ -333,6 +333,8 @@ public sealed partial class HudScreen : ContainerRuntime
         _current.PresentInventory();
         _current.PresentHotbar();
         _current.PresentEquipment();
+        _current.PresentMiscEquipment();
+        _current.PresentHousing();
         _current.PlaceHotbarLock();
         if (!_current._namePresented && _current._heldName.Visible)
             _current._heldName.Visible = false;

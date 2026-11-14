@@ -7,6 +7,7 @@ using Terraria;
 using Terraria.Audio;
 using Terraria.GameContent;
 using Terraria.GameInput;
+using Terraria.Localization;
 using Terraria.UI;
 
 namespace FreshUI.Screens;
@@ -87,7 +88,7 @@ public sealed partial class HudScreen
     }
 
     // An equipment slot: the game's handling while the cursor's on it (a locked one takes no item), then presented.
-    private void EquipmentSlot(int owner, Item[] items, int index, int context, int x, int y)
+    private void EquipmentSlot(int owner, Item[] items, int index, int context, int x, int y, bool alwaysUsable = false)
     {
         var position = new Vector2(x, y);
         if (new Rectangle(x, y, (int)(Cell * 2), (int)(Cell * 2)).Contains(Main.mouseX, Main.mouseY) && !PlayerInput.IgnoreMouseInterface)
@@ -95,33 +96,99 @@ public sealed partial class HudScreen
             Player player = Main.LocalPlayer;
             player.mouseInterface = true;
             Main.armorHide = true;
-            bool usable = player.IsItemSlotUnlockedAndUsable(context == 12 ? index : index) || Main.mouseItem.IsAir;
+            bool usable = alwaysUsable || player.IsItemSlotUnlockedAndUsable(index) || Main.mouseItem.IsAir;
             ItemSlot.Handle(items, context, index, usable);
         }
         Present(_owners[owner], items, context, index, position);
     }
 
-    // An accessory's visibility toggle (shown while nothing's held): a click flips it, its state in the hover text.
+    // An accessory's visibility toggle.
     private void AccessoryToggle(Player player, int accessory, Vector2 position)
     {
+        bool hidden = player.hideVisibleAccessory[accessory];
+        if (CornerToggle(hidden ? TextureAssets.InventoryTickOff.Value : TextureAssets.InventoryTickOn.Value, !hidden, supercart: false, Color.White * 0.7f, position))
+        {
+            player.hideVisibleAccessory[accessory] = !hidden;
+            SyncPlayer();
+        }
+    }
+
+    // A slot's corner toggle (Aether's UIEquipToggle), shown while nothing's held: true when clicked (the
+    // caller flips it; synced in multiplayer), its state (1 on, 2 off) named in the hover text (the
+    // visibility toggles' words, or the minecart upgrade's).
+    private bool CornerToggle(Texture2D texture, bool isOn, bool supercart, Color tint, Vector2 position)
+    {
         if (!Main.mouseItem.IsAir)
-            return;
-        Texture2D texture = player.hideVisibleAccessory[accessory] ? TextureAssets.InventoryTickOff.Value : TextureAssets.InventoryTickOn.Value;
+            return false;
+        bool clicked = false;
+        Player player = Main.LocalPlayer;
         if (new Rectangle((int)position.X, (int)position.Y, texture.Width, texture.Height).Contains(Main.mouseX, Main.mouseY) && !PlayerInput.IgnoreMouseInterface)
         {
             player.mouseInterface = true;
             if (Main.mouseLeft && Main.mouseLeftRelease)
             {
-                player.hideVisibleAccessory[accessory] = !player.hideVisibleAccessory[accessory];
+                clicked = true;
                 Main.mouseLeftRelease = false;
                 SoundEngine.PlaySound(12);
-                if (Main.netMode == 1)
-                    NetMessage.SendData(4, -1, -1, null, Main.myPlayer);
             }
             Main.ClearHoverItem();
-            Main.hoverItemName = Lang.inter[58 + (player.hideVisibleAccessory[accessory] ? 2 : 1)].Value;
+            Main.hoverItemName = supercart ? Language.GetTextValue(isOn ? "GameUI.SuperCartDisabled" : "GameUI.SuperCartEnabled") : Lang.inter[isOn ? 59 : 60].Value;
         }
-        DrawOver(texture, position, Color.White * 0.7f);
+        DrawOver(texture, position, tint);
+        return clicked;
+    }
+
+    // After a toggle's flipped: the player's state to the server.
+    private static void SyncPlayer()
+    {
+        if (Main.netMode == 1)
+            NetMessage.SendData(4, -1, -1, null, Main.myPlayer);
+    }
+
+    private static readonly Func<bool> MiscAsked = GumRoutes.GameScreen<UIMiscEquipSlots>();
+    private static readonly FieldInfo MiscTop = typeof(UIMiscEquipSlots).GetField("_top", BindingFlags.NonPublic | BindingFlags.Instance)!;
+    private static readonly int[] MiscContexts = [19, 20, 18, 17, 16];
+
+    // The misc equipment page (Aether's UIMiscEquipSlots): pet, light pet, minecart, mount and hook with
+    // their dyes in two columns on the art's grid, the pet and light visibility toggles and, once unlocked,
+    // the minecart upgrade's.
+    private void PresentMiscEquipment()
+    {
+        if (!IsReady || !MiscAsked())
+            return;
+        Player player = Main.LocalPlayer;
+        int top = (int)MiscTop.GetValue(UIMiscEquipSlots.Instance)!;
+        float saved = Main.inventoryScale;
+        Main.inventoryScale = Legacy.Hud.SlotScale;
+        for (int i = 0; i < 5; i++)
+        {
+            int y = Even(top + i * EquipmentPitch);
+            int x = Even(Main.screenWidth - 92);
+            EquipmentSlot(100 + i, player.miscEquips, i, MiscContexts[i], x, y, alwaysUsable: true);
+            EquipmentSlot(105 + i, player.miscDyes, i, 33, Even(Main.screenWidth - 92 - EquipmentPitch), y, alwaysUsable: true);
+            var tick = new Vector2(x + 34, y - 2);
+            if (i < 2)
+            {
+                if (CornerToggle(player.hideMisc[i] ? TextureAssets.InventoryTickOff.Value : TextureAssets.InventoryTickOn.Value, !player.hideMisc[i], supercart: false, Color.White * 0.7f, tick))
+                {
+                    if (i == 0)
+                        player.TogglePet();
+                    else
+                        player.ToggleLight();
+                    SyncPlayer();
+                }
+            }
+            else if (i == 2 && player.unlockedSuperCart)
+            {
+                // "On" here means the upgrade is off, as in the game.
+                if (CornerToggle(TextureAssets.Extra[player.enabledSuperCart ? 255 : 256].Value, !player.enabledSuperCart, supercart: true, Color.White, tick))
+                {
+                    player.enabledSuperCart = !player.enabledSuperCart;
+                    SyncPlayer();
+                }
+            }
+        }
+        Main.inventoryScale = saved;
     }
 
     // In the HUD's game view, over the slots: the defense counter and the achievement card.

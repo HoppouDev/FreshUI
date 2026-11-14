@@ -21,6 +21,14 @@
 			"postDebugTask": "stop game"
 		},
 		{
+			"name": "Widget gallery",
+			"type": "coreclr",
+			"request": "attach",
+			"processId": "${command:pickProcess}",
+			"preLaunchTask": "run widget gallery",
+			"postDebugTask": "stop game"
+		},
+		{
 			"name": "Debug with profiler",
 			"type": "coreclr",
 			"request": "attach",

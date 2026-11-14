@@ -213,6 +213,10 @@ public sealed class GumUiTree : IUiTree
         {
             component["enabled"] = false;
         }
+        if (control is { IsFocused: true })
+        {
+            component["focused"] = true;
+        }
         component["actions"] = new JsonArray(actions.Select(action => (JsonNode)action).ToArray());
         return component;
     }

@@ -22,4 +22,29 @@ public static class GumTextures
         }
         return texture;
     }
+
+    /// <summary>
+    /// <paramref name="name"/> with its texel rows from <paramref name="row"/> to
+    /// <paramref name="row"/> + <paramref name="count"/> repeated once, below themselves: art made taller
+    /// by whole pixels, for a nine-slice to draw at that height without stretching its middle unevenly.
+    /// </summary>
+    public static Texture2D Taller(string name, int row, int count)
+    {
+        string key = $"{name}#{row}+{count}";
+        if (Loaded.TryGetValue(key, out Texture2D? taller))
+        {
+            return taller;
+        }
+        Texture2D source = Load(name);
+        int width = source.Width, height = source.Height;
+        var texels = new Microsoft.Xna.Framework.Color[width * height];
+        source.GetData(texels);
+        var grown = new Microsoft.Xna.Framework.Color[width * (height + count)];
+        Array.Copy(texels, 0, grown, 0, width * (row + count));
+        Array.Copy(texels, width * row, grown, width * (row + count), width * (height - row));
+        taller = new Texture2D(source.GraphicsDevice, width, height + count);
+        taller.SetData(grown);
+        Loaded[key] = taller;
+        return taller;
+    }
 }

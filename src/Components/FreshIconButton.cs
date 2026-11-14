@@ -1,7 +1,9 @@
 using Gum.DataTypes;
 using Gum.Forms.Controls;
 using Gum.GueDeriving;
+using Gum.Input;
 using Gum.Managers;
+using Gum.Wireframe;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
@@ -22,8 +24,10 @@ record FreshIconButtonLook(
 /// a <see cref="CheckedLook"/>; while hovered it draws the look's overlay over the icon, and each state
 /// (hovered, pushed, disabled) can tint the icon. Sizes are in UI pixels (see UiPixels): the icon is
 /// drawn at <see cref="TexelSize"/> UI pixels per texel, its overlay centred over it on the UI's grid.
+/// It takes the gamepad's focus (as an <see cref="IInputReceiver"/>): focused, it shows its overlay, A
+/// activates it as a click does, and the D-pad moves on.
 /// </summary>
-class FreshIconButton : FrameworkElement
+class FreshIconButton : FrameworkElement, IInputReceiver
 {
     private readonly SpriteRuntime _icon;
     private readonly SpriteRuntime _overlay;
@@ -54,19 +58,47 @@ class FreshIconButton : FrameworkElement
         Visual.RollOff += (_, _) => { _isHovered = false; Refresh(); };
         Visual.Push += (_, _) => { _isPushed = true; Refresh(); };
         Visual.RemovedAsPushed += (_, _) => { _isPushed = false; Refresh(); };
-        Visual.Click += (_, _) =>
-        {
-            if (!IsEnabled)
-            {
-                return;
-            }
-            if (IsToggle)
-            {
-                IsChecked = !IsChecked;
-            }
-            Click?.Invoke(this, EventArgs.Empty);
-        };
+        Visual.Click += (_, _) => Activate();
+        GotFocus += (_, _) => Refresh();
+        LostFocus += (_, _) => Refresh();
         Refresh();
+    }
+
+    private void Activate()
+    {
+        if (!IsEnabled)
+        {
+            return;
+        }
+        if (IsToggle)
+        {
+            IsChecked = !IsChecked;
+        }
+        Click?.Invoke(this, EventArgs.Empty);
+    }
+
+    // --- the gamepad's focus ---
+
+    IInputReceiver? IInputReceiver.ParentInputReceiver => null;
+
+    void IInputReceiver.OnGainFocus() { }
+
+    void IInputReceiver.OnLoseFocus() { }
+
+    void IInputReceiver.OnFocusUpdatePreview(RoutedEventArgs args) { }
+
+    void IInputReceiver.DoKeyboardAction(IInputReceiverKeyboard keyboard) { }
+
+    void IInputReceiver.OnFocusUpdate()
+    {
+        foreach (IGamePad gamepad in GamePadsForUiControl)
+        {
+            HandleGamepadNavigation(gamepad);
+            if (gamepad.ButtonPushed(GamepadButton.A))
+            {
+                Activate();
+            }
+        }
     }
 
     /// <summary>Raised when the button is clicked while enabled, after a toggle has flipped <see cref="IsChecked"/>.</summary>
@@ -175,12 +207,13 @@ class FreshIconButton : FrameworkElement
         float height = icon.Height * _texelSize;
         Visual.Width = width;
         Visual.Height = height;
+        bool lit = _isHovered || IsFocused;
         _icon.Color = !IsEnabled ? _disabledColor
             : _isPushed && _isHovered ? _pushedColor
-            : _isHovered ? _hoverColor
+            : lit ? _hoverColor
             : Color.White;
 
-        if (look.HoverOverlay != null && _isHovered && IsEnabled)
+        if (look.HoverOverlay != null && lit && IsEnabled)
         {
             Rectangle overlay = Show(_overlay, look.HoverOverlay, look.HoverOverlaySource);
             _overlay.Visible = true;

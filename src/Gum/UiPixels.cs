@@ -20,6 +20,8 @@ static class UiPixels
     {
         Scale = Math.Max(1, scale);
         GumService.Default.EnableExpandToWindow(Scale);
+        // The canvas changed size: elements sized relative to it (screens filling it) follow now.
+        GumService.Default.Root.UpdateLayout();
         GumText.RefreshPixelScale();
     }
 

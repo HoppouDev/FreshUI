@@ -5,6 +5,12 @@ prepare_only=false
 case "${1:-}" in
     run) shift ;;
     setup) prepare_only=true; shift ;;
+    gallery)
+        # The widget gallery (src/Gum/GumGallery.cs) under hot reload, serving the MCP server on 47321.
+        shift
+        [ "${1:-}" = -- ] && shift
+        exec "$0" watch -- -freshuigallery -aethermcp 47321 "$@"
+        ;;
     watch)
         # .NET hot reload: dotnet watch builds the mod, then runs this script (the project's RunCommand)
         # with its hot reload agent's startup hook, and sends each saved edit to the game.
@@ -16,10 +22,11 @@ case "${1:-}" in
 esac
 case "${1:-}" in
     -h|--help)
-        printf '%s\n' 'Usage: ./aether [run | setup | watch] [-- game-args...]' \
+        printf '%s\n' 'Usage: ./aether [run | setup | watch | gallery] [-- game-args...]' \
             'On first use, clone and build Aether under .aether/client.' \
             'Use setup to prepare the client without starting the game.' \
-            'Use watch to run the game with .NET hot reload of the mod (needs the ASP.NET Core runtime).'
+            'Use watch to run the game with .NET hot reload of the mod (needs the ASP.NET Core runtime).' \
+            'Use gallery to open the widget gallery under watch, with the MCP server on port 47321.'
         exit 0
         ;;
     --)

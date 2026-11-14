@@ -254,7 +254,11 @@ public sealed class SettingsWindow : UIElement
 
     public SettingsSliderRow Slider(Func<string> label, Func<float> getValue, Action<float> setValue, int gamepadFeature, Utils.ColorLerpMethod? colorMethod = null)
     {
-        SettingsSliderRow row = new SettingsSliderRow(label, new UIMenuSlider(getValue, setValue, gamepadFeature, 1f, colorMethod));
+        SettingsSliderRow row = new SettingsSliderRow(label, new UIMenuSlider(getValue, setValue, gamepadFeature, 1f, colorMethod))
+        {
+            GetValue = getValue,
+            SetValue = setValue,
+        };
         _list.Add(row);
         return row;
     }
@@ -313,34 +317,83 @@ public sealed class SettingsWindow : UIElement
 
     // --- gamepad -------------------------------------------------------------------------------
 
-    // In game, vanilla's gamepad pages for the settings window: 30 points on the left (2900+), 30 on
-    // the right (2930+). On the title menu each element adds its own (MenuScreens.AddGamepadPoint).
+    // The gamepad's step for a slider, and the slider rows in this frame's list (by GamepadMenu index).
+    private const float SliderStep = 0.01f;
+    private readonly HashSet<int> _gamepadSliders = [];
+
+    // In game, the gamepad (GamepadMenu): the tabs and actions, then the rows wholly in view (the list
+    // scrolls a row when the gamepad moves past the first or last), sliders stepped by the D-pad; LT/RT
+    // go to the previous or next tab. On the title menu each element adds its own (MenuScreens.AddGamepadPoint).
     private void LinkGamepad()
     {
         if (!InGame)
         {
             return;
         }
-        int left = 0;
+        _gamepadSliders.Clear();
+        // Right from the tabs goes to the first row, left from a row to the open tab, as between panels.
+        int firstRow = _tabs.Count + _actions.Count;
+        int openTab = Array.IndexOf(Enum.GetValues<SettingsTab>(), Tab);
         foreach (UIElement button in _tabs.Cast<UIElement>().Concat(_actions))
         {
-            if (left < 30)
-            {
-                UILinkPointNavigator.SetPosition(2900 + left++, button.GetDimensions().Center());
-            }
+            GamepadMenu.Add(button, right: firstRow);
         }
-        UILinkPointNavigator.Shortcuts.INGAMEOPTIONS_BUTTONS_LEFT = left;
-        int right = 0;
         CalculatedStyle view = _list.GetInnerDimensions();
         foreach (UIElement row in _list)
         {
             CalculatedStyle box = row.GetDimensions();
-            if (right < 30 && row is not SettingsRow { IsHeader: true } && box.Y >= view.Y && box.Y + box.Height <= view.Y + view.Height)
+            if (row is SettingsRow { IsHeader: true } || box.Y < view.Y || box.Y + box.Height > view.Y + view.Height)
             {
-                UILinkPointNavigator.SetPosition(2930 + right++, box.Center());
+                continue;
+            }
+            if (row is SettingsSliderRow slider)
+            {
+                _gamepadSliders.Add(GamepadMenu.Count);
+                GamepadMenu.Add(row, direction => Step(slider, direction));
+            }
+            else
+            {
+                GamepadMenu.Add(row, left: openTab);
             }
         }
-        UILinkPointNavigator.Shortcuts.INGAMEOPTIONS_BUTTONS_RIGHT = right;
+        int rows = GamepadMenu.Count - firstRow;
+        GamepadMenu.Publish(this, GamepadHints, openTab, SwitchTab, direction =>
+        {
+            if (rows > 0)
+            {
+                _scrollbar.ViewPosition += direction * (RowHeight + 4f);
+            }
+        });
+    }
+
+    private static void Step(SettingsSliderRow row, int direction)
+    {
+        float before = row.GetValue();
+        float after = Math.Clamp(MathF.Round(before / SliderStep + direction) * SliderStep, 0f, 1f);
+        if (after != before)
+        {
+            row.SetValue(after);
+            SoundEngine.PlaySound(SoundID.MenuTick);
+        }
+    }
+
+    private static void SwitchTab(int direction)
+    {
+        SettingsTab[] tabs = Enum.GetValues<SettingsTab>();
+        int next = (Array.IndexOf(tabs, Tab) + direction + tabs.Length) % tabs.Length;
+        Open(tabs[next]);
+        // The tabs are the first items: the focus follows to the open one.
+        GamepadMenu.Focus(next);
+    }
+
+    private string GamepadHints(int focused)
+    {
+        string hints = _gamepadSliders.Contains(focused)
+            ? GamepadMenu.HintButtons("Adjust", "DPadLeft", "DPadRight")
+            : GamepadMenu.Hint(Lang.misc[53].Value, "MouseLeft");
+        hints += GamepadMenu.Hint(PauseMenu.SettingsFromPause ? "Back" : Lang.misc[56].Value, "Inventory");
+        return hints + PlayerInput.BuildCommand(Lang.misc[64].Value,
+            PlayerInput.ProfileGamepadUI.KeyStatus["HotbarMinus"], PlayerInput.ProfileGamepadUI.KeyStatus["HotbarPlus"]);
     }
 
     // --- drawing -------------------------------------------------------------------------------
@@ -493,6 +546,10 @@ public sealed class SettingsSliderRow : UIPanel
 
     /// <summary>What the row adjusts, for the tab's own bookkeeping (25/252: the cursor's or its border's colour).</summary>
     public int Tag;
+
+    /// <summary>The slider's value, 0 to 1, for the gamepad's steps.</summary>
+    public Func<float> GetValue { get; init; } = () => 0;
+    public Action<float> SetValue { get; init; } = _ => { };
 
     public SettingsSliderRow(Func<string> label, UIMenuSlider slider)
     {

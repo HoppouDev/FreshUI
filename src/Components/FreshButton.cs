@@ -12,7 +12,8 @@ namespace FreshUI.Components;
 
 /// <summary>
 /// A Forms button with a nine-sliced backing texture and distance field text (see GumText) with a
-/// black border, as <see cref="FreshLabel"/> text can have.
+/// black border, as <see cref="FreshLabel"/> text can have. Focused (by the gamepad), its text is gold,
+/// as the game's menus mark the selected item.
 /// </summary>
 class FreshButton : Button
 {
@@ -24,6 +25,9 @@ class FreshButton : Button
     private const float OutlineWidth = 0.75f;
 
     private TextRuntime TextVisual => ((ButtonVisual)Visual).TextInstance;
+
+    /// <summary>The gold of the game's hovered and selected UI text.</summary>
+    public static readonly Color FocusColor = new(255, 231, 69);
 
     public FreshButton()
     {
@@ -41,9 +45,9 @@ class FreshButton : Button
         var disabledText = new Color(130, 130, 130);
 
         SetState(visual, visual.States.Enabled, normal, Color.White, focused: false);
-        SetState(visual, visual.States.Focused, normal, Color.White, focused: true);
+        SetState(visual, visual.States.Focused, Color.White, FocusColor, focused: true);
         SetState(visual, visual.States.Highlighted, Color.White, Color.White, focused: false);
-        SetState(visual, visual.States.HighlightedFocused, Color.White, Color.White, focused: true);
+        SetState(visual, visual.States.HighlightedFocused, Color.White, FocusColor, focused: true);
         SetState(visual, visual.States.Pushed, pushed, Color.White, focused: false);
         SetState(visual, visual.States.Disabled, disabled, disabledText, focused: false);
         SetState(visual, visual.States.DisabledFocused, disabled, disabledText, focused: true);
@@ -73,7 +77,8 @@ class FreshButton : Button
         {
             visual.Background.Color = background;
             visual.TextInstance.Color = text;
-            visual.FocusedIndicator.Visible = focused;
+            // Focus shows in the text's colour, not Gum's indicator bar.
+            visual.FocusedIndicator.Visible = false;
         };
     }
 }

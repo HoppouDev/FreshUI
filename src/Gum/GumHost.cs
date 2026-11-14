@@ -1,5 +1,7 @@
 using FreshUI.Components;
+using System.Diagnostics;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using Aether.Api;
 using Aether.Testing;
 using Gum;
@@ -40,6 +42,56 @@ public static class GumHost
     /// <summary>Whether Gum has been set up (on the first frame in a world).</summary>
     public static bool IsInitialized { get; private set; }
 
+    /// <summary>
+    /// Screen pixels per UI pixel in place of <see cref="GuiScale.Current"/> (the widget gallery's
+    /// scale), or null to follow the GUI scale setting.
+    /// </summary>
+    public static int? ScaleOverride { get; set; }
+
+    /// <summary>
+    /// Whether Gum's controls take the gamepad: the D-pad and left stick move the focus (Gum's own
+    /// navigation), A activates, a focused slider steps and a scroll area scrolls with the right stick.
+    /// On for the widget gallery; in a world the HUD's slots are the game's own gamepad UI.
+    /// </summary>
+    public static bool GamepadEnabled
+    {
+        get => FrameworkElement.GamePadsForUiControl.Count > 0;
+        set
+        {
+            if (value == GamepadEnabled)
+                return;
+            FrameworkElement.GamePadsForUiControl.Clear();
+            if (value)
+                GumService.Default.UseGamepadDefaults();
+        }
+    }
+
+    // Animations stepped every frame before Gum draws, by their owner (held weakly), while they run.
+    private static readonly ConditionalWeakTable<object, Func<float, bool>> Animations = new();
+    private static readonly List<object> Finished = [];
+    private static long _lastFrame;
+
+    /// <summary>
+    /// Steps <paramref name="step"/> every frame before Gum draws, with the seconds since the last
+    /// frame, until it returns false; one animation per <paramref name="owner"/>, replacing any before.
+    /// </summary>
+    public static void Animate(object owner, Func<float, bool> step) => Animations.AddOrUpdate(owner, step);
+
+    private static void StepAnimations()
+    {
+        long now = Stopwatch.GetTimestamp();
+        float seconds = _lastFrame == 0 ? 0f : MathF.Min(0.1f, (now - _lastFrame) / (float)Stopwatch.Frequency);
+        _lastFrame = now;
+        foreach ((object owner, Func<float, bool> step) in Animations)
+        {
+            if (!step(seconds))
+                Finished.Add(owner);
+        }
+        foreach (object owner in Finished)
+            Animations.Remove(owner);
+        Finished.Clear();
+    }
+
     /// <summary>Registers the layer and the automation tree; from the mod initializer.</summary>
     public static void Install()
     {
@@ -62,7 +114,7 @@ public static class GumHost
         FreshItemSlot.HighlightOverlayPath = "Images/Inventory_Back22";
         // The thin gold outline the crafting window draws round its selected recipe.
         FreshItemSlot.SelectedOverlayPath = "Images/Inventory_Back24";
-        UiPixels.SetScale(GuiScale.Current);
+        UiPixels.SetScale(ScaleOverride ?? GuiScale.Current);
         GumText.Initialize(Main.instance.GraphicsDevice);
     }
 
@@ -82,12 +134,14 @@ public static class GumHost
         }
     }
 
-    private static void Update(GameTime time)
+    /// <summary>Updates Gum (layout, input) once per game update.</summary>
+    internal static void Update(GameTime time)
     {
         EnsureReady();
-        if (GuiScale.Current != UiPixels.Scale)
+        int scale = ScaleOverride ?? GuiScale.Current;
+        if (scale != UiPixels.Scale)
         {
-            UiPixels.SetScale(GuiScale.Current);
+            UiPixels.SetScale(scale);
         }
         // Gum ignores input while the window is inactive. Under remote automation, which drives an
         // unfocused window, the window counts as focused, as Aether's patch to FocusHelper makes it for
@@ -110,13 +164,15 @@ public static class GumHost
         }
     }
 
-    private static void Draw(SpriteBatch batch)
+    /// <summary>Draws Gum within the game's sprite batch, restarting the batch as it was afterwards.</summary>
+    public static void Draw(SpriteBatch batch)
     {
         if (!IsInitialized)
         {
             return;
         }
         FreshUI.Screens.HudScreen.EndFrame();
+        StepAnimations();
         object?[] state = BatchState.Select(field => field.GetValue(batch)).ToArray();
         batch.End();
         try

@@ -15,6 +15,9 @@ public sealed class Startup : IModInitializer
     public void Initialize()
     {
         GumHost.Install();
-        GumScreens.Register("fresh-ui:hud", () => new HudScreen());
+        if (GumGallery.Enabled)
+            GumScreens.Register("fresh-ui:gallery", () => new GalleryScreen());
+        else
+            GumScreens.Register("fresh-ui:hud", () => new HudScreen());
     }
 }

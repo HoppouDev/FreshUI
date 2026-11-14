@@ -37,6 +37,9 @@ public static class PauseMenu
     // Whether the settings were opened from the pause menu (their Back returns to it).
     private static bool _settingsFromPause;
 
+    /// <summary>Whether the settings were opened from the pause menu (the inventory key and B go back to it).</summary>
+    public static bool SettingsFromPause => Current == View.Settings && _settingsFromPause;
+
     // Whether the inventory was open when the window opened: it's left as it was when the window closes
     // (vanilla always reopens it, as its settings window was opened from the inventory).
     private static bool _inventoryOpen;
@@ -47,6 +50,9 @@ public static class PauseMenu
     // Whether Esc is being handled (rather than the inventory key).
     private static bool _escape;
 
+    // Whether Start was held at the last update.
+    private static bool _startWasDown;
+
     /// <summary>
     /// Esc, every update after the keyboard is read (before chat, which closes on Esc itself): what the
     /// inventory key does to close what's open (the inventory, a chest, NPC chat, the map, the window,
@@ -54,7 +60,12 @@ public static class PauseMenu
     /// </summary>
     public static void HandleEscape()
     {
-        if (Main.gameMenu || !Main.keyState.IsKeyDown(Keys.Escape) || Main.oldKeyState.IsKeyDown(Keys.Escape))
+        // The gamepad's Start does the same (it's the pause button, as in most games).
+        bool start = GamePad.GetState(PlayerIndex.One).IsButtonDown(Buttons.Start);
+        bool startPressed = start && !_startWasDown;
+        _startWasDown = start;
+        bool escape = Main.keyState.IsKeyDown(Keys.Escape) && !Main.oldKeyState.IsKeyDown(Keys.Escape);
+        if (Main.gameMenu || !escape && !startPressed)
         {
             return;
         }
@@ -338,17 +349,15 @@ public sealed class PauseScreen : UIGameScreen
         {
             Main.LocalPlayer.mouseInterface = true;
         }
-        // Vanilla's gamepad page for the settings window: its left column (2900+) for the buttons.
-        int point = 0;
+        // The gamepad: each button, linked to its neighbours by where it is (GamepadMenu).
         foreach (List<UITextPanel<string>> row in _rows)
         {
             foreach (UITextPanel<string> button in row)
             {
-                UILinkPointNavigator.SetPosition(2900 + point++, button.GetDimensions().Center());
+                GamepadMenu.Add(button);
             }
         }
-        UILinkPointNavigator.Shortcuts.INGAMEOPTIONS_BUTTONS_LEFT = point;
-        UILinkPointNavigator.Shortcuts.INGAMEOPTIONS_BUTTONS_RIGHT = 0;
+        GamepadMenu.Publish(this, _ => GamepadMenu.Hint(Lang.misc[53].Value, "MouseLeft") + GamepadMenu.Hint(Lang.misc[56].Value, "Inventory"));
     }
 
     protected override void DrawSelf(SpriteBatch spriteBatch) => Dim(spriteBatch, this);

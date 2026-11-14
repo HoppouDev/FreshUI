@@ -77,12 +77,13 @@ public sealed class HudScreen : ContainerRuntime
     private static readonly Func<bool> GridAsked = GumRoutes.GameScreen<UIInventoryGrid>();
     private static readonly Func<bool> CoinsAsked = GumRoutes.GameScreen<UICoinAmmoSlots>();
     private static readonly Func<bool> TrashAsked = GumRoutes.GameScreen<UITrashSlot>();
+    private static readonly Func<bool> HotbarAsked = GumRoutes.GameScreen<UIHotbar>();
 
     /// <summary>Registers the routes of the game's screens this screen replaces (from the mod initializer).</summary>
     public static void RegisterRoutes() => _ = GridAsked;
 
     // The slots' owners (stable keys for their bindings), and the trash's one-item array.
-    private readonly object[] _owners = Enumerable.Range(0, 59).Select(_ => new object()).ToArray();
+    private readonly object[] _owners = Enumerable.Range(0, 70).Select(_ => new object()).ToArray();
     private readonly Item[] _trash = new Item[1];
 
     // The inventory's slots, from Aether's screens (UIInventoryGrid, UICoinAmmoSlots, UITrashSlot): presented,
@@ -114,6 +115,84 @@ public sealed class HudScreen : ContainerRuntime
             Slot(58, _trash, 6, 0);
             player.trashItem = _trash[0];
         }
+    }
+
+    // The hotbar while the inventory is closed (Aether's UIHotbar): its slots (a click selects one, unless
+    // the hotbar is locked or the held item busy), the held item's own slot when it's from further in the
+    // inventory, and the held item's name above it, shown when the held item changes and then faded out.
+    private void PresentHotbar()
+    {
+        if (!IsReady || !HotbarAsked())
+        {
+            _nameClock = 0;
+            return;
+        }
+        Player player = Main.LocalPlayer;
+        for (int i = 0; i < 10; i++)
+        {
+            if (!TrySlotPosition(13, i, out Vector2 position))
+                continue;
+            FreshUI.Legacy.Hud.Bottom = position.Y + Cell * 2;
+            if (new Rectangle((int)position.X, (int)position.Y, (int)(Cell * 2), (int)(Cell * 2)).Contains(Main.mouseX, Main.mouseY) &&
+                !player.hbLocked && !Terraria.GameInput.PlayerInput.IgnoreMouseInterface && !player.controlTorch && !player.channel)
+            {
+                player.mouseInterface = true;
+                player.cursorItemIconEnabled = false;
+                if (Main.mouseLeft && !Main.blockMouse)
+                    player.changeItem = i;
+            }
+            Present(_owners[60 + i], player.inventory, 13, i, position);
+        }
+        if ((player.selectedItemState.HasActiveOverride || player.selectedItem >= 10) && player.selectedItem != 58 && !player.HeldItem.IsAir &&
+            TrySlotPosition(36, player.selectedItem, out Vector2 held))
+        {
+            Present(_owners[59], player.inventory, 36, player.selectedItem, held, interactive: false);
+        }
+        PresentHeldName(player);
+    }
+
+    private long _nameClock;
+    private float _nameTicks;
+    private int _nameSlot, _nameType, _namePrefix;
+    private string? _name;
+    private int _nameOfType, _nameOfPrefix;
+
+    private void PresentHeldName(Player player)
+    {
+        Item selected = player.inventory[player.selectedItem];
+        // Whatever is held when the hotbar appears (entering a world, closing the inventory) is taken as
+        // is: only a change while it's shown shows the name.
+        bool appearing = _nameClock == 0;
+        float ticks = FreshUI.Legacy.Hud.TicksSince(ref _nameClock);
+        if (appearing || ticks > FreshUI.Legacy.Hud.HotbarGap)
+        {
+            (_nameSlot, _nameType, _namePrefix) = (player.selectedItem, selected.type, selected.prefix);
+            _nameTicks = FreshUI.Legacy.Hud.NameShown + FreshUI.Legacy.Hud.NameFade;
+        }
+        else if (player.selectedItem != _nameSlot || selected.type != _nameType || selected.prefix != _namePrefix)
+        {
+            (_nameSlot, _nameType, _namePrefix) = (player.selectedItem, selected.type, selected.prefix);
+            _nameTicks = 0f;
+        }
+        else
+        {
+            _nameTicks += ticks;
+        }
+        float opacity = 1f - MathHelper.Clamp((_nameTicks - FreshUI.Legacy.Hud.NameShown) / FreshUI.Legacy.Hud.NameFade, 0f, 1f);
+        if (opacity <= 0f)
+            return;
+        // The name with its prefix (AffixName builds it anew each call), kept while the item is the same.
+        if (string.IsNullOrEmpty(selected.Name))
+        {
+            _name = Lang.inter[37].Value;
+            _nameOfType = -1;
+        }
+        else if (_name == null || selected.type != _nameOfType || selected.prefix != _nameOfPrefix)
+        {
+            (_nameOfType, _nameOfPrefix) = (selected.type, selected.prefix);
+            _name = selected.AffixName();
+        }
+        PresentName(_name, 0, FreshUI.Legacy.Hud.NameColor(selected) * opacity);
     }
 
     // One of the inventory's slots: the game's handling while the cursor's on it, then presented.
@@ -176,7 +255,6 @@ public sealed class HudScreen : ContainerRuntime
     {
         if (!IsReady)
             return;
-        int hotbarIndex = 0;
         foreach (UIElement element in screen.Children)
         {
             if (element is UIGameItemSlot slot && TrySlotPosition(slot.Context, slot.Slot, out Vector2 position))
@@ -185,15 +263,6 @@ public sealed class HudScreen : ContainerRuntime
                 slot.Width.Set(Cell * 2, 0);
                 slot.Height.Set(Cell * 2, 0);
                 slot.Recalculate();
-            }
-            else if (element is UIHotbarSlot && TrySlotPosition(13, hotbarIndex++, out position))
-            {
-                element.Left.Set(position.X, 0);
-                element.Top.Set(position.Y, 0);
-                element.Width.Set(Cell * 2, 0);
-                element.Height.Set(Cell * 2, 0);
-                element.Recalculate();
-                FreshUI.Legacy.Hud.Bottom = position.Y + Cell * 2;
             }
         }
         if (screen is UIChestSlots)
@@ -256,6 +325,7 @@ public sealed class HudScreen : ContainerRuntime
         if (_current == null)
             return;
         _current.PresentInventory();
+        _current.PresentHotbar();
         _current.PlaceHotbarLock();
         if (!_current._namePresented && _current._heldName.Visible)
             _current._heldName.Visible = false;

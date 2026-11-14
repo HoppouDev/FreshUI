@@ -56,8 +56,6 @@
 		"FreshUI.Legacy.Mixins.AchievementAdvisorMixin",
 		"FreshUI.Legacy.Mixins.UIIconButtonScreenMixin",
 		"FreshUI.Legacy.Mixins.UIIconButtonGroupMixin",
-		"FreshUI.Legacy.Mixins.UIHotbarMixin",
-		"FreshUI.Legacy.Mixins.UIHotbarSlotMixin",
 		"FreshUI.Legacy.Mixins.UIBuffBarMixin",
 		"FreshUI.Legacy.Mixins.BigProgressBarHelperMixin",
 		"FreshUI.Legacy.Mixins.SdfTextMixin",

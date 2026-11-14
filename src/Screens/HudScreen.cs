@@ -32,6 +32,7 @@ public sealed partial class HudScreen : ContainerRuntime
     // Game art drawn over the slots (the equipment slots' corner toggles), this frame's.
     private readonly FreshGameView _over;
     private readonly GameIconButtons _icons;
+    private readonly CraftingWindow _crafting;
     private readonly List<(Texture2D Texture, Vector2 Position, Color Color)> _overDraws = [];
 
     public HudScreen()
@@ -65,6 +66,8 @@ public sealed partial class HudScreen : ContainerRuntime
         // Aether's icon buttons (side buttons, builder toggles, page icons…), under the slots' corner toggles.
         _icons = new GameIconButtons();
         Children.Add(_icons);
+        _crafting = new CraftingWindow();
+        Children.Add(_crafting);
         _over = new FreshGameView();
         _over.Draw = (batch, _) =>
         {
@@ -318,6 +321,7 @@ public sealed partial class HudScreen : ContainerRuntime
         _current.PresentContainers();
         _current.PresentChestControls();
         _current.PresentCrafting();
+        _current._crafting.Present();
         _current.PlaceHotbarLock();
         if (!_current._namePresented && _current._heldName.Visible)
             _current._heldName.Visible = false;

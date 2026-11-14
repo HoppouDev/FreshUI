@@ -138,13 +138,44 @@ class FreshPanelButton : Button
     public bool IsChosen
     {
         get => _chosen;
-        set { _chosen = value; Refresh(); }
+        set
+        {
+            if (_chosen == value)
+                return;
+            _chosen = value;
+            Refresh();
+        }
+    }
+
+    /// <summary>Lit as if hovered (the gamepad's cursor, the game's, is on it).</summary>
+    public bool IsLit
+    {
+        get => _forced;
+        set
+        {
+            if (_forced == value)
+                return;
+            _forced = value;
+            Refresh();
+        }
+    }
+    private bool _forced;
+
+    /// <summary>Centres the icon in the button (an icon-only button, as a filter's tab).</summary>
+    public void CentreIcon()
+    {
+        if (_icon == null)
+            return;
+        _icon.XUnits = _icon.YUnits = Gum.Converters.GeneralUnitType.PixelsFromMiddle;
+        _icon.XOrigin = RenderingLibrary.Graphics.HorizontalAlignment.Center;
+        _icon.YOrigin = RenderingLibrary.Graphics.VerticalAlignment.Center;
+        _icon.X = _icon.Y = 0;
     }
 
     private void Refresh()
     {
         var visual = (ButtonVisual)Visual;
-        bool lit = (_lit || _chosen) && !_disabled;
+        bool lit = (_lit || _chosen || _forced) && !_disabled;
         visual.Background.Color = lit ? FreshStyle.ButtonLit : _disabled ? FreshStyle.Button * 0.6f : FreshStyle.Button;
         _border.Color = lit ? FreshStyle.Gold : Color.Black;
         visual.TextInstance.Color = _disabled ? FreshStyle.Disabled : _textColor;

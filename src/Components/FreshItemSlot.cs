@@ -105,8 +105,8 @@ class FreshItemSlot : FrameworkElement
     /// <summary>Live HUD activation for remote automation; physical input stays in Aether.</summary>
     internal Func<bool, bool>? HudAction { get; set; }
 
-    /// <summary>Updates a live item in one pass, including animated icons and empty equipment silhouettes.</summary>
-    internal void SetItem(Item item, int context, int index, float scale)
+    /// <summary>Updates a live item in one pass, including animated icons and empty equipment silhouettes; <paramref name="light"/> tints the icon (a recipe that can't be made).</summary>
+    internal void SetItem(Item item, int context, int index, float scale, Color? light = null)
     {
         _scale = scale;
         _kind = context switch
@@ -166,9 +166,9 @@ class FreshItemSlot : FrameworkElement
             Main.instance.LoadItem(item.type);
             _item = TextureAssets.Item[item.type].Value;
             _itemSource = Main.itemAnimations[item.type]?.GetFrame(_item) ?? _item.Bounds;
-            Color light = Color.White;
-            ItemSlot.GetItemLight(ref light, item);
-            _iconColor = item.GetAlpha(light);
+            Color tint = light ?? Color.White;
+            ItemSlot.GetItemLight(ref tint, item);
+            _iconColor = item.GetAlpha(tint);
         }
         else if (context == 6)
             _placeholder = TextureAssets.Trash.Value;

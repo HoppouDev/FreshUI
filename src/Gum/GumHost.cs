@@ -256,10 +256,10 @@ public static class GumHost
         }
     }
 
-    // One layer, ending the game's sprite batch and restarting it as it was afterwards.
     /// <summary>The transform the game's sprite batch was begun with.</summary>
     internal static Matrix BatchTransform(SpriteBatch batch) => (Matrix)BatchState[6].GetValue(batch)!;
 
+    // One layer, ending the game's sprite batch and restarting it as it was afterwards.
     internal static void DrawLayer(SpriteBatch batch, Layer layer)
     {
         StepAnimations();

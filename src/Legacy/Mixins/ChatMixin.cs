@@ -6,7 +6,7 @@ namespace FreshUI.Legacy.Mixins;
 
 /// <summary>
 /// The chat input: editing at a cursor with selection, mouse and sent-message history
-/// (<see cref="ChatInput" />), and the command completion popup (<see cref="CommandPopup" />).
+/// (<see cref="ChatInput" />), and the command completion (<see cref="CommandPopup" />, its popup a Gum screen).
 /// </summary>
 [Mixin(typeof(Main))]
 public static class ChatMixin
@@ -30,7 +30,7 @@ public static class ChatMixin
     [Inject("DrawPlayerChat()", At.TAIL)]
     private static void Draw(CallbackInfo callback)
     {
-        CommandPopup.Draw(Main.spriteBatch);
+        CommandPopup.DrawGhost(Main.spriteBatch);
         ChatInput.DrawCursor(Main.spriteBatch);
     }
 

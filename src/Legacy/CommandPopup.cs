@@ -14,25 +14,18 @@ using Terraria.UI.Chat;
 namespace FreshUI.Legacy;
 
 /// <summary>
-/// Shows the Aether API's command completion (<see cref="CommandCompletion" />) for the chat input.
-/// Suggestions for the word at the cursor are listed above the input: Tab completes the selected
-/// one and then cycles through them (Shift+Tab backwards), Up and Down select, and the mouse
-/// selects, completes and scrolls. With the cursor at the end, the rest of the selected suggestion
-/// follows the typed text in grey, and with nothing to suggest the usage of the next arguments or
-/// the parse error is shown instead.
+/// The Aether API's command completion (<see cref="CommandCompletion" />) for the chat input.
+/// Suggestions for the word at the cursor are listed above the input (drawn by Gum,
+/// <see cref="FreshUI.Screens.CommandPopupScreen"/>): Tab completes the selected one and then cycles
+/// through them (Shift+Tab backwards), Up and Down select, and the mouse selects, completes and
+/// scrolls. With the cursor at the end, the rest of the selected suggestion follows the typed text in
+/// grey, and with nothing to suggest the usage of the next arguments or the parse error is shown instead.
 /// </summary>
 public static class CommandPopup
 {
-    private const int MaxRows = 10;
-    private const int RowHeight = 24;
-    private const int TextOffset = 3;
-    private const int Padding = 4;
+    internal const int MaxRows = 10;
 
-    private static readonly Color TextColor = new(170, 170, 170);
-    private static readonly Color ErrorColor = new(255, 85, 85);
-    private static readonly Color SelectedColor = new(255, 255, 85);
     private static readonly Color HintColor = new(128, 128, 128);
-    private static readonly Color Background = new(0, 0, 0, 208);
 
     // The chat text and cursor the state is for, those the last completion produced (its list stays),
     // and those not to complete (a recalled message).
@@ -53,11 +46,76 @@ public static class CommandPopup
     private static int scroll;
     private static bool cycling;
 
-    // The list as last drawn, and the mouse then.
-    private static Rectangle bounds;
-    private static Point lastMouse;
+    /// <summary>Where the list was last laid out, in the chat's UI units (the wheel over it scrolls it, not the chat).</summary>
+    internal static Rectangle Bounds;
+
+    private static readonly List<(string Text, bool Error)> lines = [];
 
     internal static bool Open => shown is { Suggestions.Count: > 0 };
+
+    /// <summary>What the popup shows: the suggestions in view, or the usage or error lines (<c>Error</c> for an error).</summary>
+    internal static IReadOnlyList<(string Text, bool Error)> Lines
+    {
+        get
+        {
+            lines.Clear();
+            if (!Main.drawingPlayerChat)
+                return lines;
+            if (Open)
+            {
+                IReadOnlyList<CommandSuggestion> suggestions = shown!.Suggestions;
+                for (int index = scroll; index < Math.Min(suggestions.Count, scroll + MaxRows); index++)
+                    lines.Add((suggestions[index].Text, false));
+            }
+            else if (shown is { Hints.Count: > 0 })
+            {
+                foreach (CommandHint hint in shown.Hints)
+                    lines.Add((hint.Text, hint.IsError));
+            }
+            return lines;
+        }
+    }
+
+    /// <summary>The selected suggestion's row in view, or -1.</summary>
+    internal static int SelectedRow => Open && selected >= scroll && selected < scroll + MaxRows ? selected - scroll : -1;
+
+    /// <summary>The selected suggestion's description, while it's in view.</summary>
+    internal static string? SelectedTooltip => SelectedRow >= 0 && shown!.Suggestions[selected].Tooltip is { Length: > 0 } tooltip ? tooltip : null;
+
+    /// <summary>Where in the input (UI units from its text's start) the completed word, or the usage, starts.</summary>
+    internal static float AnchorX
+    {
+        get
+        {
+            if (shown == null)
+                return 0;
+            int position = Math.Clamp(Open ? shown.Start : shown.HintStart, 0, shownInput.Length);
+            return ChatInput.Width(FontAssets.MouseText.Value, shownInput[..position]);
+        }
+    }
+
+    /// <summary>The mouse came onto a row in view: it's selected.</summary>
+    internal static void Hover(int row)
+    {
+        if (Open && scroll + row < shown!.Suggestions.Count)
+            selected = scroll + row;
+    }
+
+    /// <summary>A row in view was clicked: it's completed.</summary>
+    internal static void Click(int row)
+    {
+        if (!Open || scroll + row >= shown!.Suggestions.Count)
+            return;
+        selected = scroll + row;
+        Complete();
+    }
+
+    /// <summary>The wheel over the list: up (-1) or down (1) a row.</summary>
+    internal static void ScrollBy(int rows)
+    {
+        if (Open)
+            scroll = Math.Clamp(scroll + rows, 0, Math.Max(0, shown!.Suggestions.Count - MaxRows));
+    }
 
     /// <summary>Completes nothing for this text and cursor (until either changes).</summary>
     internal static void Hide(string text, int caret)
@@ -85,110 +143,29 @@ public static class CommandPopup
             if (cycling)
                 Complete();
         }
-        if (PlayerInput.ScrollWheelDelta != 0 && bounds.Contains(PlayerInput.UIMousePosition.ToPoint()))
-        {
-            scroll = Math.Clamp(scroll - Math.Sign(PlayerInput.ScrollWheelDelta), 0, Math.Max(0, shown!.Suggestions.Count - MaxRows));
+        // The list scrolls itself (Gum); the chat doesn't.
+        if (Bounds.Contains(PlayerInput.UIMousePosition.ToPoint()))
             PlayerInput.ScrollWheelDelta = 0;
-        }
     }
 
-    /// <summary>Draws the suggestions, or the usage or error, above the chat input (in UI coordinates).</summary>
-    public static void Draw(SpriteBatch batch)
+    /// <summary>With the cursor at the end, the rest of the selected suggestion after the typed text, in grey (in UI coordinates, with the input's text).</summary>
+    public static void DrawGhost(SpriteBatch batch)
     {
-        bounds = Rectangle.Empty;
         if (!Main.drawingPlayerChat)
             return;
         Refresh();
-        DynamicSpriteFont font = FontAssets.MouseText.Value;
-        int bottom = Main.screenHeight - 38;
-        if (Open)
-            DrawList(batch, font, bottom);
-        else if (shown is { Hints.Count: > 0 })
-            DrawHints(batch, font, bottom);
-    }
-
-    private static void DrawList(SpriteBatch batch, DynamicSpriteFont font, int bottom)
-    {
-        IReadOnlyList<CommandSuggestion> suggestions = shown!.Suggestions;
-        CommandSuggestion current = suggestions[selected];
+        if (!Open || cycling || inputCaret != Main.chatText.Length)
+            return;
+        CommandSuggestion current = shown!.Suggestions[selected];
         int typedEnd = Math.Min(current.End, shownInput.Length);
         string typed = shownInput[Math.Min(current.Start, typedEnd)..typedEnd];
-        if (!cycling && inputCaret == Main.chatText.Length && current.Text.Length > typed.Length &&
-            current.Text.StartsWith(typed, StringComparison.OrdinalIgnoreCase))
+        if (current.Text.Length > typed.Length && current.Text.StartsWith(typed, StringComparison.OrdinalIgnoreCase))
         {
-            DrawText(batch, font, current.Text[typed.Length..],
-                new Vector2(ChatInput.InputX + ChatInput.Width(font, Main.chatText), Main.screenHeight - 30), HintColor);
-        }
-
-        int rows = Math.Min(suggestions.Count, MaxRows);
-        int width = 0;
-        foreach (CommandSuggestion suggestion in suggestions)
-            width = Math.Max(width, (int)Math.Ceiling(font.MeasureString(suggestion.Text).X));
-        width += Padding * 2;
-        int x = Left(font, shownInput, shown.Start, width);
-        int top = bottom - rows * RowHeight;
-        bounds = new Rectangle(x, top, width, rows * RowHeight);
-        Fill(batch, bounds, Background);
-
-        Point mouse = PlayerInput.UIMousePosition.ToPoint();
-        if (bounds.Contains(mouse))
-        {
-            Main.LocalPlayer.mouseInterface = true;
-            int hovered = scroll + (mouse.Y - top) / RowHeight;
-            if (mouse != lastMouse)
-                selected = hovered;
-            if (Main.mouseLeft && Main.mouseLeftRelease)
-            {
-                Main.mouseLeftRelease = false;
-                selected = hovered;
-                Complete();
-            }
-        }
-        lastMouse = mouse;
-
-        for (int row = 0; row < rows; row++)
-        {
-            int index = scroll + row;
-            DrawText(batch, font, suggestions[index].Text, new Vector2(x + Padding, top + row * RowHeight + TextOffset),
-                index == selected ? SelectedColor : TextColor);
-        }
-        // Dotted edges where the list continues.
-        if (scroll > 0)
-            Dots(batch, x, top - 2, width);
-        if (scroll + rows < suggestions.Count)
-            Dots(batch, x, bounds.Bottom, width);
-
-        if (suggestions[selected].Tooltip is { Length: > 0 } tooltip && selected >= scroll && selected < scroll + rows)
-        {
-            int tooltipWidth = (int)Math.Ceiling(font.MeasureString(tooltip).X) + Padding * 2;
-            int tooltipX = Math.Min(bounds.Right + 2, Math.Max(0, Main.screenWidth - tooltipWidth));
-            var box = new Rectangle(tooltipX, top + (selected - scroll) * RowHeight, tooltipWidth, RowHeight);
-            Fill(batch, box, Background);
-            DrawText(batch, font, tooltip, new Vector2(box.X + Padding, box.Y + TextOffset), Color.White);
+            DynamicSpriteFont font = FontAssets.MouseText.Value;
+            ChatManager.DrawColorCodedStringWithShadow(batch, font, [new TextSnippet(current.Text[typed.Length..], HintColor) { UseRawColor = true }],
+                new Vector2(ChatInput.InputX + ChatInput.Width(font, Main.chatText), Main.screenHeight - 30), 0f, Vector2.Zero, Vector2.One, out _);
         }
     }
-
-    private static void DrawHints(SpriteBatch batch, DynamicSpriteFont font, int bottom)
-    {
-        IReadOnlyList<CommandHint> hints = shown!.Hints;
-        int width = 0;
-        foreach (CommandHint hint in hints)
-            width = Math.Max(width, (int)Math.Ceiling(font.MeasureString(hint.Text).X));
-        width += Padding * 2;
-        int x = Left(font, shownInput, shown.HintStart, width);
-        int top = bottom - hints.Count * RowHeight;
-        Fill(batch, new Rectangle(x, top, width, hints.Count * RowHeight), Background);
-        for (int line = 0; line < hints.Count; line++)
-        {
-            DrawText(batch, font, hints[line].Text, new Vector2(x + Padding, top + line * RowHeight + TextOffset),
-                hints[line].IsError ? ErrorColor : TextColor);
-        }
-    }
-
-    // A box's left edge: under the given place in the input, kept on screen.
-    private static int Left(DynamicSpriteFont font, string text, int position, int width) =>
-        Math.Clamp(ChatInput.InputX + (int)ChatInput.Width(font, text[..Math.Clamp(position, 0, text.Length)]) - Padding, 0,
-            Math.Max(0, Main.screenWidth - width));
 
     // Brings the state up to the chat text and cursor: completes them again unless a completion or a
     // recalled message wrote them.
@@ -255,17 +232,4 @@ public static class CommandPopup
     }
 
     private static bool Pressed(Keys key) => Main.keyState.IsKeyDown(key) && !Main.oldKeyState.IsKeyDown(key);
-
-    private static void DrawText(SpriteBatch batch, DynamicSpriteFont font, string text, Vector2 position, Color color) =>
-        ChatManager.DrawColorCodedStringWithShadow(batch, font, [new TextSnippet(text, color) { UseRawColor = true }],
-            position, 0f, Vector2.Zero, Vector2.One, out _);
-
-    private static void Fill(SpriteBatch batch, Rectangle rectangle, Color color) =>
-        batch.Draw(TextureAssets.MagicPixel.Value, rectangle, color);
-
-    private static void Dots(SpriteBatch batch, int x, int y, int width)
-    {
-        for (int dot = 0; dot < width; dot += 4)
-            Fill(batch, new Rectangle(x + dot, y, 2, 2), TextColor);
-    }
 }

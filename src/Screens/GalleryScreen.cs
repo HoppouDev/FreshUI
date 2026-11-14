@@ -78,6 +78,7 @@ public sealed class GalleryScreen : ContainerRuntime
         Cell(0, 2, "Panel button", PanelButtons);
         Cell(1, 2, "Window", Window);
         Cell(2, 2, "Colour bars", ColorBars);
+        Cell(3, 2, "Game view", GameView);
         _grid.Height = 3 * (CellHeight + Gap) - Gap;
         // Gum's spatial navigation passes over controls inside another candidate, and from the toolbar
         // the page (a scroll area) is one: down goes to the first control instead.
@@ -400,6 +401,26 @@ public sealed class GalleryScreen : ContainerRuntime
                 row.Children.Add(swatch);
             stack.Children.Add(row);
         }
+    }
+
+    private static void GameView(ContainerRuntime stack)
+    {
+        // Chat text with its tags (an item icon, a colour) and coins, drawn by the game, under a Gum label
+        // that overlaps it: Gum's own drawing order holds around the game's.
+        var area = new ContainerRuntime { Width = 136, Height = 40, HasEvents = false };
+        var view = new FreshGameView { Width = 136, Height = 40 };
+        view.Draw = (batch, box) =>
+        {
+            Terraria.UI.Chat.ChatManager.DrawColorCodedStringWithShadow(batch, Terraria.GameContent.FontAssets.MouseText.Value,
+                "[i:29] A [c/FF8040:tagged] line", new Vector2(box.X, box.Y), Color.White, 0f, Vector2.Zero, Vector2.One);
+            Terraria.UI.ItemSlot.DrawMoney(batch, "", box.X - 10, box.Y + 10, [1, 2, 3, 4], horizontal: true);
+        };
+        area.Children.Add(view);
+        var over = Text("Gum over it", 8, FreshStyle.Gold);
+        over.Visual.X = 90;
+        over.Visual.Y = 2;
+        area.Children.Add(over.Visual);
+        stack.Children.Add(area);
     }
 
     private static void ScrollArea(ContainerRuntime stack, bool smooth)

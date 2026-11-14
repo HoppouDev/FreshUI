@@ -37,6 +37,8 @@
 		"FreshUI.Legacy.Mixins.DefenseCounterMixin",
 		"FreshUI.Legacy.Mixins.UIInventoryGridMixin",
 		"FreshUI.Legacy.Mixins.UIGameItemSlotMixin",
+		"FreshUI.Legacy.Mixins.UINpcChatMixin",
+		"FreshUI.Legacy.Mixins.UtilsMixin",
 		"FreshUI.Legacy.Mixins.GameScreensMixin",
 		"FreshUI.Legacy.Mixins.UICraftingIconMixin",
 		"FreshUI.Legacy.Mixins.UICoinAmmoSlotsMixin",

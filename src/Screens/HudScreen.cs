@@ -320,6 +320,8 @@ public sealed partial class HudScreen : ContainerRuntime
             return;
         _current.PresentResourceBars();
         _current.PresentBuffs();
+        _current.PresentMinimapFrame();
+        _current.PresentInfoAccs();
         _current.PresentInventory();
         _current.PresentHotbar();
         _current.PresentEquipment();

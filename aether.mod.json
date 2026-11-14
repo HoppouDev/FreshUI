@@ -44,6 +44,7 @@
 		"FreshUI.Legacy.Mixins.UIAchievementsMenuMixin",
 		"FreshUI.Hooks.Mixins.GameScreensMixin",
 		"FreshUI.Hooks.Mixins.UserInterfaceMixin",
+		"FreshUI.Hooks.Mixins.InstructionBarMixin",
 		"FreshUI.Legacy.Mixins.AchievementAdvisorMixin",
 		"FreshUI.Legacy.Mixins.UIBuffBarMixin",
 		"FreshUI.Legacy.Mixins.BigProgressBarHelperMixin",

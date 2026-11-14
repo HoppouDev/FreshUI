@@ -255,26 +255,6 @@ public sealed partial class HudScreen : ContainerRuntime
         return true;
     }
 
-    /// <summary>Runs after Aether's layout, before its UserInterface.Update performs hit testing.</summary>
-    public static void LayoutSlots(UIGameScreen screen)
-    {
-        if (!IsReady)
-            return;
-        foreach (UIElement element in screen.Children)
-        {
-            if (element is UIGameItemSlot slot && TrySlotPosition(slot.Context, slot.Slot, out Vector2 position))
-            {
-                slot.Place(position, FreshItemSlot.DefaultScale);
-                slot.Width.Set(Cell * 2, 0);
-                slot.Height.Set(Cell * 2, 0);
-                slot.Recalculate();
-            }
-        }
-        if (screen is UIChestSlots)
-            ChestUI.LastChestDisplayRectangle = new Rectangle((int)((GroupOrigin.X + Pitch) * 2),
-                (int)(GroupOrigin.Y * 2), (int)((10 * Pitch - 1) * 2), (int)((4 * Pitch - 1) * 2));
-    }
-
     // At draw time, not in Gum's update: that runs before the game handles the key opening the inventory.
     private void PlaceHotbarLock()
     {
@@ -335,6 +315,8 @@ public sealed partial class HudScreen : ContainerRuntime
         _current.PresentEquipment();
         _current.PresentMiscEquipment();
         _current.PresentHousing();
+        _current.PresentContainers();
+        _current.PresentChestControls();
         _current.PlaceHotbarLock();
         if (!_current._namePresented && _current._heldName.Visible)
             _current._heldName.Visible = false;

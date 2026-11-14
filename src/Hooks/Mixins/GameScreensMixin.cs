@@ -6,7 +6,7 @@ using Microsoft.Xna.Framework.Graphics;
 
 namespace FreshUI.Hooks.Mixins;
 
-/// <summary>Aether's in-game screens that Gum screens replace aren't drawn or updated (<see cref="GumRoutes.GameScreen{T}"/>); the live inventory's slots are laid out on Gum's grid before their hit testing.</summary>
+/// <summary>Aether's in-game screens that Gum screens replace aren't drawn or updated (<see cref="GumRoutes.GameScreen{T}"/>).</summary>
 [Mixin(typeof(GameScreens))]
 public static class GameScreensMixin
 {
@@ -19,6 +19,4 @@ public static class GameScreensMixin
             callback.Cancel();
     }
 
-    [Inject(Draw, At.INVOKE, Target = "Terraria.UI.UserInterface::Update(Microsoft.Xna.Framework.GameTime)")]
-    private static void Layout(UIGameScreen screen, SpriteBatch batch, CallbackInfo callback) => HudScreen.LayoutSlots(screen);
 }

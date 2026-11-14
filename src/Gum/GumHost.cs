@@ -122,7 +122,8 @@ public static class GumHost
         Renderer.UsePremultipliedAlpha = true;
         GumService.Default.Initialize(Main.instance);
         OverlayLayer = SystemManagers.Default.Renderer.AddLayer();
-        OverlayRoot = new ContainerRuntime { Name = "Overlay Root" };
+        // No events of its own: it covers the canvas, and would take the mouse from the HUD's screens under it.
+        OverlayRoot = new ContainerRuntime { Name = "Overlay Root", HasEvents = false };
         OverlayRoot.AddToManagers(SystemManagers.Default, OverlayLayer);
         FreshButton.BackingPath = "Images/UI/ButtonBacking";
         FreshItemSlot.BackgroundPaths[FreshItemSlotKind.Inventory] = "Images/Inventory_Back";

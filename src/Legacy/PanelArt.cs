@@ -57,11 +57,44 @@ public static class PanelArt
     /// <summary>A width from <paramref name="x"/> that ends on a whole UI pixel too, measured from the snapped <paramref name="x"/>.</summary>
     public static float SnapWidth(float x, float width) => Round2(x + width) - Floor2(x);
 
-    /// <summary>An element's area on whole UI pixels: its edges at the nearest even UI units (its top left down).</summary>
+    /// <summary>
+    /// An element's area on whole UI pixels: its edges at even UI units, moved inwards (never outside the
+    /// area, which a list clips to: a row at its edge keeps its border).
+    /// </summary>
     public static CalculatedStyle Snap(CalculatedStyle box)
     {
-        int left = Floor2(box.X), top = Floor2(box.Y);
-        return new CalculatedStyle(left, top, Math.Max(0, Round2(box.X + box.Width) - left), Math.Max(0, Round2(box.Y + box.Height) - top));
+        int left = Ceiling2(box.X), top = Ceiling2(box.Y);
+        return new CalculatedStyle(left, top, Math.Max(0, Floor2(box.X + box.Width) - left), Math.Max(0, Floor2(box.Y + box.Height) - top));
+    }
+
+    private static int Ceiling2(float value) => (int)MathF.Ceiling(value / 2) * 2;
+
+    /// <summary>A flat strip on whole UI pixels (an achievement's title and description boxes): its fill, and a black border a UI pixel wide.</summary>
+    public static void DrawStrip(SpriteBatch batch, Vector2 position, float width, float height, bool lit)
+    {
+        Texture2D pixel = Terraria.GameContent.TextureAssets.MagicPixel.Value;
+        Vector2 at = Snap(position);
+        int w = (int)SnapWidth(position.X, width), h = (int)SnapWidth(position.Y, height);
+        var area = new Rectangle((int)at.X, (int)at.Y, w, h);
+        batch.Draw(pixel, area, Color.Black);
+        area.Inflate(-2, -2);
+        batch.Draw(pixel, area, lit ? StripLit : Strip);
+    }
+
+    private static readonly Color Strip = new(21, 28, 61);
+    private static readonly Color StripLit = new(39, 51, 104);
+
+    /// <summary>
+    /// The scale (UI units per texel) nearest <paramref name="scale"/> at which art drawn by the game at the
+    /// UI's scale has a whole number of screen pixels per texel (at least one), or its half for small art.
+    /// </summary>
+    public static float WholeTexels(float scale)
+    {
+        float perTexel = scale * Main.UIScale;
+        float whole = MathF.Max(0.5f, MathF.Floor(perTexel * 2) / 2);
+        if (whole > 1)
+            whole = MathF.Floor(whole);
+        return whole / Main.UIScale;
     }
 
     /// <summary>A spliced panel the game draws: in FreshUI's style if it's a character-creation panel (true), else left to the game.</summary>

@@ -23,16 +23,18 @@ public sealed partial class HudScreen
         if (!IsReady)
             return;
         Player player = Main.LocalPlayer;
-        if (ChestAsked())
+        // (The route still shows for an update after the chest closes.)
+        (Chest? chest, int context) = player.chest switch
         {
-            (Chest chest, int context) = player.chest switch
-            {
-                -2 => (player.bank, 4),
-                -3 => (player.bank2, 4),
-                -4 => (player.bank3, 4),
-                -5 => (player.bank4, 32),
-                _ => (Main.chest[player.chest], 3),
-            };
+            -2 => (player.bank, 4),
+            -3 => (player.bank2, 4),
+            -4 => (player.bank3, 4),
+            -5 => (player.bank4, 32),
+            >= 0 => (Main.chest[player.chest], 3),
+            _ => (null, 0),
+        };
+        if (chest != null && ChestAsked())
+        {
             Rectangle area = ChestUI.LastChestDisplayRectangle = ContainerArea();
             if (area.Contains(Main.mouseX, Main.mouseY) && !PlayerInput.IgnoreMouseInterface)
                 player.mouseInterface = true;

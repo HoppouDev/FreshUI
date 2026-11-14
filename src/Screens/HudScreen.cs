@@ -317,6 +317,7 @@ public sealed partial class HudScreen : ContainerRuntime
         _current.PresentHousing();
         _current.PresentContainers();
         _current.PresentChestControls();
+        _current.PresentCrafting();
         _current.PlaceHotbarLock();
         if (!_current._namePresented && _current._heldName.Visible)
             _current._heldName.Visible = false;

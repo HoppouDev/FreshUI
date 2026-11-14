@@ -31,7 +31,7 @@ public sealed class SettingsScreen : ContainerRuntime, IGumScreenUpdate
     private const float Gap = 5, Padding = 6, LeftShare = 0.3f;
     private const float TabHeight = 20, ActionHeight = 25, HeadingHeight = 20;
     private const float RowHeight = 16, HeaderHeight = 16, RowGap = 2, Indent = 7;
-    private const float RowText = 9, TabText = 10;
+    private const float RowText = 9, HeaderText = 10.5f, TabText = 10;
 
     /// <summary>Whether this is the in-game window (the title menu's has Language, Map Enabled, and its own Back).</summary>
     public readonly bool InGame;
@@ -206,18 +206,15 @@ public sealed class SettingsScreen : ContainerRuntime, IGumScreenUpdate
     // cycles, a slider, a key. It isn't a button: it lights (a panel with a gold border) only while
     // hovered or while its control has the focus, and a click anywhere on it is its control's.
 
-    /// <summary>A group's name, in muted text, over a separator.</summary>
+    /// <summary>A group's name, in muted text, low in its space (close to the group it names).</summary>
     public void Header(Func<string> text)
     {
         var row = new ContainerRuntime { WidthUnits = DimensionUnitType.RelativeToParent, Width = 0, Height = HeaderHeight };
-        var label = new FreshLabel { Text = text(), FontSize = RowText, Color = FreshStyle.MutedText };
+        var label = new FreshLabel { Text = text(), FontSize = HeaderText, Color = FreshStyle.MutedText };
         label.Visual.X = 2;
         label.Visual.YUnits = GeneralUnitType.PixelsFromLarge;
         label.Visual.YOrigin = VerticalAlignment.Bottom;
-        label.Visual.Y = -2;
         row.Children.Add(label.Visual);
-        var rule = new FreshSeparator { YUnits = GeneralUnitType.PixelsFromLarge, YOrigin = VerticalAlignment.Bottom };
-        row.Children.Add(rule);
         _list.InnerPanel.Children.Add(row);
     }
 

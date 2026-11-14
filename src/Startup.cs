@@ -22,6 +22,7 @@ public sealed class Startup : IModInitializer
         else
         {
             GumScreens.Register("fresh-ui:hud", () => new HudScreen());
+            HudScreen.RegisterRoutes();
             GumScreens.Register("fresh-ui:pause", () => new PauseScreen(), layer: GumLayer.Overlay,
                 showWhen: () => PauseMenu.ShowsPause, defaultFocus: () => PauseScreen.Current?.First, hints: PauseScreen.Hints);
             Settings("fresh-ui:settings", inGame: true, () => PauseMenu.ShowsSettings);

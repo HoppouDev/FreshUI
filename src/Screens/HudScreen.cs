@@ -73,6 +73,73 @@ public sealed class HudScreen : ContainerRuntime
         _current = this;
     }
 
+    // Aether's inventory screens this screen replaces: shown (the game asks for them) while the inventory is open.
+    private static readonly Func<bool> GridAsked = GumRoutes.GameScreen<UIInventoryGrid>();
+    private static readonly Func<bool> CoinsAsked = GumRoutes.GameScreen<UICoinAmmoSlots>();
+    private static readonly Func<bool> TrashAsked = GumRoutes.GameScreen<UITrashSlot>();
+
+    /// <summary>Registers the routes of the game's screens this screen replaces (from the mod initializer).</summary>
+    public static void RegisterRoutes() => _ = GridAsked;
+
+    // The slots' owners (stable keys for their bindings), and the trash's one-item array.
+    private readonly object[] _owners = Enumerable.Range(0, 59).Select(_ => new object()).ToArray();
+    private readonly Item[] _trash = new Item[1];
+
+    // The inventory's slots, from Aether's screens (UIInventoryGrid, UICoinAmmoSlots, UITrashSlot): presented,
+    // and handled by the game's ItemSlot.Handle while the cursor (the mouse, or the gamepad's) is on one.
+    private void PresentInventory()
+    {
+        if (!IsReady)
+            return;
+        Player player = Main.LocalPlayer;
+        if (GridAsked())
+        {
+            for (int i = 0; i < 50; i++)
+                Slot(i, player.inventory, 0, i, chestStack: true);
+            // The grid's gaps keep clicks off the world too.
+            if (TrySlotPosition(0, 10, out Vector2 topLeft) && TrySlotPosition(0, 9, out Vector2 bottomRight) &&
+                new Rectangle((int)topLeft.X, (int)topLeft.Y, (int)(bottomRight.X - topLeft.X) + 44, (int)(bottomRight.Y - topLeft.Y) + 44).Contains(Main.mouseX, Main.mouseY))
+            {
+                player.mouseInterface = true;
+            }
+        }
+        if (CoinsAsked())
+        {
+            for (int i = 50; i < 58; i++)
+                Slot(i, player.inventory, i < 54 ? 1 : 2, i);
+        }
+        if (TrashAsked())
+        {
+            _trash[0] = player.trashItem;
+            Slot(58, _trash, 6, 0);
+            player.trashItem = _trash[0];
+        }
+    }
+
+    // One of the inventory's slots: the game's handling while the cursor's on it, then presented.
+    private void Slot(int owner, Item[] items, int context, int index, bool chestStack = false)
+    {
+        if (!TrySlotPosition(context, context == 6 ? 0 : index, out Vector2 position))
+            return;
+        if (new Rectangle((int)position.X, (int)position.Y, (int)(Cell * 2), (int)(Cell * 2)).Contains(Main.mouseX, Main.mouseY) &&
+            !Terraria.GameInput.PlayerInput.IgnoreMouseInterface)
+        {
+            Main.LocalPlayer.mouseInterface = true;
+            Main.inventoryScale = FreshItemSlot.DefaultScale;
+            bool allow = true;
+            if (chestStack)
+            {
+                // A slot filled from a chest's stack is marked until it's empty again (as Aether's grid).
+                bool[] marked = Main.LocalPlayer.inventoryChestStack;
+                if (marked[index] && items[index].IsAir)
+                    marked[index] = false;
+                allow = !marked[index];
+            }
+            ItemSlot.Handle(items, context, index, allow);
+        }
+        Present(_owners[owner], items, context, index, position);
+    }
+
     private static FreshIconButtonLook LockLook(Texture2D texture) => new(texture,
         new Rectangle(0, 0, 24, texture.Height), texture, new Rectangle(26, 0, 24, texture.Height));
 
@@ -188,6 +255,7 @@ public sealed class HudScreen : ContainerRuntime
     {
         if (_current == null)
             return;
+        _current.PresentInventory();
         _current.PlaceHotbarLock();
         if (!_current._namePresented && _current._heldName.Visible)
             _current._heldName.Visible = false;

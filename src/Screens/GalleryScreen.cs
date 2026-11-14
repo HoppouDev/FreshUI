@@ -371,38 +371,26 @@ public sealed class GalleryScreen : ContainerRuntime
 
     private static void ColorBars(ContainerRuntime stack)
     {
-        // Hue, saturation and lightness, each bar's track the colour along it with the others as they are.
-        float[] hsl = [0.6f, 0.8f, 0.5f];
-        Color Color(int part, float value)
-        {
-            float[] at = (float[])hsl.Clone();
-            at[part] = value;
-            return Main.hslToRgb(at[0], at[1], at[2]);
-        }
-        var swatch = FreshStyle.Backdrop(Color(0, hsl[0]));
+        // A FreshColorPicker on a colour of its own (each bar's track the colour along it), and a swatch of it.
+        Vector3 hsl = new(0.6f, 0.8f, 0.5f);
+        var swatch = FreshStyle.Backdrop(Main.hslToRgb(hsl.X, hsl.Y, hsl.Z));
         swatch.WidthUnits = swatch.HeightUnits = DimensionUnitType.Absolute;
         swatch.Width = 20;
         swatch.Height = 20;
-        var bars = new List<FreshSlider>();
-        for (int i = 0; i < 3; i++)
+        var picker = new FreshColorPicker
         {
-            int part = i;
-            var bar = new FreshSlider { Minimum = 0, Maximum = 1, Value = hsl[part] };
-            bar.Ramp = value => Color(part, value);
-            bar.ValueChanged += (_, _) =>
+            Get = () => hsl,
+            Set = value =>
             {
-                hsl[part] = (float)bar.Value;
-                swatch.FillColor = Color(part, hsl[part]);
-                foreach (FreshSlider other in bars)
-                    other.UpdateRamp();
-            };
-            bars.Add(bar);
-            var row = Row(11);
-            row.Children.Add(bar.Visual);
-            if (i == 0)
-                row.Children.Add(swatch);
-            stack.Children.Add(row);
-        }
+                hsl = value;
+                swatch.FillColor = Main.hslToRgb(value.X, value.Y, value.Z);
+            },
+        };
+        picker.Sync();
+        var row = Row(picker.Height);
+        row.Children.Add(picker);
+        row.Children.Add(swatch);
+        stack.Children.Add(row);
     }
 
     private static void GameView(ContainerRuntime stack)

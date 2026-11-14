@@ -33,6 +33,8 @@ public sealed partial class HudScreen : ContainerRuntime
     private readonly FreshGameView _over;
     private readonly GameIconButtons _icons;
     private readonly CraftingWindow _crafting;
+    private readonly StylistWindow _stylist = new();
+    private readonly DresserWindow _dresser = new();
     private readonly List<(Texture2D Texture, Vector2 Position, Color Color)> _overDraws = [];
 
     public HudScreen()
@@ -68,6 +70,8 @@ public sealed partial class HudScreen : ContainerRuntime
         Children.Add(_icons);
         _crafting = new CraftingWindow();
         Children.Add(_crafting);
+        Children.Add(_stylist);
+        Children.Add(_dresser);
         _over = new FreshGameView();
         _over.Draw = (batch, _) =>
         {
@@ -325,6 +329,8 @@ public sealed partial class HudScreen : ContainerRuntime
         _current._crafting.Present();
         _current.PresentShopInfo();
         _current.PresentNpcChat();
+        _current._stylist.Present();
+        _current._dresser.Present();
         _current.PlaceHotbarLock();
         if (!_current._namePresented && _current._heldName.Visible)
             _current._heldName.Visible = false;

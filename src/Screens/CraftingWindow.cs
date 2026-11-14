@@ -202,7 +202,7 @@ internal sealed class CraftingWindow : ContainerRuntime
         }
         if (Height != -Top - TabsHeight)
             Height = -Top - TabsHeight;
-        Rectangle area = Units(this);
+        Rectangle area = HudPoints.Units(this);
         bool overWindow = area.Contains(Main.mouseX, Main.mouseY) && !PlayerInput.IgnoreMouseInterface;
         if (overWindow)
             Main.LocalPlayer.mouseInterface = true;
@@ -227,41 +227,6 @@ internal sealed class CraftingWindow : ContainerRuntime
         CraftingUI.DrawGridToggle(Main.spriteBatch, 42, 285, 20030);
         if (!Main.InGuideCraftMenu)
             CraftingUI.DrawCraftFromNearbyChestsToggle(Main.spriteBatch, 82, 285, 20031);
-    }
-
-    // The element's area in UI units (two a UI pixel).
-    private static Rectangle Units(GraphicalUiElement element) => new((int)(element.AbsoluteLeft * 2), (int)(element.AbsoluteTop * 2),
-        (int)(element.GetAbsoluteWidth() * 2), (int)(element.GetAbsoluteHeight() * 2));
-
-    private static bool Hovered(GraphicalUiElement element) =>
-        Units(element).Contains(Main.mouseX, Main.mouseY) && !PlayerInput.IgnoreMouseInterface;
-
-    // The gamepad's focus on the element's point (the game's): lit, and A on it is true.
-    private static bool GamepadPoint(GraphicalUiElement element, int point, out bool focused)
-    {
-        float centre = float.NaN;
-        return GamepadPoint(element, point, out focused, ref centre);
-    }
-
-    // A wide element (wideX not NaN) has its point under or over the gamepad's, within it, so the D-pad's
-    // moves by position find it; kept where it was while it's the gamepad's.
-    private static bool GamepadPoint(GraphicalUiElement element, int point, out bool focused, ref float wideX)
-    {
-        Rectangle area = Units(element);
-        Vector2 at = area.Center.ToVector2();
-        if (!float.IsNaN(wideX))
-        {
-            int current = UILinkPointNavigator.CurrentPoint;
-            if (current != point && UILinkPointNavigator.Points.TryGetValue(current, out UILinkPoint? from))
-                wideX = Math.Clamp(from.Position.X / Main.UIScale, area.Left + area.Height / 2f, area.Right - area.Height / 2f);
-            at.X = Math.Clamp(wideX, area.Left, area.Right);
-        }
-        UILinkPointNavigator.SetPosition(point, at);
-        focused = PlayerInput.UsingGamepadUI && UILinkPointNavigator.InUse && UILinkPointNavigator.CurrentPoint == point;
-        if (!focused || !Main.mouseLeft || !Main.mouseLeftRelease)
-            return false;
-        Main.mouseLeftRelease = false;
-        return true;
     }
 
     private void PresentTabs(NewCraftingUI ui)
@@ -300,7 +265,7 @@ internal sealed class CraftingWindow : ContainerRuntime
         {
             FreshPanelButton tab = _tabs[i];
             tab.IsChosen = filterer.IsFilterActive(i);
-            if (GamepadPoint(tab.Visual, 20052 + i, out bool focused))
+            if (HudPoints.Place(tab.Visual, 20052 + i, out bool focused))
                 ToggleFilter(i);
             tab.IsLit = focused;
             if (focused)
@@ -336,11 +301,11 @@ internal sealed class CraftingWindow : ContainerRuntime
         if (_search.TextColor != textColor)
             _search.TextColor = textColor;
         _search.IsChosen = _writing;
-        if (GamepadPoint(_search.Visual, 20050, out bool focused, ref _searchPointX))
+        if (HudPoints.Place(_search.Visual, 20050, out bool focused, ref _searchPointX))
             ToggleSearch();
         _search.IsLit = focused;
         // Right-click clears the search and starts typing, as the game's.
-        if (Hovered(_search.Visual) && Main.mouseRight && Main.mouseRightRelease)
+        if (HudPoints.Hovered(_search.Visual) && Main.mouseRight && Main.mouseRightRelease)
         {
             Main.mouseRightRelease = false;
             SetSearch(ui, "");
@@ -348,7 +313,7 @@ internal sealed class CraftingWindow : ContainerRuntime
                 ToggleSearch();
         }
         // A click elsewhere ends the typing.
-        else if (_writing && (Main.mouseLeft && Main.mouseLeftRelease || Main.mouseRight && Main.mouseRightRelease) && !Hovered(_search.Visual))
+        else if (_writing && (Main.mouseLeft && Main.mouseLeftRelease || Main.mouseRight && Main.mouseRightRelease) && !HudPoints.Hovered(_search.Visual))
         {
             StopSearch();
         }
@@ -384,7 +349,7 @@ internal sealed class CraftingWindow : ContainerRuntime
         PlayerInput.WritingText = true;
         Main.CurrentInputTextTakerOverride = SearchBar(ui);
         Main.instance.HandleIME();
-        Main.instance.SetIMEPanelAnchor(new Vector2(Units(_search.Visual).Left, Units(_search.Visual).Bottom + 32), 0f);
+        Main.instance.SetIMEPanelAnchor(new Vector2(HudPoints.Units(_search.Visual).Left, HudPoints.Units(_search.Visual).Bottom + 32), 0f);
         if (++Main.instance.textBlinkerCount >= 20)
         {
             Main.instance.textBlinkerState = (Main.instance.textBlinkerState + 1) % 2;
@@ -447,7 +412,7 @@ internal sealed class CraftingWindow : ContainerRuntime
             _grid.Visual.Y = gridTop;
             _grid.Visual.Height = -gridTop - Pad;
         }
-        Rectangle view = Units(_grid.Visual);
+        Rectangle view = HudPoints.Units(_grid.Visual);
         int? selected = Selected(ui);
         bool gridFocused = PlayerInput.UsingGamepad && UILinkPointNavigator.CurrentPoint is >= 20100 and < 21000;
         object? hovered = null;
@@ -456,7 +421,7 @@ internal sealed class CraftingWindow : ContainerRuntime
             object entry = _shownEntries[i]!;
             int recipe = EntryIndex(entry);
             FreshItemSlot slot = _gridSlots[i];
-            Rectangle area = Units(slot.Visual);
+            Rectangle area = HudPoints.Units(slot.Visual);
             int point = 20100 + i;
             if (point < 21000)
             {
@@ -507,13 +472,13 @@ internal sealed class CraftingWindow : ContainerRuntime
                 _guide.Visual.Y = guideTop;
                 _guideText.Y = guideTop + MathF.Round((_guide.Size - 9) / 2);
             }
-            if (Hovered(_guide.Visual))
+            if (HudPoints.Hovered(_guide.Visual))
             {
                 Main.LocalPlayer.mouseInterface = true;
                 Main.inventoryScale = CraftScale;
                 ItemSlot.Handle(ref Main.guideItem, 7);
             }
-            GamepadPoint(_guide.Visual, 20020, out _);
+            HudPoints.Place(_guide.Visual, 20020, out _);
             _guideItem[0] = Main.guideItem;
             _guide.SetItem(Main.guideItem, 7, 0, CraftScale);
             string text = Main.guideItem.IsAir ? Lang.inter[24].Value : Lang.inter[21].Value + " " + Main.guideItem.Name;
@@ -531,13 +496,13 @@ internal sealed class CraftingWindow : ContainerRuntime
         {
             int index = EntryIndex(entry);
             Recipe recipe = Main.recipe[index];
-            if (Hovered(_craft.Visual))
+            if (HudPoints.Hovered(_craft.Visual))
             {
                 Main.LocalPlayer.mouseInterface = true;
                 Main.inventoryScale = CraftScale;
                 HandleCraftSlot(ui, entry, 42);
             }
-            GamepadPoint(_craft.Visual, 20000, out _);
+            HudPoints.Place(_craft.Visual, 20000, out _);
             _craft.SetItem(recipe.createItem, 22, 0, CraftScale, _available[index] ? null : Disabled);
             while (count < Recipe.maxRequirements && !recipe.requiredItem[count].IsAir)
                 count++;
@@ -559,13 +524,13 @@ internal sealed class CraftingWindow : ContainerRuntime
                 if (!slot.Visual.Visible)
                     slot.Visual.Visible = true;
                 UILinkPointNavigator.Shortcuts.NewCraftingUI_MaterialIndex = j;
-                if (Hovered(slot.Visual))
+                if (HudPoints.Hovered(slot.Visual))
                 {
                     Main.LocalPlayer.mouseInterface = true;
                     ItemSlot.HoverOverrideClick(item, 43);
                     CraftingUI.SetRecipeMaterialDisplayName(recipe, item);
                 }
-                GamepadPoint(slot.Visual, 20001 + j, out _);
+                HudPoints.Place(slot.Visual, 20001 + j, out _);
                 slot.SetItem(item, 22, 0, scale, enough ? null : Disabled);
                 TextRuntime ownedText = _owned[j];
                 if (ownedText.Visible == guide)

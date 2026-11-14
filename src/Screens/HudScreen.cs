@@ -17,7 +17,7 @@ namespace FreshUI.Screens;
 /// coins on the left, ammo on the right, then the hotbar between its lock and trash. Aether handles
 /// the live slots, with its hit boxes moved to the same grid before it processes mouse input.
 /// </summary>
-public sealed class HudScreen : ContainerRuntime
+public sealed partial class HudScreen : ContainerRuntime
 {
     // The original InventoryScreen dimensions, including the reserved space for a closed container.
     private const float Pitch = 23, Cell = 22, GroupWidth = 275, GroupHeight = 206;
@@ -68,6 +68,7 @@ public sealed class HudScreen : ContainerRuntime
         _over = new FreshGameView();
         _over.Draw = (batch, _) =>
         {
+            DrawEquipmentExtras(batch);
             foreach ((Texture2D texture, Vector2 position, Color color) in _overDraws)
                 batch.Draw(texture, position, color);
             _overDraws.Clear();
@@ -87,7 +88,7 @@ public sealed class HudScreen : ContainerRuntime
     public static void RegisterRoutes() => _ = GridAsked;
 
     // The slots' owners (stable keys for their bindings), and the trash's one-item array.
-    private readonly object[] _owners = Enumerable.Range(0, 70).Select(_ => new object()).ToArray();
+    private readonly object[] _owners = Enumerable.Range(0, 100).Select(_ => new object()).ToArray();
     private readonly Item[] _trash = new Item[1];
 
     // The inventory's slots, from Aether's screens (UIInventoryGrid, UICoinAmmoSlots, UITrashSlot): presented,
@@ -331,6 +332,7 @@ public sealed class HudScreen : ContainerRuntime
             return;
         _current.PresentInventory();
         _current.PresentHotbar();
+        _current.PresentEquipment();
         _current.PlaceHotbarLock();
         if (!_current._namePresented && _current._heldName.Visible)
             _current._heldName.Visible = false;

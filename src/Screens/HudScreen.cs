@@ -29,6 +29,9 @@ public sealed class HudScreen : ContainerRuntime
     private readonly TextRuntime _heldName;
     private bool _namePresented;
     private readonly FreshIconButton _hotbarLock;
+    // Game art drawn over the slots (the equipment slots' corner toggles), this frame's.
+    private readonly FreshGameView _over;
+    private readonly List<(Texture2D Texture, Vector2 Position, Color Color)> _overDraws = [];
 
     public HudScreen()
     {
@@ -58,6 +61,14 @@ public sealed class HudScreen : ContainerRuntime
         };
         _hotbarLock.Click += (_, _) => Main.LocalPlayer.hbLocked = _hotbarLock.IsChecked;
         Children.Add(_hotbarLock.Visual);
+        _over = new FreshGameView();
+        _over.Draw = (batch, _) =>
+        {
+            foreach ((Texture2D texture, Vector2 position, Color color) in _overDraws)
+                batch.Draw(texture, position, color);
+            _overDraws.Clear();
+        };
+        Children.Add(_over);
         FreshTooltip.Attach(_hotbarLock.Visual, () => Main.LocalPlayer.hbLocked ? "Hotbar locked" : "Hotbar unlocked");
         _current = this;
     }
@@ -140,6 +151,7 @@ public sealed class HudScreen : ContainerRuntime
         if (_current == null)
             return;
         _current._namePresented = false;
+        _current._overDraws.Clear();
         foreach ((object owner, SlotBinding slot) in _current._slots)
         {
             if (!slot.View.Visual.Visible)
@@ -170,6 +182,18 @@ public sealed class HudScreen : ContainerRuntime
             if (!slot.Presented && slot.View.Visual.Visible)
                 slot.View.Visual.Visible = false;
         }
+    }
+
+    /// <summary>
+    /// Draws game art over the slots (an equipment slot's corner toggle, which the game draws before
+    /// Gum draws the slots), at its position in UI units; false: Gum isn't ready, the game draws it.
+    /// </summary>
+    public static bool DrawOver(Texture2D texture, Vector2 position, Color color)
+    {
+        if (!IsReady)
+            return false;
+        _current!._overDraws.Add((texture, position, color));
+        return true;
     }
 
     public static bool PresentName(string text, float top, Color color)
@@ -208,7 +232,8 @@ public sealed class HudScreen : ContainerRuntime
         {
             binding = new SlotBinding();
             screen._slots.Add(owner, binding);
-            screen.Children.Add(binding.View.Visual);
+            // Under the game art drawn over the slots.
+            screen.Children.Insert(screen.Children.IndexOf(screen._over), binding.View.Visual);
         }
         FreshItemSlot view = binding.View;
         if (view.Visual.Name == null || binding.Context != context || binding.Index != index)

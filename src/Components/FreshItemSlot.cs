@@ -100,7 +100,7 @@ class FreshItemSlot : FrameworkElement
 
     // What the slot last showed: SetItem runs every frame, and Gum's setters notify (and allocate) even
     // for unchanged values.
-    private (float, FreshItemSlotKind, string?, bool, bool, Texture2D?, Rectangle?, Texture2D?, Rectangle?, Color, Color, int, int?, int)? _shown;
+    private (float, FreshItemSlotKind, string?, (bool, bool), bool, Texture2D?, Rectangle?, Texture2D?, Rectangle?, Color, Color, int, int?, int)? _shown;
 
     /// <summary>Live HUD activation for remote automation; physical input stays in Aether.</summary>
     internal Func<bool, bool>? HudAction { get; set; }
@@ -291,6 +291,20 @@ class FreshItemSlot : FrameworkElement
         set { _isHighlighted = value; Refresh(); }
     }
 
+    /// <summary>Whether the gamepad is on the slot: it shows <see cref="SelectedOverlayPath"/>'s gold outline (Gum's focus), as the selected hotbar slot does.</summary>
+    public bool IsGamepadFocused
+    {
+        get => _isFocused;
+        set
+        {
+            if (_isFocused == value)
+                return;
+            _isFocused = value;
+            Refresh();
+        }
+    }
+    private bool _isFocused;
+
     /// <summary>The item's icon, or null for an empty slot.</summary>
     public Texture2D? Item
     {
@@ -342,7 +356,7 @@ class FreshItemSlot : FrameworkElement
 
     private void Refresh()
     {
-        var state = (_scale, _kind, _backgroundPath, _isHighlighted, _isSelected, _item, _itemSource, _placeholder,
+        var state = (_scale, _kind, _backgroundPath, (_isHighlighted, _isFocused), _isSelected, _item, _itemSource, _placeholder,
             _placeholderSource, _iconColor, _backgroundColor, _count, _hotbarIndex, UiPixels.Scale);
         if (_shown is { } shown && shown.Equals(state))
         {
@@ -356,8 +370,8 @@ class FreshItemSlot : FrameworkElement
 
         _background.Texture = LoadTexture(_backgroundPath ?? BackgroundPaths.GetValueOrDefault(_kind));
         _background.Color = _backgroundColor;
-        _highlightOverlay.Texture = _isHighlighted
-            ? LoadTexture(_isSelected ? SelectedOverlayPath ?? HighlightOverlayPath : HighlightOverlayPath) : null;
+        _highlightOverlay.Texture = _isFocused ? LoadTexture(SelectedOverlayPath ?? HighlightOverlayPath)
+            : _isHighlighted ? LoadTexture(_isSelected ? SelectedOverlayPath ?? HighlightOverlayPath : HighlightOverlayPath) : null;
         _highlightOverlay.Visible = _highlightOverlay.Texture != null;
 
         RefreshIcon(size);

@@ -142,6 +142,20 @@ public sealed class HudScreen : ContainerRuntime
         button.IsChecked = Main.LocalPlayer.hbLocked;
         button.Visual.X = GroupOrigin.X + MathF.Round((Cell - button.Visual.Width) / 2);
         button.Visual.Y = GroupOrigin.Y + HotbarTop + MathF.Round((Cell - button.Visual.Height) / 2);
+        // On the game's gamepad navigation (a page of its own): lit while it's there, A toggles it.
+        bool focused = false;
+        if (Main.playerInventory)
+        {
+            FreshUI.Legacy.InventoryNavigation.PlaceHotbarLock(new Vector2(button.Visual.X + button.Visual.Width / 2, button.Visual.Y + button.Visual.Height / 2) * 2);
+            focused = FreshUI.Legacy.InventoryNavigation.OnHotbarLock;
+            if (focused && Main.mouseLeft && Main.mouseLeftRelease)
+            {
+                Main.mouseLeftRelease = false;
+                Main.LocalPlayer.hbLocked = !Main.LocalPlayer.hbLocked;
+                Terraria.Audio.SoundEngine.PlaySound(Terraria.ID.SoundID.Unlock);
+            }
+        }
+        button.IsLit = focused;
     }
 
     /// <summary>Drops the slots the last frame didn't present, and starts collecting this frame's.</summary>
@@ -261,6 +275,8 @@ public sealed class HudScreen : ContainerRuntime
         int point = ItemSlot.GetGamepadPointForSlot(items, context, index);
         if (point != -1)
             UILinkPointNavigator.SetPosition(point, position + new Vector2(52 * scale * 0.75f));
+        // The gamepad's slot shows it, as ItemSlot.Draw does.
+        view.IsGamepadFocused = point != -1 && Terraria.GameInput.PlayerInput.UsingGamepadUI && UILinkPointNavigator.InUse && UILinkPointNavigator.CurrentPoint == point;
         return true;
     }
 

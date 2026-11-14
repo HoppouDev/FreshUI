@@ -192,6 +192,20 @@ class FreshIconButton : FrameworkElement, IInputReceiver
         Visible = false,
     };
 
+    /// <summary>Lit as if hovered (the game's gamepad navigation is on it), without taking Gum's focus.</summary>
+    public bool IsLit
+    {
+        get => _isLit;
+        set
+        {
+            if (_isLit == value)
+                return;
+            _isLit = value;
+            Refresh();
+        }
+    }
+    private bool _isLit;
+
     private void Refresh()
     {
         FreshIconButtonLook? look = _isChecked && _checkedLook != null ? _checkedLook : _look;
@@ -207,7 +221,7 @@ class FreshIconButton : FrameworkElement, IInputReceiver
         float height = icon.Height * _texelSize;
         Visual.Width = width;
         Visual.Height = height;
-        bool lit = _isHovered || IsFocused;
+        bool lit = _isHovered || IsFocused || _isLit;
         _icon.Color = !IsEnabled ? _disabledColor
             : _isPushed && _isHovered ? _pushedColor
             : lit ? _hoverColor

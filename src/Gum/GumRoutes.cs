@@ -34,9 +34,26 @@ public static class GumRoutes
     /// <summary>Ties a registered screen to its game screen route, so it shows in the very frame the game first asks.</summary>
     public static void Bind<T>(GumScreen screen) where T : UIGameScreen => GameScreenTypes[typeof(T)] = (GameScreenTypes.GetValueOrDefault(typeof(T)).Asked, screen);
 
+    private static readonly List<(Func<UIGameScreen, bool> Match, Action<UIGameScreen> Asked)> GameScreenKinds = [];
+
+    /// <summary>
+    /// Gum in place of every Aether in-game screen that <paramref name="match"/> accepts (screens of a kind,
+    /// some made as the game goes): each time the game asks for one, <paramref name="asked"/> gets it instead
+    /// of the game drawing it.
+    /// </summary>
+    public static void GameScreens(Func<UIGameScreen, bool> match, Action<UIGameScreen> asked) => GameScreenKinds.Add((match, asked));
+
     /// <summary><c>GameScreens.Draw</c>: whether the screen is Gum's (the game's isn't drawn), noting that the game asked for it.</summary>
     public static bool AskGameScreen(UIGameScreen screen)
     {
+        foreach ((Func<UIGameScreen, bool> match, Action<UIGameScreen> asked) in GameScreenKinds)
+        {
+            if (match(screen))
+            {
+                asked(screen);
+                return true;
+            }
+        }
         if (!GameScreenTypes.TryGetValue(screen.GetType(), out var route))
             return false;
         GameScreenTypes[screen.GetType()] = (Main.GameUpdateCount, route.Screen);

@@ -46,7 +46,7 @@ public static class InventoryLabelMixin
                 new Vector2(Main.screenWidth - 10 - 76 * scale, Main.screenHeight - 20 - 76 * scale), large);
             return;
         }
-        float columnsCentre = SideButtons.ColumnX + (SideButtons.Pitch + 32f) / 2f;
+        float columnsCentre = FreshUI.Screens.SideButtons.ColumnX + (FreshUI.Screens.SideButtons.Pitch + 32f) / 2f;
         float ui = Main.UIScale;
         float left = MathF.Round((columnsCentre - 36f * scale) * ui) / ui;
         advisor.DrawOneAchievement(spriteBatch, new Vector2(left - 4f * scale, 20f - 4f * scale), large);

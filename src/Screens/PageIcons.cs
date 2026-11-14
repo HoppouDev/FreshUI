@@ -1,8 +1,9 @@
+using FreshUI.Legacy;
 using Aether.UI.Game;
 using Microsoft.Xna.Framework;
 using Terraria;
 
-namespace FreshUI.Legacy;
+namespace FreshUI.Screens;
 
 /// <summary>Centres an equipment page icon (camera, housing, equipment) over its column of the page.</summary>
 public static class PageIcons

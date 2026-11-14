@@ -31,6 +31,7 @@ public sealed class HudScreen : ContainerRuntime
     private readonly FreshIconButton _hotbarLock;
     // Game art drawn over the slots (the equipment slots' corner toggles), this frame's.
     private readonly FreshGameView _over;
+    private readonly GameIconButtons _icons;
     private readonly List<(Texture2D Texture, Vector2 Position, Color Color)> _overDraws = [];
 
     public HudScreen()
@@ -61,6 +62,9 @@ public sealed class HudScreen : ContainerRuntime
         };
         _hotbarLock.Click += (_, _) => Main.LocalPlayer.hbLocked = _hotbarLock.IsChecked;
         Children.Add(_hotbarLock.Visual);
+        // Aether's icon buttons (side buttons, builder toggles, page icons…), under the slots' corner toggles.
+        _icons = new GameIconButtons();
+        Children.Add(_icons);
         _over = new FreshGameView();
         _over.Draw = (batch, _) =>
         {
@@ -302,6 +306,7 @@ public sealed class HudScreen : ContainerRuntime
             return;
         _current._namePresented = false;
         _current._overDraws.Clear();
+        _current._icons.Clear();
         foreach ((object owner, SlotBinding slot) in _current._slots)
         {
             if (!slot.View.Visual.Visible)

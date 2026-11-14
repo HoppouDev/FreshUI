@@ -1,11 +1,11 @@
+using FreshUI.Legacy;
 using Aether.UI.Game;
 using FreshUI.Legacy.Mixins;
 using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.GameContent;
-using FreshUI.Screens;
 
-namespace FreshUI.Legacy;
+namespace FreshUI.Screens;
 
 /// <summary>
 /// Utility icons in slot-sized columns flanking the inventory. Before Gum is ready, the legacy
@@ -73,12 +73,6 @@ public static class SideButtons
             return rectangle;
         };
     }
-
-    /// <summary>
-    /// Puts the hotbar lock in the grid's first free cell, under the bestiary button (it's drawn at 0.9
-    /// from its top left).
-    /// </summary>
-    public static void PlaceHotbarLock(UIIconButton button) => Place(button, () => 0, _ => ScaledFrame(TextureAssets.HbLock[0].Value.Frame(2)));
 
     /// <summary>
     /// Puts the builder toggles' buttons in the grid after the hotbar lock, packed in order, skipping the

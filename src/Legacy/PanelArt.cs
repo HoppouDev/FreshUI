@@ -23,6 +23,40 @@ public static class PanelArt
     private static int Floor2(float value) => (int)MathF.Floor(value / 2) * 2;
     private static int Round2(float value) => (int)MathF.Round(value / 2) * 2;
 
+    /// <summary>A menu's title tab (the text panel saying <paramref name="key"/>'s text) at the settings window's title size.</summary>
+    public static void TitleSize(UIElement menu, string key)
+    {
+        foreach (UIElement child in menu.Children)
+        {
+            if (child is Terraria.GameContent.UI.Elements.UITextPanel<Terraria.Localization.LocalizedText> title && title.Text == Terraria.Localization.Language.GetTextValue(key))
+            {
+                title.TextScale = TitleScale;
+                title.SetText(Terraria.Localization.Language.GetText(key));
+                return;
+            }
+            TitleSize(child, key);
+        }
+    }
+
+    /// <summary>The large font's scale for a window's title (the settings window's, Gum's FontSize 16).</summary>
+    public const float TitleScale = 0.8f;
+
+    /// <summary>A position on whole UI pixels (even UI units, rounded down).</summary>
+    public static Vector2 Snap(Vector2 position) => new(Floor2(position.X), Floor2(position.Y));
+
+    /// <summary>A list row's panel in the settings window's rows' colours: <see cref="FreshStyle.ButtonLit"/> with a gold border while lit (hovered), else <see cref="FreshStyle.Button"/> with a black one.</summary>
+    public static void LightRow(Terraria.GameContent.UI.Elements.UIPanel row, bool lit)
+    {
+        row.BackgroundColor = lit ? FreshStyle.ButtonLit : FreshStyle.Button;
+        row.BorderColor = lit ? FreshStyle.Gold : Color.Black;
+    }
+
+    /// <summary>A sprite's draw position such that its top left (<paramref name="position"/> less its scaled <paramref name="origin"/>) is on a whole UI pixel.</summary>
+    public static Vector2 SnapCorner(Vector2 position, Vector2 origin) => Snap(position - origin) + origin;
+
+    /// <summary>A width from <paramref name="x"/> that ends on a whole UI pixel too, measured from the snapped <paramref name="x"/>.</summary>
+    public static float SnapWidth(float x, float width) => Round2(x + width) - Floor2(x);
+
     /// <summary>An element's area on whole UI pixels: its edges at the nearest even UI units (its top left down).</summary>
     public static CalculatedStyle Snap(CalculatedStyle box)
     {

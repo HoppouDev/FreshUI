@@ -30,7 +30,7 @@ public sealed class SettingsScreen : ContainerRuntime, IGumScreenUpdate
     private const float WindowWidth = 480, GameHeight = 320, GameMargin = 24, MenuTop = 109, MenuMargin = 22;
     private const float Gap = 5, Padding = 6, LeftShare = 0.3f;
     private const float TabHeight = 20, ActionHeight = 25, HeadingHeight = 20;
-    private const float RowHeight = 16, HeaderHeight = 14, RowGap = 2, Indent = 7;
+    private const float RowHeight = 16, HeaderHeight = 16, RowGap = 2, Indent = 7;
     private const float RowText = 9, TabText = 10;
 
     /// <summary>Whether this is the in-game window (the title menu's has Language, Map Enabled, and its own Back).</summary>
@@ -202,8 +202,11 @@ public sealed class SettingsScreen : ContainerRuntime, IGumScreenUpdate
     }
 
     // --- rows, for SettingsTabs ----------------------------------------------------------------
+    // A row is the setting's name at the left and its control at the right: a switch, a value that
+    // cycles, a slider, a key. It isn't a button: it lights (a panel with a gold border) only while
+    // hovered or while its control has the focus, and a click anywhere on it is its control's.
 
-    /// <summary>A group's name, in muted text, low in its space (close to the group it names).</summary>
+    /// <summary>A group's name, in muted text, over a separator.</summary>
     public void Header(Func<string> text)
     {
         var row = new ContainerRuntime { WidthUnits = DimensionUnitType.RelativeToParent, Width = 0, Height = HeaderHeight };
@@ -211,37 +214,99 @@ public sealed class SettingsScreen : ContainerRuntime, IGumScreenUpdate
         label.Visual.X = 2;
         label.Visual.YUnits = GeneralUnitType.PixelsFromLarge;
         label.Visual.YOrigin = VerticalAlignment.Bottom;
+        label.Visual.Y = -2;
         row.Children.Add(label.Visual);
+        var rule = new FreshSeparator { YUnits = GeneralUnitType.PixelsFromLarge, YOrigin = VerticalAlignment.Bottom };
+        row.Children.Add(rule);
         _list.InnerPanel.Children.Add(row);
     }
 
-    /// <summary>A setting changed in place by clicking it (with the menus' tick), its text its state.</summary>
-    public void Toggle(Func<string> text, Action change) => Button(text, () =>
+    /// <summary>An on/off setting: its name and a switch (its state <paramref name="isOn"/>; <paramref name="toggle"/> flips it).</summary>
+    public void Switch(string label, Func<bool> isOn, Action toggle)
     {
-        SoundEngine.PlaySound(SoundID.MenuTick);
-        change();
-    });
-
-    /// <summary>A row that does something else (opens another screen), making its own sound.</summary>
-    public void Button(Func<string> text, Action onClick)
-    {
-        FreshPanelButton row = Button(text(), RowText, onClick);
-        row.AlignTextLeft(Indent);
-        row.Visual.Width = 0;
-        row.Visual.Height = RowHeight;
-        row.GotFocus += (_, _) => ScrollIntoView(row.Visual);
-        // Left from an option goes to the open tab (as from the right panel to the left).
-        row.SpatialNavigationLeft = _tabs.Find(t => t.Tab == _builtTab).Button;
+        ContainerRuntime row = Row(() => label, out _);
+        var control = new FreshToggleSwitch { IsChecked = isOn() };
+        bool syncing = false;
+        void Flipped()
+        {
+            if (syncing)
+                return;
+            SoundEngine.PlaySound(SoundID.MenuTick);
+            toggle();
+        }
+        control.Checked += (_, _) => Flipped();
+        control.Unchecked += (_, _) => Flipped();
+        row.Click += (_, _) => control.IsChecked = !control.IsChecked;
         _refresh.Add(() =>
         {
-            string now = text();
-            if (row.Text != now)
-                row.Text = now;
+            bool on = isOn();
+            if (control.IsChecked != on)
+            {
+                syncing = true;
+                control.IsChecked = on;
+                syncing = false;
+            }
         });
-        _list.InnerPanel.Children.Add(row.Visual);
+        Place(row, control);
     }
 
-    /// <summary>A slider from 0 to 1: its label on the left, its bar on the right; the row lit while hovered or the bar has the focus.</summary>
+    /// <summary>
+    /// A setting with several values, from the game's text for it ("Name: Value"): its name, and its value
+    /// at the right, which a click cycles (with the menus' tick).
+    /// </summary>
+    public void Toggle(Func<string> text, Action change)
+    {
+        string? last = null;
+        string name = "", value = "";
+        // The game's text, split once per change of it (not every update).
+        void Split()
+        {
+            string now = text();
+            if (now == last)
+                return;
+            last = now;
+            int colon = now.LastIndexOf(": ", StringComparison.Ordinal);
+            (name, value) = colon > 0 ? (now[..colon], now[(colon + 2)..]) : (now, "");
+        }
+        Split();
+        Cycle(() => { Split(); return name; }, () => { Split(); return value; }, change);
+    }
+
+    /// <summary>A setting with several values: its name, and its value at the right, which a click cycles (with the menus' tick).</summary>
+    public void Cycle(Func<string> label, Func<string> value, Action next) => Value(label, value, () =>
+    {
+        SoundEngine.PlaySound(SoundID.MenuTick);
+        next();
+    });
+
+    /// <summary>A row that does something else (opens another screen, applies an action), making its own sound: its name and a chevron.</summary>
+    public void Button(Func<string> text, Action onClick) => Value(text, () => ">", onClick);
+
+    /// <summary>
+    /// A row with a value at the right that acts when clicked (<see cref="FreshValueButton"/>): <paramref name="lit"/>
+    /// keeps it lit (a key waiting to be rebound), <paramref name="color"/> gives its colour at rest.
+    /// </summary>
+    internal FreshValueButton Value(Func<string> label, Func<string> value, Action onClick, Func<bool>? lit = null, Func<Color>? color = null)
+    {
+        ContainerRuntime row = Row(label, out _);
+        var control = new FreshValueButton { Text = value() };
+        control.Click += (_, _) => onClick();
+        row.Click += (_, _) => onClick();
+        _refresh.Add(() =>
+        {
+            string now = value();
+            if (control.Text != now)
+                control.Text = now;
+            if (lit != null)
+                control.IsLit = lit();
+            if (color != null)
+                control.Color = color();
+        });
+        Place(row, control);
+        return control;
+    }
+
+    /// <summary>A slider from 0 to 1: its label on the left, its bar on the right.</summary>
     public void Slider(Func<string> label, Func<float> getValue, Action<float> setValue) => SliderRow(label, getValue, setValue, null);
 
     /// <summary>One of a colour's bars (hue, saturation…): a slider from 0 to 1, without a label, its track the colour at each value.</summary>
@@ -249,26 +314,8 @@ public sealed class SettingsScreen : ContainerRuntime, IGumScreenUpdate
 
     private void SliderRow(Func<string>? label, Func<float> getValue, Action<float> setValue, Func<float, Color>? ramp)
     {
-        var row = new FreshPanel { WidthUnits = DimensionUnitType.RelativeToParent, Width = 0, Height = RowHeight, BackgroundColor = FreshStyle.Button };
-        FreshLabel? text = null;
-        if (label != null)
-        {
-            text = new FreshLabel { Text = label(), FontSize = RowText, OutlineWidth = 0.75f };
-            text.Visual.X = Indent;
-            text.Visual.YUnits = GeneralUnitType.PixelsFromMiddle;
-            text.Visual.YOrigin = VerticalAlignment.Center;
-            row.Children.Add(text.Visual);
-        }
+        ContainerRuntime row = Row(label, out _);
         var slider = new FreshSlider { Minimum = 0, Maximum = 1 };
-        GraphicalUiElement bar = slider.Visual;
-        bar.XUnits = label != null ? GeneralUnitType.PixelsFromLarge : GeneralUnitType.PixelsFromMiddle;
-        bar.XOrigin = label != null ? HorizontalAlignment.Right : HorizontalAlignment.Center;
-        bar.X = label != null ? -5 : 0;
-        bar.YUnits = GeneralUnitType.PixelsFromMiddle;
-        bar.YOrigin = VerticalAlignment.Center;
-        // A whole pixel from the row's top: the bar is 9 pixels tall, the row 16.
-        bar.Y = -0.5f;
-        row.Children.Add(bar);
         if (ramp != null)
         {
             slider.Ramp = ramp;
@@ -281,11 +328,6 @@ public sealed class SettingsScreen : ContainerRuntime, IGumScreenUpdate
             if (!syncing)
                 setValue((float)slider.Value);
         };
-        slider.GotFocus += (_, _) =>
-        {
-            _lastFocused = slider;
-            ScrollIntoView(row);
-        };
         _refresh.Add(() =>
         {
             float value = getValue();
@@ -295,15 +337,69 @@ public sealed class SettingsScreen : ContainerRuntime, IGumScreenUpdate
                 slider.Value = value;
                 syncing = false;
             }
-            if (text != null)
+        });
+        Place(row, slider, centred: label == null);
+        // A whole pixel from the row's top: the bar is 9 pixels tall, the row 16.
+        slider.Visual.Y = -0.5f;
+    }
+
+    // A row: its light (shown while it's hovered or its control is focused) and its name.
+    private ContainerRuntime Row(Func<string>? label, out FreshPanel light)
+    {
+        var row = new ContainerRuntime { WidthUnits = DimensionUnitType.RelativeToParent, Width = 0, Height = RowHeight, HasEvents = true };
+        light = new FreshPanel
+        {
+            WidthUnits = DimensionUnitType.RelativeToParent,
+            HeightUnits = DimensionUnitType.RelativeToParent,
+            Width = 0,
+            Height = 0,
+            BackgroundColor = FreshStyle.ButtonLit * 0.6f,
+            BorderColor = FreshStyle.Gold,
+            Visible = false,
+        };
+        row.Children.Add(light);
+        if (label != null)
+        {
+            var text = new FreshLabel { Text = label(), FontSize = RowText, OutlineWidth = 0.75f };
+            text.Visual.X = Indent;
+            text.Visual.YUnits = GeneralUnitType.PixelsFromMiddle;
+            text.Visual.YOrigin = VerticalAlignment.Center;
+            row.Children.Add(text.Visual);
+            _refresh.Add(() =>
             {
-                string now = label!();
+                string now = label();
                 if (text.Text != now)
                     text.Text = now;
-            }
-            bool lit = slider.IsFocused || row.HasCursorOver(FrameworkElement.MainCursor, GumHost.OverlayLayer);
-            row.BackgroundColor = lit ? FreshStyle.ButtonLit : FreshStyle.Button;
-            row.BorderColor = lit ? FreshStyle.Gold : Color.Black;
+            });
+        }
+        return row;
+    }
+
+    // Puts a row's control at its right (or centred), lights the row with it, and adds the row.
+    private void Place(ContainerRuntime row, FrameworkElement control, bool centred = false)
+    {
+        GraphicalUiElement visual = control.Visual;
+        visual.XUnits = centred ? GeneralUnitType.PixelsFromMiddle : GeneralUnitType.PixelsFromLarge;
+        visual.XOrigin = centred ? HorizontalAlignment.Center : HorizontalAlignment.Right;
+        visual.X = centred ? 0 : -Indent;
+        visual.YUnits = GeneralUnitType.PixelsFromMiddle;
+        visual.YOrigin = VerticalAlignment.Center;
+        visual.Y = 0;
+        row.Children.Add(visual);
+        var light = (FreshPanel)row.Children[0];
+        control.GotFocus += (_, _) =>
+        {
+            _lastFocused = control;
+            ScrollIntoView(row);
+        };
+        // Left from an option goes to the open tab (as from the right panel to the left); a slider's left steps it.
+        if (control is not Gum.Forms.Controls.Slider)
+            control.SpatialNavigationLeft = _tabs.Find(t => t.Tab == _builtTab).Button;
+        _refresh.Add(() =>
+        {
+            bool lit = control.IsFocused || row.HasCursorOver(FrameworkElement.MainCursor, GumHost.OverlayLayer);
+            if (light.Visible != lit)
+                light.Visible = lit;
         });
         _list.InnerPanel.Children.Add(row);
     }

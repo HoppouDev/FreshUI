@@ -1,5 +1,6 @@
 using Aether.Graphics.Terrain;
 using Aether.UI;
+using FreshUI.Components;
 using FreshUI.Legacy;
 using Microsoft.Xna.Framework;
 using Terraria;
@@ -61,7 +62,7 @@ public static class SettingsTabs
         SettingsTab.Interface => Lang.menu[210].Value,
         SettingsTab.Volume => Lang.menu[65].Value,
         SettingsTab.Cursor => Lang.menu[218].Value,
-        _ => Lang.menu[219].Value
+        _ => Lang.menu[222].Value
     };
 
     /// <summary>The tab a title-menu settings page's <c>menuMode</c> becomes (code elsewhere still opens them by mode).</summary>
@@ -127,12 +128,37 @@ public static class SettingsTabs
 
     private static string OnOff(string key, bool enabled) => CachedText.Format(key, Language.GetTextValue(enabled ? "GameUI.Enabled" : "GameUI.Disabled"));
 
+    // FreshUI's own name for a setting the game names only by its action ("Go Windowed").
+    private const string FullscreenName = "Fullscreen";
+
+    /// <summary>
+    /// An on/off setting's name from the game's texts for its two states ("Autopause On", "Autopause Off"):
+    /// what they share, up to a word's end, without a trailing colon.
+    /// </summary>
+    internal static string Pair(string on, string off)
+    {
+        int shared = 0;
+        while (shared < on.Length && shared < off.Length && on[shared] == off[shared])
+            shared++;
+        // Back to a word's end ("Autosave O" from "On"/"Off" is "Autosave").
+        if (shared < on.Length && shared < off.Length)
+        {
+            while (shared > 0 && on[shared - 1] != ' ')
+                shared--;
+        }
+        string name = on[..shared].TrimEnd(' ', ':');
+        return name.Length > 0 ? name : on;
+    }
+
+    /// <summary>An on/off setting's name from the game's "Name: {0}" text for it.</summary>
+    internal static string FormatName(string key) => Language.GetTextValue(key, "").TrimEnd(' ', ':');
+
     private static string AetherOnOff(string key, bool enabled) => CachedText.Format(key, Language.GetTextValue(enabled ? "AetherGraphics.On" : "AetherGraphics.Off"));
 
     private static void General(SettingsScreen w)
     {
         w.Header(() => Language.GetTextValue("GameUI.Gameplay"));
-        w.Toggle(() => Language.GetTextValue(Main.SettingsEnabled_AutoReuseAllItems ? "UI.AutoReuseAllOn" : "UI.AutoReuseAllOff"), () => Main.SettingsEnabled_AutoReuseAllItems = !Main.SettingsEnabled_AutoReuseAllItems);
+        w.Switch(Pair(Language.GetTextValue("UI.AutoReuseAllOn"), Language.GetTextValue("UI.AutoReuseAllOff")), () => Main.SettingsEnabled_AutoReuseAllItems, () => Main.SettingsEnabled_AutoReuseAllItems = !Main.SettingsEnabled_AutoReuseAllItems);
         w.Toggle(() => DoorOpeningHelper.PreferenceSettings switch
         {
             DoorOpeningHelper.DoorAutoOpeningPreference.EnabledForEverything => Language.GetTextValue("UI.SmartDoorsEnabled"),
@@ -141,26 +167,27 @@ public static class SettingsTabs
         }, DoorOpeningHelper.CyclePreferences);
         w.Toggle(() => Language.GetTextValue(Player.Settings.HoverControl == ButtonControlMode.Hold ? "UI.HoverControlSettingIsHold" : "UI.HoverControlSettingIsClick"), Player.Settings.CycleHoverControl);
         w.Header(() => "Pausing and Saving");
-        w.Toggle(() => Lang.menu[Main.autoPause ? 69 : 70].Value, () => Main.autoPause = !Main.autoPause);
-        w.Toggle(() => Language.GetTextValue(Main.SettingPlayWhenUnfocused ? "UI.PlayWhenUnfocusedOn" : "UI.PlayWhenUnfocusedOff"), () => Main.SettingPlayWhenUnfocused = !Main.SettingPlayWhenUnfocused);
-        w.Toggle(() => Lang.menu[Main.autoSave ? 67 : 68].Value, () => Main.autoSave = !Main.autoSave);
+        w.Switch(Pair(Lang.menu[69].Value, Lang.menu[70].Value), () => Main.autoPause, () => Main.autoPause = !Main.autoPause);
+        w.Switch(Pair(Language.GetTextValue("UI.PlayWhenUnfocusedOn"), Language.GetTextValue("UI.PlayWhenUnfocusedOff")), () => !Main.SettingPlayWhenUnfocused, () => Main.SettingPlayWhenUnfocused = !Main.SettingPlayWhenUnfocused);
+        w.Switch(Pair(Lang.menu[67].Value, Lang.menu[68].Value), () => Main.autoSave, () => Main.autoSave = !Main.autoSave);
         // The world map is loaded with the world, so it's only switched on the title menu, as in vanilla.
         if (!w.InGame)
         {
-            w.Toggle(() => Lang.menu[Main.mapEnabled ? 112 : 113].Value, () => Main.mapEnabled = !Main.mapEnabled);
+            w.Switch(Pair(Lang.menu[112].Value, Lang.menu[113].Value), () => Main.mapEnabled, () => Main.mapEnabled = !Main.mapEnabled);
         }
         w.Header(() => "Multiplayer");
         w.Toggle(() => Lang.menu[Main.HidePassword ? 212 : 211].Value, () => Main.HidePassword = !Main.HidePassword);
+
     }
 
     private static void Display(SettingsScreen w)
     {
         w.Header(() => "Window");
         // Resizing the window mid-draw isn't safe, so these wait for the next update.
-        w.Toggle(() => Lang.menu[Main.graphics.IsFullScreen ? 49 : 50].Value, () => Main.QueueMainThreadAction(Main.ToggleFullScreen));
+        w.Switch(FullscreenName, () => Main.graphics.IsFullScreen, () => Main.QueueMainThreadAction(Main.ToggleFullScreen));
         w.Toggle(() => CachedText.Concat(Lang.menu[51].Value, ": ", CachedText.Number(Main.PendingResolutionWidth), "x", CachedText.Number(Main.PendingResolutionHeight)), NextResolution);
         w.Header(() => "Frame Rate");
-        w.Toggle(() => AetherOnOff(AetherGraphics.UncappedFps.Key, AetherGraphics.UncappedFps.Get()), AetherGraphics.ToggleUncapped);
+        w.Switch(FormatName(AetherGraphics.UncappedFps.Key), () => AetherGraphics.UncappedFps.Get(), AetherGraphics.ToggleUncapped);
         Flag(w, AetherGraphics.SmoothEntityMovement);
         w.Header(() => "Scale");
         w.Toggle(GuiScale.LabelText, GuiScale.Cycle);
@@ -203,28 +230,28 @@ public static class SettingsTabs
         Flag(w, AetherGraphics.ComputeTerrain);
         Flag(w, AetherGraphics.FastTerrain);
         w.Header(() => "Background");
-        w.Toggle(() => Lang.menu[Main.BackgroundEnabled ? 100 : 101].Value, () => Main.BackgroundEnabled = !Main.BackgroundEnabled);
+        w.Switch(Pair(Lang.menu[100].Value, Lang.menu[101].Value), () => Main.BackgroundEnabled, () => Main.BackgroundEnabled = !Main.BackgroundEnabled);
         w.Slider(() => CachedText.Concat(Lang.menu[52].Value, ": ", CachedText.Number(Main.bgScroll), "%"), () => Main.bgScroll / 100f, delegate(float v)
         {
             Main.bgScroll = (int)(v * 100f);
             Main.caveParallax = 1f - Main.bgScroll / 500f;
         });
         w.Header(() => "World");
-        w.Toggle(() => Lang.menu[ChildSafety.Disabled ? 132 : 133].Value, () => ChildSafety.Disabled = !ChildSafety.Disabled);
-        w.Toggle(() => Language.GetTextValue(Main.SettingsEnabled_TilesSwayInWind ? "UI.TilesSwayInWindOn" : "UI.TilesSwayInWindOff"), () => Main.SettingsEnabled_TilesSwayInWind = !Main.SettingsEnabled_TilesSwayInWind);
-        w.Toggle(() => Lang.menu[Main.SettingsEnabled_MinersWobble ? 250 : 251].Value, () => Main.SettingsEnabled_MinersWobble = !Main.SettingsEnabled_MinersWobble);
+        w.Switch(Pair(Lang.menu[132].Value, Lang.menu[133].Value), () => ChildSafety.Disabled, () => ChildSafety.Disabled = !ChildSafety.Disabled);
+        w.Switch(Pair(Language.GetTextValue("UI.TilesSwayInWindOn"), Language.GetTextValue("UI.TilesSwayInWindOff")), () => Main.SettingsEnabled_TilesSwayInWind, () => Main.SettingsEnabled_TilesSwayInWind = !Main.SettingsEnabled_TilesSwayInWind);
+        w.Switch(Pair(Lang.menu[250].Value, Lang.menu[251].Value), () => Main.SettingsEnabled_MinersWobble, () => Main.SettingsEnabled_MinersWobble = !Main.SettingsEnabled_MinersWobble);
     }
 
     private static void Flag(SettingsScreen w, AetherGraphics.Flag flag)
     {
-        w.Toggle(() => AetherOnOff(flag.Key, flag.Get()), () => flag.Set(!flag.Get()));
+        w.Switch(FormatName(flag.Key), () => flag.Get(), () => flag.Set(!flag.Get()));
     }
 
     private static void Effects(SettingsScreen w)
     {
-        w.Toggle(() => OnOff("GameUI.StormEffects", Main.UseStormEffects), () => Main.UseStormEffects = !Main.UseStormEffects);
-        w.Toggle(() => OnOff("GameUI.ForegroundSunlightEffects", Main.ForegroundSunlightEffects), () => Main.ForegroundSunlightEffects = !Main.ForegroundSunlightEffects);
-        w.Toggle(() => OnOff("GameUI.HeatDistortion", Main.UseHeatDistortion), () => Main.UseHeatDistortion = !Main.UseHeatDistortion);
+        w.Switch(FormatName("GameUI.StormEffects"), () => Main.UseStormEffects, () => Main.UseStormEffects = !Main.UseStormEffects);
+        w.Switch(FormatName("GameUI.ForegroundSunlightEffects"), () => Main.ForegroundSunlightEffects, () => Main.ForegroundSunlightEffects = !Main.ForegroundSunlightEffects);
+        w.Switch(FormatName("GameUI.HeatDistortion"), () => Main.UseHeatDistortion, () => Main.UseHeatDistortion = !Main.UseHeatDistortion);
         w.Toggle(() => CachedText.Format("GameUI.WaveQuality", Main.WaveQuality switch
         {
             1 => Language.GetTextValue("GameUI.QualityLow"),
@@ -232,8 +259,8 @@ public static class SettingsTabs
             3 => Language.GetTextValue("GameUI.QualityHigh"),
             _ => Language.GetTextValue("GameUI.QualityOff")
         }), () => Main.WaveQuality = (Main.WaveQuality + 1) % 4);
-        w.Toggle(() => OnOff("GameUI.ScreenShake", Main.UseScreenShake), () => Main.UseScreenShake = !Main.UseScreenShake);
-        w.Toggle(() => Language.GetTextValue(Main.FlashyEffectsWorld ? "UI.FlashyEffectsWorldOn" : "UI.FlashyEffectsWorldOff"), () => Main.FlashyEffectsWorld = !Main.FlashyEffectsWorld);
+        w.Switch(FormatName("GameUI.ScreenShake"), () => Main.UseScreenShake, () => Main.UseScreenShake = !Main.UseScreenShake);
+        w.Switch(Pair(Language.GetTextValue("UI.FlashyEffectsWorldOn"), Language.GetTextValue("UI.FlashyEffectsWorldOff")), () => Main.FlashyEffectsWorld, () => Main.FlashyEffectsWorld = !Main.FlashyEffectsWorld);
     }
 
     private static void Interface(SettingsScreen w)
@@ -242,15 +269,15 @@ public static class SettingsTabs
         w.Toggle(() => CachedText.Format("UI.SelectHealthStyle", Language.GetTextValue(CachedText.Concat("UI.HealthManaStyle_", Main.ResourceSetsManager.ActiveSetKeyName))), Main.ResourceSetsManager.CycleResourceSet);
         w.Toggle(() => CachedText.Format("UI.SelectMapBorder", Language.GetTextValue(CachedText.Concat("UI.MinimapFrame_", Main.MinimapFrameManagerInstance.ActiveSelectionKeyName))), Main.MinimapFrameManagerInstance.CycleSelection);
         w.Slider(() => CachedText.Format("GameUI.MapScale", CachedText.Number(Math.Round(Main.MapScale * 100f))), () => (Main.MapScale - 0.5f) / 0.5f, v => Main.MapScale = v * 0.5f + 0.5f);
-        w.Toggle(() => CachedText.Concat(Lang.menu[123].Value, " ", Lang.menu[124 + Main.invasionProgressMode].Value), () => Main.invasionProgressMode = (Main.invasionProgressMode + 1) % 3);
-        w.Toggle(() => Language.GetTextValue(BigProgressBarSystem.ShowText ? "UI.ShowBossLifeTextOn" : "UI.ShowBossLifeTextOff"), BigProgressBarSystem.ToggleShowText);
-        w.Toggle(() => Lang.menu[Main.showItemText ? 71 : 72].Value, () => Main.showItemText = !Main.showItemText);
-        w.Toggle(() => Lang.menu[Main.GamepadDisableInstructionsDisplay ? 241 : 242].Value, () => Main.GamepadDisableInstructionsDisplay = !Main.GamepadDisableInstructionsDisplay);
+        w.Cycle(() => Lang.menu[123].Value, () => Lang.menu[124 + Main.invasionProgressMode].Value, () => Main.invasionProgressMode = (Main.invasionProgressMode + 1) % 3);
+        w.Switch(Pair(Language.GetTextValue("UI.ShowBossLifeTextOn"), Language.GetTextValue("UI.ShowBossLifeTextOff")), () => BigProgressBarSystem.ShowText, BigProgressBarSystem.ToggleShowText);
+        w.Switch(Pair(Lang.menu[71].Value, Lang.menu[72].Value), () => Main.showItemText, () => Main.showItemText = !Main.showItemText);
+        w.Switch(Pair(Lang.menu[241].Value, Lang.menu[242].Value), () => !Main.GamepadDisableInstructionsDisplay, () => Main.GamepadDisableInstructionsDisplay = !Main.GamepadDisableInstructionsDisplay);
         w.Header(() => "Items and Building");
-        w.Toggle(() => Lang.inter[ItemSlot.Options.HighlightNewItems ? 117 : 116].Value, () => ItemSlot.Options.HighlightNewItems = !ItemSlot.Options.HighlightNewItems);
-        w.Toggle(() => Language.GetTextValue(Main.FlashyEffectsInterface ? "UI.FlashyEffectsInterfaceOn" : "UI.FlashyEffectsInterfaceOff"), () => Main.FlashyEffectsInterface = !Main.FlashyEffectsInterface);
-        w.Toggle(() => Lang.menu[Main.placementPreview ? 128 : 129].Value, () => Main.placementPreview = !Main.placementPreview);
-        w.Toggle(() => Lang.menu[Main.MouseShowBuildingGrid ? 229 : 230].Value, () => Main.MouseShowBuildingGrid = !Main.MouseShowBuildingGrid);
+        w.Switch(Pair(Lang.inter[117].Value, Lang.inter[116].Value), () => ItemSlot.Options.HighlightNewItems, () => ItemSlot.Options.HighlightNewItems = !ItemSlot.Options.HighlightNewItems);
+        w.Switch(Pair(Language.GetTextValue("UI.FlashyEffectsInterfaceOn"), Language.GetTextValue("UI.FlashyEffectsInterfaceOff")), () => Main.FlashyEffectsInterface, () => Main.FlashyEffectsInterface = !Main.FlashyEffectsInterface);
+        w.Switch(Pair(Lang.menu[128].Value, Lang.menu[129].Value), () => Main.placementPreview, () => Main.placementPreview = !Main.placementPreview);
+        w.Switch(Pair(Lang.menu[229].Value, Lang.menu[230].Value), () => Main.MouseShowBuildingGrid, () => Main.MouseShowBuildingGrid = !Main.MouseShowBuildingGrid);
         w.Header(() => "Dialogue and Tooltips");
         w.Toggle(() => Main.DialoguePortraitPreference switch
         {
@@ -259,7 +286,7 @@ public static class SettingsTabs
             Main.DialoguePortraitDrawOption.Disabled => Language.GetTextValue("UI.PortraitsDisabled"),
             _ => Language.GetTextValue("UI.PortraitsDetailed")
         }, Main.CycleNPCPortraitMode);
-        w.Toggle(() => Language.GetTextValue(Main.SettingsEnabled_OpaqueBoxBehindTooltips ? "GameUI.HoverTextBoxesOn" : "GameUI.HoverTextBoxesOff"), () => Main.SettingsEnabled_OpaqueBoxBehindTooltips = !Main.SettingsEnabled_OpaqueBoxBehindTooltips);
+        w.Switch(Pair(Language.GetTextValue("GameUI.HoverTextBoxesOn"), Language.GetTextValue("GameUI.HoverTextBoxesOff")), () => Main.SettingsEnabled_OpaqueBoxBehindTooltips, () => Main.SettingsEnabled_OpaqueBoxBehindTooltips = !Main.SettingsEnabled_OpaqueBoxBehindTooltips);
     }
 
     private static void Volume(SettingsScreen w)
@@ -294,9 +321,11 @@ public static class SettingsTabs
             LockOnHelper.LockOnMode.ThreeDS => Lang.menu[234].Value,
             _ => ""
         }, LockOnHelper.CycleUseModes);
-        w.Toggle(() => Lang.menu[Player.SmartCursorSettings.SmartBlocksEnabled ? 215 : 216].Value, () => Player.SmartCursorSettings.SmartBlocksEnabled = !Player.SmartCursorSettings.SmartBlocksEnabled);
+        w.Switch(Pair(Lang.menu[215].Value, Lang.menu[216].Value), () => Player.SmartCursorSettings.SmartBlocksEnabled, () => Player.SmartCursorSettings.SmartBlocksEnabled = !Player.SmartCursorSettings.SmartBlocksEnabled);
         w.Toggle(() => Lang.menu[Main.cSmartCursorModeIsToggleAndNotHold ? 121 : 122].Value, () => Main.cSmartCursorModeIsToggleAndNotHold = !Main.cSmartCursorModeIsToggleAndNotHold);
+
         w.Toggle(() => Lang.menu[Player.SmartCursorSettings.SmartAxeAfterPickaxe ? 214 : 213].Value, () => Player.SmartCursorSettings.SmartAxeAfterPickaxe = !Player.SmartCursorSettings.SmartAxeAfterPickaxe);
+
     }
 
     /// <summary>One of the cursor's colour bars: its track shows <paramref name="ramp"/> for the colour as it is (<paramref name="rampColor"/>, HSL).</summary>
@@ -321,9 +350,85 @@ public static class SettingsTabs
 
     private static void Controls(SettingsScreen w)
     {
-        w.Button(() => Lang.menu[222].Value, OpenKeybinds(w.InGame));
+        w.Header(() => Lang.menu[219].Value);
+        // The input profile (as the game's key bindings menu): its bindings are the profile's.
+        w.Cycle(() => ProfileName, () => PlayerInput.CurrentProfile.ShowName, NextProfile);
         w.Toggle(() => Lang.menu[Main.ReversedUpDownArmorSetBonuses ? 220 : 221].Value, () => Main.ReversedUpDownArmorSetBonuses = !Main.ReversedUpDownArmorSetBonuses);
         w.Toggle(() => ItemSlot.Options.DisableQuickTrash ? Lang.menu[253].Value : Lang.menu[ItemSlot.Options.DisableLeftShiftTrashCan ? 224 : 223].Value, CycleQuickTrash);
+        // The keyboard's bindings in the game's key bindings menu's groups; the gamepad's are still in that menu.
+        foreach ((int title, string[] bindings) in KeyboardGroups)
+        {
+            w.Header(() => Lang.menu[title].Value);
+            foreach (string bind in bindings)
+                Binding(w, bind);
+        }
+        w.Header(() => GamepadName);
+        w.Button(() => GamepadBindingsName, OpenKeybinds(w.InGame));
+    }
+
+    // FreshUI's own names (English, as the group headers).
+    private const string ProfileName = "Profile", GamepadName = "Gamepad", GamepadBindingsName = "Gamepad Bindings";
+
+    // The game's key bindings menu's keyboard groups (gameplay, map, hotbar) by their titles; "sp" entries are its other rows.
+    private static readonly (int Title, string[] Bindings)[] KeyboardGroups =
+    [
+        (164, ["MouseLeft", "MouseRight", "Up", "Down", "Left", "Right", "Jump", "Grapple", "SmartSelect", "SmartCursor",
+            "QuickMount", "QuickHeal", "QuickMana", "QuickBuff", "Throw", "Inventory", "ToggleCreativeMenu", "ViewZoomIn", "ViewZoomOut", "Loadout1",
+            "Loadout2", "Loadout3", "NextLoadout", "PreviousLoadout", "ToggleCameraMode", "ArmorSetAbility", "Dash", "sp20", "sp21", "sp9"]),
+        (165, ["MapZoomIn", "MapZoomOut", "MapAlphaUp", "MapAlphaDown", "MapFull", "MapStyle", "sp11"]),
+        (166, ["HotbarMinus", "HotbarPlus", "Hotbar1", "Hotbar2", "Hotbar3", "Hotbar4", "Hotbar5", "Hotbar6", "Hotbar7", "Hotbar8",
+            "Hotbar9", "Hotbar10", "sp10"]),
+    ];
+
+    // One row of a keyboard group: a binding (its name, and its keys, which a click listens to replace), or one of the group's other rows.
+    private static void Binding(SettingsScreen w, string bind)
+    {
+        switch (bind)
+        {
+        case "sp9":
+            w.Button(() => Lang.menu[86].Value, () => PlayerInput.CurrentProfile.CopyGameplaySettingsFrom(PlayerInput.OriginalProfiles[CopyableProfile], InputMode.Keyboard));
+            return;
+        case "sp10":
+            w.Button(() => Lang.menu[86].Value, () => PlayerInput.CurrentProfile.CopyHotbarSettingsFrom(PlayerInput.OriginalProfiles[CopyableProfile], InputMode.Keyboard));
+            return;
+        case "sp11":
+            w.Button(() => Lang.menu[86].Value, () => PlayerInput.CurrentProfile.CopyMapSettingsFrom(PlayerInput.OriginalProfiles[CopyableProfile], InputMode.Keyboard));
+            return;
+        case "sp20":
+            w.Switch(Language.GetTextValue("UI.DoubleTapDash"), () => Player.Settings.DashControl == Player.Settings.DashPreference.AllowDoubleTap,
+                () => Player.Settings.DashControl = Player.Settings.DashControl == Player.Settings.DashPreference.AllowDoubleTap
+                    ? Player.Settings.DashPreference.OnlyThroughHotkeys : Player.Settings.DashPreference.AllowDoubleTap);
+            return;
+        case "sp21":
+            w.Cycle(() => Language.GetTextValue("UI.PanControlMode"), () => Language.GetTextValue(CachedText.Concat("UI.PanControlMode_", CachedText.Name(PlayerInput.CurrentProfile.PanControl_Keyboard))),
+                () => Utils.CycleControlControl_OffOnClickHold(ref PlayerInput.CurrentProfile.PanControl_Keyboard));
+            return;
+        }
+        // The game's own names and key texts for the binding (its key bindings menu's row, kept for them).
+        var row = new Terraria.GameContent.UI.Elements.UIKeybindingListItem(bind, InputMode.Keyboard, Color.White);
+        Func<string> name = FriendlyName.CreateDelegate<Func<string>>(row);
+        Func<List<string>, string> keys = KeysText.CreateDelegate<Func<List<string>, string>>(row);
+        List<string> Keys() => PlayerInput.CurrentProfile.InputModes[InputMode.Keyboard].KeyStatus[bind];
+        w.Value(name, () => Keys().Count == 0 ? Lang.menu[195].Value : keys(Keys()), delegate
+        {
+            SoundEngine.PlaySound(SoundID.MenuTick);
+            if (PlayerInput.ListeningTrigger != bind)
+                PlayerInput.ListenFor(PlayerInput.CurrentProfile.AllowEditing ? bind : null, InputMode.Keyboard);
+        }, lit: () => PlayerInput.ListeningTrigger == bind, color: () => Keys().Count == 0 ? new Color(110, 110, 110) : FreshStyle.MutedText);
+    }
+
+    private static readonly System.Reflection.MethodInfo FriendlyName = typeof(Terraria.GameContent.UI.Elements.UIKeybindingListItem)
+        .GetMethod("GetFriendlyName", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!;
+    private static readonly System.Reflection.MethodInfo KeysText = typeof(Terraria.GameContent.UI.Elements.UIKeybindingListItem)
+        .GetMethod("GenInput", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!;
+
+    // The game's own profile to reset a group from: the current one if it's one of the game's, else its default.
+    private static string CopyableProfile => PlayerInput.OriginalProfiles.ContainsKey(PlayerInput.CurrentProfile.Name) ? PlayerInput.CurrentProfile.Name : "Redigit's Pick";
+
+    private static void NextProfile()
+    {
+        List<string> names = PlayerInput.Profiles.Keys.ToList();
+        PlayerInput.SetSelectedProfile(names[(names.IndexOf(PlayerInput.CurrentProfile.Name) + 1) % names.Count]);
     }
 
     private static Action OpenKeybinds(bool inGame) => inGame

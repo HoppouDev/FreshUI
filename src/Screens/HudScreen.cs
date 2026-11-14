@@ -72,6 +72,7 @@ public sealed partial class HudScreen : ContainerRuntime
         _over.Draw = (batch, _) =>
         {
             DrawEquipmentExtras(batch);
+            DrawShopInfo(batch);
             foreach ((Texture2D texture, Vector2 position, Color color) in _overDraws)
                 batch.Draw(texture, position, color);
             _overDraws.Clear();
@@ -322,6 +323,7 @@ public sealed partial class HudScreen : ContainerRuntime
         _current.PresentChestControls();
         _current.PresentCrafting();
         _current._crafting.Present();
+        _current.PresentShopInfo();
         _current.PlaceHotbarLock();
         if (!_current._namePresented && _current._heldName.Visible)
             _current._heldName.Visible = false;

@@ -223,6 +223,7 @@ public static class GumHost
             }
         }
         GumGamepad.Update();
+        FreshUI.Components.FreshTooltip.Update();
     }
 
     /// <summary>Draws the HUD's Gum layer within the game's sprite batch (the retained layer, in a world).</summary>

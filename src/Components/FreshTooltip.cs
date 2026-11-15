@@ -97,6 +97,27 @@ static class FreshTooltip
         text.Y = UiPixels.Snap(MathF.Max(EdgeMargin, y));
     }
 
+    /// <summary>
+    /// After each Gum update: the tooltip goes with its element when that's no longer shown (hidden, or removed, as
+    /// a screen closing or a list rebuilt), which no roll-off reports.
+    /// </summary>
+    internal static void Update()
+    {
+        if (_owner != null && !IsShown(_owner))
+            Hide(_owner);
+    }
+
+    private static bool IsShown(GraphicalUiElement element)
+    {
+        GraphicalUiElement at = element;
+        for (; at.Parent is GraphicalUiElement parent; at = parent)
+        {
+            if (!at.Visible)
+                return false;
+        }
+        return at.Visible && (at == GumHost.OverlayRoot || at == GumService.Default.Root);
+    }
+
     private static void Hide(InteractiveGue owner)
     {
         if (_owner == owner && _text != null)

@@ -156,14 +156,15 @@ static partial class GumText
 
     /// <summary>
     /// A drop shadow as the hotbar's numbers': the outlined text <paramref name="offset"/> UI pixels lower in
-    /// <see cref="DropShadowColor"/> (0 for none).
+    /// <see cref="DropShadowColor"/> (0 for none), crisp or softened by a <paramref name="blur"/> radius in UI pixels
+    /// (up to an eighth of the font size).
     /// </summary>
-    public static void SetDropShadow(TextRuntime text, float offset)
+    public static void SetDropShadow(TextRuntime text, float offset, float blur = 0)
     {
         text.DropshadowColor = DropShadowColor;
         text.DropshadowOffsetX = 0;
         text.DropshadowOffsetY = offset;
-        text.DropshadowBlur = 0;
+        text.DropshadowBlur = blur;
         text.HasDropshadow = offset > 0;
     }
 

@@ -22,7 +22,7 @@ namespace FreshUI.Screens;
 /// <summary>
 /// The title menu's own screens (Aether's <see cref="UIMenuScreen"/>s: the main menu, multiplayer, joining and
 /// hosting, the delete confirmations, connection status and errors, language…), drawn as Aether's items: Death Text
-/// outlined in black, faded until hovered or focused, when it grows and turns gold, with a drop shadow, centred
+/// outlined in black, faded until hovered or focused, when it grows and turns gold, with a soft drop shadow, centred
 /// where Aether's screen puts it. Each item is a Forms <see cref="Button"/> (no backing) the size of Aether's, its
 /// text kept up to date (a text field's typing and caret are the screen's), disabled as the item is, a click (or A)
 /// doing what the item does; labels are Gum text. Aether's screen keeps its per-frame work and Back
@@ -151,7 +151,7 @@ internal sealed class TitleMenuScreen : ContainerRuntime, IGumScreenUpdate
             _label.HorizontalAlignment = RenderingLibrary.Graphics.HorizontalAlignment.Center;
             _label.VerticalAlignment = RenderingLibrary.Graphics.VerticalAlignment.Center;
             GumText.SetOutline(_label, 1, Color.Black);
-            GumText.SetDropShadow(_label, 2);
+            GumText.SetDropShadow(_label, 2, blur: 2);
             if (Button == null)
             {
                 Visual.XUnits = Gum.Converters.GeneralUnitType.PixelsFromMiddle;

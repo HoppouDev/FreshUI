@@ -33,7 +33,7 @@ internal sealed class WorldLoadScreen : ContainerRuntime, IGumScreenUpdate
         HeightUnits = DimensionUnitType.RelativeToChildren,
         Width = 0,
         Height = 0,
-        FontSize = 29.5f,
+        FontSize = GumText.DeathTextSize,
         HasEvents = false,
     };
     private readonly ContainerRuntime _bar = new() { Width = BarWidth, Height = 35, HasEvents = false };
@@ -47,6 +47,7 @@ internal sealed class WorldLoadScreen : ContainerRuntime, IGumScreenUpdate
         Width = Height = 0;
         HasEvents = false;
         GumText.SetOutline(_message, 0.6f, Color.Black);
+        GumText.SetDropShadow(_message, 2);
         Children.Add(_message);
         _overall = new Fill(_bar, 10, 20, 285, 8, new Color(48, 48, 48));
         _current = new Fill(_bar, 25, 30, 254, 4, new Color(33, 33, 33));

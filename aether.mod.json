@@ -45,6 +45,7 @@
 		"FreshUI.Hooks.Mixins.GameScreensMixin",
 		"FreshUI.Hooks.Mixins.UserInterfaceMixin",
 		"FreshUI.Hooks.Mixins.InstructionBarMixin",
+		"FreshUI.Hooks.Mixins.GameTipsDisplayMixin",
 		"FreshUI.Hooks.Mixins.UIMinimapFrameMixin",
 		"FreshUI.Hooks.Mixins.MouseTextMixin",
 		"FreshUI.Hooks.Mixins.ChatInputBoxMixin",

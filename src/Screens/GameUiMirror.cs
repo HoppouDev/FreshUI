@@ -102,6 +102,20 @@ internal sealed class GameUiMirror : ContainerRuntime
     private static readonly Dictionary<Type, bool> OverridesClicks = [];
 
     // Whether the game acts on clicks on the element: a handler on it, or its type's own mouse down or click.
+    // Elements that act on the game's mouse themselves while hovered (an item slot, an item grid): Gum's hover reaches them as the game's.
+    private static bool TakesHover(UIElement element) => element is UIItemSlot or UIDynamicItemCollection;
+
+    // A place to click for each element under one the game draws whole that takes input.
+    private void AddHits(UIElement element, GraphicalUiElement container, Func<Vector2> origin)
+    {
+        foreach (UIElement child in element.Children)
+        {
+            if (Listened(child) || TakesHover(child))
+                Keep(new HitMirror(child), container, origin);
+            AddHits(child, container, origin);
+        }
+    }
+
     private static bool Listened(UIElement element)
     {
         if (MouseDownEvent.GetValue(element) != null || ClickEvent.GetValue(element) != null)
@@ -120,7 +134,7 @@ internal sealed class GameUiMirror : ContainerRuntime
     private void Add(UIElement element, GraphicalUiElement container, Func<Vector2> origin, ListMirror? list = null)
     {
         Type type = element.GetType();
-        bool listened = Listened(element);
+        bool listened = Listened(element) || TakesHover(element);
         if (element is UIScrollbar)
             return; // A list's own (its mirror scrolls).
         if (element is UIList gameList)
@@ -158,6 +172,16 @@ internal sealed class GameUiMirror : ContainerRuntime
             Keep(new SeparatorMirror(element), container, origin);
         else if (element is UIText text)
             Keep(new TextMirror(text), container, origin);
+        else if (element is UIImage or UIImageFramed && element.Children.Any())
+        {
+            // Art with something on it (the research slot's frame, the pistons and their sparks): all the game's
+            // drawing, with a place to click for what on it takes input.
+            Keep(new GameMirror(element, list), container, origin);
+            if (listened)
+                Keep(new HitMirror(element), container, origin);
+            AddHits(element, container, origin);
+            return;
+        }
         else if (!element.Children.Any() && type != typeof(UIElement))
         {
             // The game's own art (a preview, a portrait…); a control too where the game listens to it.
@@ -333,7 +357,7 @@ internal sealed class GameUiMirror : ContainerRuntime
     private sealed class OptionMirror : ButtonMirror
     {
         private readonly PropertyInfo _selected, _icon, _iconColor;
-        private readonly FieldInfo _highlight, _frame;
+        private readonly FieldInfo _highlight, _frame, _overrides, _picked, _unpicked;
         private Texture2D? _shownIcon;
         private Color _shownColor;
 
@@ -345,12 +369,17 @@ internal sealed class GameUiMirror : ContainerRuntime
             _iconColor = type.GetProperty("IconColor")!;
             _highlight = type.GetField("ShowHighlightWhenSelected")!;
             _frame = type.GetField("_iconFrame", BindingFlags.NonPublic | BindingFlags.Instance)!;
+            _overrides = type.GetField("_UseOverrideColors", BindingFlags.NonPublic | BindingFlags.Instance)!;
+            _picked = type.GetField("_overridePickedColor", BindingFlags.NonPublic | BindingFlags.Instance)!;
+            _unpicked = type.GetField("_overrideUnpickedColor", BindingFlags.NonPublic | BindingFlags.Instance)!;
         }
 
         public override void Sync()
         {
             base.Sync();
-            bool chosen = (bool)_selected.GetValue(Element)! && (bool)_highlight.GetValue(Element)!;
+            // Chosen while selected, where the game shows it: its highlight, or its own picked colour (the journey powers').
+            bool chosen = (bool)_selected.GetValue(Element)! && ((bool)_highlight.GetValue(Element)! ||
+                (bool)_overrides.GetValue(Element)! && !_picked.GetValue(Element)!.Equals(_unpicked.GetValue(Element)));
             Button.IsChosen = chosen;
             var icon = (Texture2D?)_icon.GetValue(Element);
             var color = (Color)_iconColor.GetValue(Element)!;
@@ -478,7 +507,12 @@ internal sealed class GameUiMirror : ContainerRuntime
         private readonly FreshPanel _panel = new();
         private readonly Func<Color> _color;
 
-        public PanelMirror(UIElement element, Func<Color> color) : base(element) => _color = color;
+        public PanelMirror(UIElement element, Func<Color> color) : base(element)
+        {
+            _color = color;
+            // It takes the mouse, as a Gum panel: in a world, clicks on it don't reach the world (the game's hover handlers that stopped them run only for controls here).
+            _panel.HasEvents = true;
+        }
 
         public override GraphicalUiElement Visual => _panel;
 
@@ -540,10 +574,23 @@ internal sealed class GameUiMirror : ContainerRuntime
             if (_text.HorizontalAlignment != align)
                 _text.HorizontalAlignment = align;
             float x = MathF.Round(inner.X / 2), y = MathF.Round((inner.Y + baseline) / 2 - size * GumText.Baseline), width = MathF.Round(inner.Width / 2);
+            if (!_source.IsWrapped)
+            {
+                // A line the game doesn't wrap isn't wrapped here (Gum's letters can be a little wider than the game's
+                // measure): as wide as it is, anchored at the side of the game's area it's aligned to.
+                x += align switch
+                {
+                    RenderingLibrary.Graphics.HorizontalAlignment.Right => width,
+                    RenderingLibrary.Graphics.HorizontalAlignment.Center => MathF.Round(width / 2),
+                    _ => 0,
+                };
+                width = 0;
+            }
             if (_text.X != x || _text.Y != y || _text.Width != width)
             {
                 (_text.X, _text.Y, _text.Width) = (x, y, width);
-                _text.WidthUnits = DimensionUnitType.Absolute;
+                _text.WidthUnits = _source.IsWrapped ? DimensionUnitType.Absolute : DimensionUnitType.RelativeToChildren;
+                _text.XOrigin = _source.IsWrapped ? RenderingLibrary.Graphics.HorizontalAlignment.Left : align;
                 _text.HeightUnits = DimensionUnitType.RelativeToChildren;
                 _text.Height = 0;
             }

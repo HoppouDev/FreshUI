@@ -137,6 +137,8 @@ internal sealed class GameUiMirror : ContainerRuntime
             Keep(new OptionMirror(element), container, origin);
         else if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(UITextPanel<>))
             Keep(new TextPanelMirror((UIPanel)element, listened), container, origin);
+        else if (element is UITextPanel<string> textBox && type.Name == "UITextBox")
+            Keep(new TextBoxMirror(textBox), container, origin);
         else if (element is UIDifficultyButton difficulty)
             Keep(new DifficultyMirror(difficulty), container, origin);
         else if (element is UIColoredImageButton imageButton)
@@ -270,6 +272,60 @@ internal sealed class GameUiMirror : ContainerRuntime
             string text = (string)_textProperty.GetValue(Element)! ?? "";
             if (Button.Text != text)
                 Button.Text = text;
+        }
+    }
+
+    /// <summary>
+    /// A text box (the game's internal <c>UITextBox</c>, the on-screen keyboard's): not a control, a panel in the
+    /// panel buttons' look showing its text, what the IME is composing and the caret at the end (where the game keeps
+    /// it), in the game's size, hidden while the game hides the box.
+    /// </summary>
+    private sealed class TextBoxMirror : Mirror
+    {
+        private readonly FreshPanel _panel = new() { BackgroundColor = FreshStyle.Button };
+        private readonly TextRuntime _text = new()
+        {
+            XUnits = Gum.Converters.GeneralUnitType.PixelsFromMiddle,
+            YUnits = Gum.Converters.GeneralUnitType.PixelsFromMiddle,
+            XOrigin = RenderingLibrary.Graphics.HorizontalAlignment.Center,
+            YOrigin = RenderingLibrary.Graphics.VerticalAlignment.Center,
+            WidthUnits = DimensionUnitType.RelativeToChildren,
+            HeightUnits = DimensionUnitType.RelativeToChildren,
+            Width = 0,
+            Height = 0,
+            Color = Color.White,
+            HasEvents = false,
+        };
+        private readonly UITextPanel<string> _box;
+        private readonly FieldInfo _showInputTicker, _hideSelf, _cursor;
+
+        public TextBoxMirror(UITextPanel<string> box) : base(box)
+        {
+            _box = box;
+            _showInputTicker = box.GetType().GetField("ShowInputTicker")!;
+            _hideSelf = box.GetType().GetField("HideSelf")!;
+            _cursor = box.GetType().GetField("_cursor", BindingFlags.NonPublic | BindingFlags.Instance)!;
+            _text.FontSize = (box.IsLarge ? DeathTextEm : MouseTextEm) / 2 * box.TextScale;
+            GumText.SetOutline(_text, 0.75f, Color.Black);
+            _panel.Children.Add(_text);
+        }
+
+        public override GraphicalUiElement Visual => _panel;
+
+        // shortcut: the caret doesn't blink (the game's does), so the centred text doesn't shift as it would.
+        public override void Sync()
+        {
+            base.Sync();
+            bool shown = !(bool)_hideSelf.GetValue(_box)!;
+            if (_panel.Visible != shown)
+                _panel.Visible = shown;
+            string text = _box.Text ?? "";
+            // As the game's box sets it each draw: what's typed goes at the end.
+            _cursor.SetValue(_box, text.Length);
+            if ((bool)_showInputTicker.GetValue(_box)!)
+                text += ReLogic.OS.Platform.Get<ReLogic.Localization.IME.IImeService>().CompositionString + "|";
+            if (_text.Text != text)
+                _text.Text = text;
         }
     }
 

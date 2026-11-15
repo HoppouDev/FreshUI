@@ -226,6 +226,18 @@ public static class GumHost
         FreshUI.Components.FreshTooltip.Update();
     }
 
+    /// <summary>Whether an element is shown: it and its parents visible, up to a root FreshUI draws (not removed).</summary>
+    public static bool IsShown(GraphicalUiElement element)
+    {
+        GraphicalUiElement at = element;
+        for (; at.Parent is GraphicalUiElement parent; at = parent)
+        {
+            if (!at.Visible)
+                return false;
+        }
+        return at.Visible && (at == OverlayRoot || at == GumService.Default.Root);
+    }
+
     /// <summary>Draws the HUD's Gum layer within the game's sprite batch (the retained layer, in a world).</summary>
     public static void Draw(SpriteBatch batch)
     {

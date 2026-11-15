@@ -44,6 +44,8 @@ public sealed class Startup : IModInitializer
                 showWhen: AchievementsScreen.Shows, defaultFocus: () => AchievementsScreen.Instance?.First);
             GumScreens.Register("fresh-ui:emotes", () => new EmotesScreen(), layer: GumLayer.Overlay,
                 showWhen: EmotesScreen.Shows, defaultFocus: () => EmotesScreen.Instance?.First);
+            GumScreens.Register("fresh-ui:virtual-keyboard", () => new VirtualKeyboardScreen(), layer: GumLayer.Overlay,
+                showWhen: VirtualKeyboardScreen.Shows, defaultFocus: () => VirtualKeyboardScreen.Instance?.First, hints: VirtualKeyboardScreen.Hints);
             GumScreens.Register("fresh-ui:world-load", () => new WorldLoadScreen(), layer: GumLayer.Overlay, showWhen: WorldLoadScreen.Shows);
         }
     }

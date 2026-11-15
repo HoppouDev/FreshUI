@@ -103,19 +103,8 @@ static class FreshTooltip
     /// </summary>
     internal static void Update()
     {
-        if (_owner != null && !IsShown(_owner))
+        if (_owner != null && !GumHost.IsShown(_owner))
             Hide(_owner);
-    }
-
-    private static bool IsShown(GraphicalUiElement element)
-    {
-        GraphicalUiElement at = element;
-        for (; at.Parent is GraphicalUiElement parent; at = parent)
-        {
-            if (!at.Visible)
-                return false;
-        }
-        return at.Visible && (at == GumHost.OverlayRoot || at == GumService.Default.Root);
     }
 
     private static void Hide(InteractiveGue owner)

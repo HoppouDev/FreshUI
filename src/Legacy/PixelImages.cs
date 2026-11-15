@@ -115,7 +115,7 @@ public static class PixelImages
 
     // The list items' button art without its button: the 2-pixel frame (outline and bevel), the fill
     // (its colour inside the frame's top left) and the icon's shadow on it (the right bevel's colour).
-    private static Texture2D Icon(Texture2D texture)
+    public static Texture2D Icon(Texture2D texture)
     {
         if (Icons.TryGetValue(texture, out Texture2D? icon))
             return icon;

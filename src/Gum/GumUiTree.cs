@@ -205,7 +205,7 @@ public sealed class GumUiTree : IUiTree
             ["parent"] = parent,
             ["screen"] = GumScreens.ScreenOf(element),
             ["type"] = (control?.GetType() ?? element.GetType()).Name,
-            ["label"] = TextOf(element, control) ?? (string.IsNullOrEmpty(element.Name) ? null : element.Name),
+            ["label"] = TextOf(element, control) is { Length: > 0 } text ? text : string.IsNullOrEmpty(element.Name) ? null : element.Name,
             ["bounds"] = new JsonArray(bounds.X, bounds.Y, bounds.Width, bounds.Height),
             ["value"] = Value(control),
         };

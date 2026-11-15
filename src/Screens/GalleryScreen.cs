@@ -81,6 +81,7 @@ public sealed class GalleryScreen : ContainerRuntime
         Cell(3, 2, "Game view", GameView);
         Cell(0, 3, "Option buttons", OptionButtons);
         Cell(1, 3, "Text field", TextFields);
+        Cell(2, 3, "Progress bar", ProgressBars);
         _grid.Height = 4 * (CellHeight + Gap) - Gap;
         // Gum's spatial navigation passes over controls inside another candidate, and from the toolbar
         // the page (a scroll area) is one: down goes to the first control instead.
@@ -437,6 +438,17 @@ public sealed class GalleryScreen : ContainerRuntime
                 buttons.Add(button);
                 row.Children.Add(button.Visual);
             }
+            stack.Children.Add(row);
+        }
+    }
+
+    private static void ProgressBars(ContainerRuntime stack)
+    {
+        // Empty, a quarter, two thirds and full.
+        foreach (float value in new[] { 0f, 0.25f, 0.67f, 1f })
+        {
+            var row = Row(FreshProgressBar.BarHeight);
+            row.Children.Add(new FreshProgressBar { Width = 100, Value = value });
             stack.Children.Add(row);
         }
     }

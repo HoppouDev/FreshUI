@@ -7,6 +7,8 @@ using Gum.Wireframe;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Terraria;
+using Terraria.UI.Gamepad;
+using Terraria.GameInput;
 using Terraria.GameContent.UI.Elements;
 using Terraria.UI;
 
@@ -50,6 +52,15 @@ internal sealed class GameUiMirror : ContainerRuntime
     /// <summary>The game's screen to show.</summary>
     public UIElement? Source { get; set; }
 
+    /// <summary>
+    /// Whether the game's cursor drives the controls while the gamepad's in use (on the HUD, where the game's navigator
+    /// moves it along the game's own gamepad points): the control under it is hovered as the mouse would (lit, the
+    /// element's mouse over), and A (the game's left click there) clicks it.
+    /// </summary>
+    public bool FollowsGameCursor { get; set; }
+
+    private Mirror? _underCursor;
+
     /// <summary>The first control (the gamepad's focus starts there), if any.</summary>
     public FreshPanelButton? First => _mirrors.Select(m => m.Button).FirstOrDefault(b => b is { IsEnabled: true });
 
@@ -78,7 +89,54 @@ internal sealed class GameUiMirror : ContainerRuntime
         }
         foreach (Mirror mirror in _mirrors)
             mirror.Sync();
+        if (FollowsGameCursor)
+            FollowGameCursor();
     }
+
+    private void FollowGameCursor()
+    {
+        Mirror? under = null;
+        if (GamepadCursor() is { } cursor)
+        {
+            // The cursor in UI units; Gum's canvas is in UI pixels.
+            float x = cursor.X / 2, y = cursor.Y / 2;
+            for (int i = _mirrors.Count - 1; i >= 0 && under == null; i--)
+            {
+                GraphicalUiElement visual = _mirrors[i].Visual;
+                if (_mirrors[i] is (ButtonMirror or HitMirror) && GumHost.IsShown(visual) &&
+                    x >= visual.AbsoluteLeft && x < visual.AbsoluteLeft + visual.GetAbsoluteWidth() &&
+                    y >= visual.AbsoluteTop && y < visual.AbsoluteTop + visual.GetAbsoluteHeight())
+                    under = _mirrors[i];
+            }
+        }
+        Vector2 at = GamepadCursor() ?? new Vector2(Main.mouseX, Main.mouseY);
+        if (under != _underCursor)
+        {
+            if (_underCursor != null)
+            {
+                _underCursor.Element.MouseOut(new UIMouseEvent(_underCursor.Element, at));
+                if (_underCursor.Button != null)
+                    _underCursor.Button.IsLit = false;
+            }
+            if (under != null)
+            {
+                under.Element.MouseOver(new UIMouseEvent(under.Element, at));
+                if (under.Button != null)
+                    under.Button.IsLit = true;
+            }
+            _underCursor = under;
+        }
+        if (under != null && PlayerInput.Triggers.JustPressed.MouseLeft)
+            ((InteractiveGue)under.Visual).CallClick();
+    }
+
+    /// <summary>
+    /// The gamepad's cursor in UI units while the game's navigator drives it (its current point, kept in screen
+    /// pixels); the game points its mouse there only while it draws its own UI, not when this runs or draws.
+    /// </summary>
+    private static Vector2? GamepadCursor() =>
+        PlayerInput.UsingGamepadUI && UILinkPointNavigator.InUse && UILinkPointNavigator.Points.TryGetValue(UILinkPointNavigator.CurrentPoint, out UILinkPoint? point)
+            ? point.Position / Main.UIScale : null;
 
     private static int Count(UIElement element)
     {
@@ -90,6 +148,7 @@ internal sealed class GameUiMirror : ContainerRuntime
 
     private void Build()
     {
+        _underCursor = null;
         _zone.Children.Clear();
         _mirrors.Clear();
         foreach (UIElement child in Source!.Children)
@@ -176,7 +235,7 @@ internal sealed class GameUiMirror : ContainerRuntime
         {
             // Art with something on it (the research slot's frame, the pistons and their sparks): all the game's
             // drawing, with a place to click for what on it takes input.
-            Keep(new GameMirror(element, list), container, origin);
+            Keep(new GameMirror(element, list, this), container, origin);
             if (listened)
                 Keep(new HitMirror(element), container, origin);
             AddHits(element, container, origin);
@@ -185,7 +244,7 @@ internal sealed class GameUiMirror : ContainerRuntime
         else if (!element.Children.Any() && type != typeof(UIElement))
         {
             // The game's own art (a preview, a portrait…); a control too where the game listens to it.
-            Keep(new GameMirror(element, list), container, origin);
+            Keep(new GameMirror(element, list, this), container, origin);
             if (listened)
                 Keep(new HitMirror(element), container, origin);
             return;
@@ -606,14 +665,36 @@ internal sealed class GameUiMirror : ContainerRuntime
         private static readonly RasterizerState Clipped = new() { CullMode = CullMode.CullCounterClockwiseFace, ScissorTestEnable = true };
         private readonly FreshGameView _view;
         private readonly ListMirror? _list;
+        private readonly GameUiMirror _owner;
 
-        public GameMirror(UIElement element, ListMirror? list) : base(element)
+        public GameMirror(UIElement element, ListMirror? list, GameUiMirror owner) : base(element)
         {
             _list = list;
-            _view = new FreshGameView { Draw = Draw };
+            _owner = owner;
+            _view = new FreshGameView { Draw = DrawAtCursor };
         }
 
         public override GraphicalUiElement Visual => _view;
+
+        // What acts on the game's mouse as it draws (an item slot, an item grid) finds it at the gamepad's cursor, as in the game's own UI draw.
+        private void DrawAtCursor(SpriteBatch batch, Rectangle area)
+        {
+            if (!_owner.FollowsGameCursor || GamepadCursor() is not { } cursor)
+            {
+                Draw(batch, area);
+                return;
+            }
+            (int mouseX, int mouseY) = (Main.mouseX, Main.mouseY);
+            (Main.mouseX, Main.mouseY) = ((int)cursor.X, (int)cursor.Y);
+            try
+            {
+                Draw(batch, area);
+            }
+            finally
+            {
+                (Main.mouseX, Main.mouseY) = (mouseX, mouseY);
+            }
+        }
 
         private void Draw(SpriteBatch batch, Rectangle area)
         {

@@ -14,7 +14,9 @@ namespace FreshUI.Screens;
 /// interface, beside the inventory of a journey character) in FreshUI's components, by <see cref="GameUiMirror"/>:
 /// the power strips' buttons, their sliders, and the items window (duplication and research). The game's menu keeps
 /// its state and handlers and runs its update from here (the buttons' tooltips among it); its interface no longer
-/// draws or updates it (<see cref="GumRoutes.State{T}"/>). The menu's toggle button stays the game's.
+/// draws or updates it (<see cref="GumRoutes.State{T}"/>). On the gamepad the menu's own points and links are the
+/// game's (placed from here, as its draw did), and the mirror follows the game's cursor along them (A clicks what's
+/// under it). The menu's toggle button stays the game's.
 /// </summary>
 internal sealed class JourneyPowersWindow : ContainerRuntime
 {
@@ -22,7 +24,11 @@ internal sealed class JourneyPowersWindow : ContainerRuntime
 
     private static readonly Func<CreativeUI, UICreativePowersMenu?> Menu = Compile();
 
-    private readonly GameUiMirror _mirror = new();
+    // The menu's gamepad points (its Draw placed them): its own links along its strips, sliders and item grid.
+    private static readonly Action<UICreativePowersMenu> SetupGamepadPoints = (Action<UICreativePowersMenu>)Delegate.CreateDelegate(typeof(Action<UICreativePowersMenu>),
+        typeof(UICreativePowersMenu).GetMethod("SetupGamepadPoints", BindingFlags.NonPublic | BindingFlags.Instance)!);
+
+    private readonly GameUiMirror _mirror = new() { FollowsGameCursor = true };
 
     public JourneyPowersWindow()
     {
@@ -43,9 +49,12 @@ internal sealed class JourneyPowersWindow : ContainerRuntime
         bool shown = Shows;
         if (Visible != shown)
             Visible = shown;
-        _mirror.Source = shown ? Menu(Main.CreativeMenu) : null;
-        if (shown)
-            _mirror.Update();
+        UICreativePowersMenu? menu = shown ? Menu(Main.CreativeMenu) : null;
+        _mirror.Source = menu;
+        if (menu == null)
+            return;
+        _mirror.Update();
+        SetupGamepadPoints(menu);
     }
 
     private static Func<CreativeUI, UICreativePowersMenu?> Compile()

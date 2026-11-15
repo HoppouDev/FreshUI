@@ -24,6 +24,8 @@ public static class GumHudFocus
 {
     // The hotbar lock (a Gum button: the game's lock had no point) on a page of its own, valid with the inventory.
     private const int LockPage = 31300, LockPoint = 31300;
+    // The journey powers menu's page (beside the inventory, its points placed by JourneyPowersWindow).
+    private const int JourneyPage = 1005;
     private const float TargetSize = 8;
 
     // When each point was last placed (the game places a point where it draws its element).
@@ -41,7 +43,7 @@ public static class GumHudFocus
 
     private static bool IsLive(int point) =>
         Placed.TryGetValue(point, out uint at) && Main.GameUpdateCount - at <= 1 &&
-        UILinkPointNavigator.Points.TryGetValue(point, out UILinkPoint? link) && (link.Page < 1000 || link.Page == LockPage);
+        UILinkPointNavigator.Points.TryGetValue(point, out UILinkPoint? link) && (link.Page < 1000 || link.Page is LockPage or JourneyPage);
 
     // The crafting pages move through recipes with the game's own links.
     private static bool MovesItself(int point) =>

@@ -45,6 +45,12 @@ static partial class GumText
     /// <summary>How far a line's baseline is below its top, in ems: text placed by its baseline sits at Y + FontSize * Baseline.</summary>
     public static float Baseline => _upright.Baseline / AtlasFontSize;
 
+    /// <summary>The game's Death Text (its menus' and headers' big text) drawn at scale 1, as a font size (matched to the game's on screen).</summary>
+    public const float DeathTextSize = 29.5f;
+
+    /// <summary>The drop shadow's colour: black at alpha 100, as the hotbar's numbers'.</summary>
+    public static readonly Color DropShadowColor = new(0, 0, 0, 100);
+
     /// <summary>The weight of text with Gum's IsBold and no weight of its own: 700, or 200 above a bold font's.</summary>
     public static float BoldWeight => Math.Min(1000, Math.Max(700, DesignWeight + 200));
 
@@ -146,6 +152,19 @@ static partial class GumText
     {
         Styles.GetOrCreateValue(text).Gradient = gradient;
         text.UpdateToFontValues();
+    }
+
+    /// <summary>
+    /// A drop shadow as the hotbar's numbers': the outlined text <paramref name="offset"/> UI pixels lower in
+    /// <see cref="DropShadowColor"/> (0 for none).
+    /// </summary>
+    public static void SetDropShadow(TextRuntime text, float offset)
+    {
+        text.DropshadowColor = DropShadowColor;
+        text.DropshadowOffsetX = 0;
+        text.DropshadowOffsetY = offset;
+        text.DropshadowBlur = 0;
+        text.HasDropshadow = offset > 0;
     }
 
     private static void UpdateFont(IText text, GraphicalUiElement element)

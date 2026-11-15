@@ -16,8 +16,8 @@ namespace FreshUI.Screens;
 /// <summary>
 /// The player select (the game's <see cref="UICharacterSelect"/>, which still loads the players when it opens), a
 /// <see cref="SelectScreen"/>: a row per player (favourites first, then the last played, as the game's) with the
-/// player's portrait (the game's), name, life and mana, difficulty and time played, and its play, favourite, cloud,
-/// rename and delete buttons, calling <see cref="PlayerFileData"/> as the game's rows do.
+/// player's portrait (the game's), name with life, mana and difficulty, time played as the aside, and its play,
+/// favourite, cloud, rename and delete buttons, calling <see cref="PlayerFileData"/> as the game's rows do.
 /// </summary>
 internal sealed class PlayerSelectScreen : SelectScreen
 {
@@ -64,10 +64,24 @@ internal sealed class PlayerSelectScreen : SelectScreen
             HeightUnits = Gum.DataTypes.DimensionUnitType.RelativeToParent,
             Width = 0,
             Height = 0,
-            Draw = (batch, area) => DrawInfo(batch, area, data, portrait),
+            Draw = (batch, area) => DrawPortrait(batch, area, portrait),
         });
-        Name(row, data.Name, data.Player.loadStatus == StatusID.Ok ? Color.White : Color.Gray);
-        float x = 38;
+        Player player = data.Player;
+        Name(row, data.Name, player.loadStatus == StatusID.Ok ? Color.White : Color.Gray);
+        (string difficulty, Color color) = player.difficulty switch
+        {
+            1 => (Language.GetTextValue("UI.Mediumcore"), Main.mcColor),
+            2 => (Language.GetTextValue("UI.Hardcore"), Main.hcColor),
+            3 => (Language.GetTextValue("UI.Creative"), Main.creativeModeColor),
+            _ => (Language.GetTextValue("UI.Softcore"), Color.White),
+        };
+        Details(row,
+            DetailIcon("Images/Heart"), Detail(player.statLifeMax + Language.GetTextValue("GameUI.PlayerLifeMax"), FreshUI.Components.FreshStyle.MutedText),
+            DetailIcon("Images/Mana", spaced: true), Detail(player.statManaMax + Language.GetTextValue("GameUI.PlayerManaMax"), FreshUI.Components.FreshStyle.MutedText),
+            Detail(difficulty, color, spaced: true));
+        TimeSpan played = data.GetPlayTime();
+        Aside(row, ((int)played.TotalHours).ToString("D2") + played.ToString("\\:mm\\:ss"));
+        float x = ButtonsX;
         Plays.Add(Icon(row, ref x, "Images/UI/ButtonPlay", Language.GetTextValue("UI.Play"), () => Play(data)));
         Icon(row, ref x, data.IsFavorite ? "Images/UI/ButtonFavoriteActive" : "Images/UI/ButtonFavoriteInactive",
             Language.GetTextValue(data.IsFavorite ? "UI.Unfavorite" : "UI.Favorite"), () =>
@@ -89,10 +103,7 @@ internal sealed class PlayerSelectScreen : SelectScreen
         }
         Icon(row, ref x, "Images/UI/ButtonRename", Language.GetTextValue("UI.Rename"), () => Rename(data));
         if (!data.IsFavorite)
-        {
-            float right = DeleteX;
-            Icon(row, ref right, "Images/UI/ButtonDelete", Language.GetTextValue("UI.Delete"), () => Delete(data));
-        }
+            Delete(row, () => Delete(data));
     }
 
     private static void Play(PlayerFileData data)
@@ -136,35 +147,15 @@ internal sealed class PlayerSelectScreen : SelectScreen
         Main.menuMode = 5;
     }
 
-    // The game's part of a row: the portrait, and the life, mana, difficulty and time played on their strips.
-    private static void DrawInfo(SpriteBatch batch, Rectangle area, PlayerFileData data, UICharacter portrait)
+    // The game's part of a row: the player's portrait (on its back panel), at the row's top left.
+    private static void DrawPortrait(SpriteBatch batch, Rectangle area, UICharacter portrait)
     {
-        portrait.Left.Set(area.X + 8, 0f);
-        portrait.Top.Set(area.Y + (area.Height - 58) / 2, 0f);
-        portrait.Width.Set(59, 0f);
-        portrait.Height.Set(58, 0f);
+        Vector2 at = ArtPosition(area);
+        portrait.Left.Set(at.X, 0f);
+        portrait.Top.Set(at.Y, 0f);
+        portrait.Width.Set(ArtSize * 2, 0f);
+        portrait.Height.Set(ArtSize * 2, 0f);
         portrait.Recalculate();
         portrait.Draw(batch);
-        Player player = data.Player;
-        // Right of the name and buttons: life and mana on the first line, the difficulty and time played on the second.
-        var at = new Vector2(area.X + 300, area.Y + 6);
-        string life = player.statLifeMax + Language.GetTextValue("GameUI.PlayerLifeMax"), mana = player.statManaMax + Language.GetTextValue("GameUI.PlayerManaMax");
-        batch.Draw(TextureAssets.Heart.Value, at, Color.White);
-        Utils.DrawBorderString(batch, life, at + new Vector2(TextureAssets.Heart.Width() + 6, 1), Color.White);
-        at.X += 100;
-        batch.Draw(TextureAssets.Mana.Value, at, Color.White);
-        Utils.DrawBorderString(batch, mana, at + new Vector2(TextureAssets.Mana.Width() + 6, 1), Color.White);
-        (string difficulty, Color color) = player.difficulty switch
-        {
-            1 => (Language.GetTextValue("UI.Mediumcore"), Main.mcColor),
-            2 => (Language.GetTextValue("UI.Hardcore"), Main.hcColor),
-            3 => (Language.GetTextValue("UI.Creative"), Main.creativeModeColor),
-            _ => (Language.GetTextValue("UI.Softcore"), Color.White),
-        };
-        var second = new Vector2(area.X + 300, area.Y + 52);
-        Utils.DrawBorderString(batch, difficulty, second, color);
-        TimeSpan played = data.GetPlayTime();
-        string time = ((int)played.TotalHours).ToString("D2") + played.ToString("\\:mm\\:ss");
-        Utils.DrawBorderString(batch, time, second + new Vector2(130, 0), Color.White);
     }
 }

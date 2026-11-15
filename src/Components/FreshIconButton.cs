@@ -31,6 +31,8 @@ class FreshIconButton : FrameworkElement, IInputReceiver
 {
     private readonly SpriteRuntime _icon;
     private readonly SpriteRuntime _overlay;
+    private FreshPanel? _backing;
+    private Color _idleColor = Color.White;
 
     private FreshIconButtonLook? _look;
     private FreshIconButtonLook? _checkedLook;
@@ -160,6 +162,47 @@ class FreshIconButton : FrameworkElement, IInputReceiver
         set { _hoverColor = value; Refresh(); }
     }
 
+    /// <summary>The icon's tint at rest (neither hovered, focused, pushed nor disabled).</summary>
+    public Color IdleColor
+    {
+        get => _idleColor;
+        set { _idleColor = value; Refresh(); }
+    }
+
+    /// <summary>
+    /// Whether it's backed while hovered or focused by the menus' lit panel (<see cref="FreshStyle.ButtonLit"/>, a gold
+    /// border) the size of the button, as a lit <see cref="FreshPanelButton"/>: clearer than a tint on coloured art.
+    /// </summary>
+    public bool HasBacking
+    {
+        get => _backing != null;
+        set
+        {
+            if (value == HasBacking)
+                return;
+            if (value)
+            {
+                _backing = new FreshPanel
+                {
+                    WidthUnits = DimensionUnitType.RelativeToParent,
+                    HeightUnits = DimensionUnitType.RelativeToParent,
+                    Width = 0,
+                    Height = 0,
+                    BackgroundColor = FreshStyle.ButtonLit,
+                    BorderColor = FreshStyle.Gold,
+                    Visible = false,
+                };
+                Visual.Children.Insert(0, _backing);
+            }
+            else
+            {
+                Visual.Children.Remove(_backing);
+                _backing = null;
+            }
+            Refresh();
+        }
+    }
+
     /// <summary>The icon's tint while pushed.</summary>
     public Color PushedColor
     {
@@ -225,7 +268,9 @@ class FreshIconButton : FrameworkElement, IInputReceiver
         _icon.Color = !IsEnabled ? _disabledColor
             : _isPushed && _isHovered ? _pushedColor
             : lit ? _hoverColor
-            : Color.White;
+            : _idleColor;
+        if (_backing != null)
+            _backing.Visible = lit && IsEnabled;
 
         if (look.HoverOverlay != null && lit && IsEnabled)
         {

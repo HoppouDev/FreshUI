@@ -13,11 +13,33 @@ namespace FreshUI.Screens;
 /// <summary>
 /// A title menu's list to choose from (the player select, the world select): a <see cref="FreshWindow"/> under the
 /// game's logo with a row per entry in a <see cref="FreshScrollViewer"/>, and Back and New under it, B going back.
-/// Each row is a <see cref="FreshPanel"/> its screen fills (<see cref="Row"/>, <see cref="Name"/>, <see cref="Icon"/>).
+/// Each row is a <see cref="FreshPanel"/> its screen fills, laid out alike: the entry's picture (drawn by the game,
+/// <see cref="ArtSize"/> square) at the top left, its <see cref="Name"/> beside it with its <see cref="Details"/>
+/// under that and an <see cref="Aside"/> at the right, and its buttons (<see cref="Icon"/>, <see cref="Delete"/>)
+/// on a line under the picture. A row is lit (a gold border) while the cursor is over it or one of its buttons has
+/// the focus, so it's clear which entry a button acts on.
 /// </summary>
 internal abstract class SelectScreen : ContainerRuntime, IGumScreenUpdate
 {
-    protected const float WindowWidth = 325, RowHeight = 48, Gap = 4, ButtonHeight = 25, Top = 110;
+    protected const float WindowWidth = 325, Gap = 4, ButtonHeight = 25, Top = 110;
+
+    /// <summary>
+    /// A row's layout, in UI pixels from its outer edge (its border is one): the same gap (5) inside the border at
+    /// the top and sides, and a wider band for the buttons' glyphs under the picture. The picture is <see cref="ArtSize"/>
+    /// square at the top left; the text beside it, the name level with its top and the details line ending level with
+    /// its bottom; the button line under it.
+    /// </summary>
+    protected const float Inset = 6, ArtSize = 29, TextX = Inset + ArtSize + 6, DetailsY = Inset + ArtSize - 6;
+
+    // The buttons' art (22 square) keeps a few pixels' margin around its glyph (11 to 14 tall, the trash can the
+    // tallest): the line starts that much early, so the glyphs line up with the picture (and delete's with the
+    // aside), and its band sits 2 under the picture and 3 over the border, about 6 clear above and below every glyph.
+    private const float ArtMargin = 4, ButtonArt = 22;
+
+    protected const float ButtonsY = Inset + ArtSize + 2, RowHeight = ButtonsY + ButtonArt + 3;
+
+    /// <summary>Where a row's first button goes.</summary>
+    protected const float ButtonsX = Inset - ArtMargin;
 
     private readonly FreshWindow _window;
     private readonly FreshPanel _panel = new();
@@ -29,6 +51,8 @@ internal abstract class SelectScreen : ContainerRuntime, IGumScreenUpdate
 
     /// <summary>Each row's first button (the gamepad's focus starts at the first).</summary>
     protected readonly List<FreshIconButton> Plays = [];
+
+    private readonly List<FreshPanel> _rows = [];
 
     protected SelectScreen(string title, Action goBack, string newText, Action onNew)
     {
@@ -64,6 +88,7 @@ internal abstract class SelectScreen : ContainerRuntime, IGumScreenUpdate
     public void UpdateScreen()
     {
         UpdateRows();
+        LightRows();
         float canvasWidth = GraphicalUiElement.CanvasWidth, canvasHeight = GraphicalUiElement.CanvasHeight;
         float height = MathF.Floor(canvasHeight - Top - 20 - ButtonHeight - Gap);
         float x = MathF.Floor((canvasWidth - WindowWidth) / 2);
@@ -92,64 +117,158 @@ internal abstract class SelectScreen : ContainerRuntime, IGumScreenUpdate
         return button;
     }
 
+    // The row the cursor is over (within the list's view) or whose button has the focus is lit.
+    private void LightRows()
+    {
+        Gum.Wireframe.ICursor cursor = FrameworkElement.MainCursor;
+        float x = cursor.XRespectingGumZoomAndBounds(), y = cursor.YRespectingGumZoomAndBounds();
+        bool inList = Contains(List.Visual, x, y);
+        object? focus = InteractiveGue.CurrentInputReceiver;
+        foreach (FreshPanel row in _rows)
+        {
+            bool lit = inList && Contains(row, x, y) || focus is FrameworkElement { Visual.Parent: var parent } && parent == row;
+            Color border = lit ? FreshStyle.Gold : Color.Black;
+            if (row.BorderColor != border)
+                (row.BorderColor, row.BackgroundColor) = (border, lit ? FreshStyle.Button : FreshStyle.Panel);
+        }
+    }
+
+    private static bool Contains(GraphicalUiElement element, float x, float y) =>
+        x >= element.AbsoluteLeft && x < element.AbsoluteLeft + element.AbsoluteWidth && y >= element.AbsoluteTop && y < element.AbsoluteTop + element.AbsoluteHeight;
+
     /// <summary>Clears the rows (before adding them again).</summary>
     protected void ClearRows()
     {
         List.InnerPanel.Children.Clear();
         Plays.Clear();
+        _rows.Clear();
     }
 
-    /// <summary>A new row, <paramref name="height"/> UI pixels tall, added to the list.</summary>
-    protected FreshPanel Row(float height = RowHeight)
+    /// <summary>A new row, added to the list.</summary>
+    protected FreshPanel Row()
     {
-        var row = new FreshPanel { WidthUnits = DimensionUnitType.RelativeToParent, Width = 0, Height = height };
+        var row = new FreshPanel { WidthUnits = DimensionUnitType.RelativeToParent, Width = 0, Height = RowHeight };
         List.InnerPanel.Children.Add(row);
+        _rows.Add(row);
         return row;
     }
 
-    /// <summary>A row's name, top left after its picture.</summary>
+    /// <summary>Where a row's picture is drawn (in the game's units, two a UI pixel), from the row's area in them.</summary>
+    protected static Vector2 ArtPosition(Rectangle area) => new(area.X + Inset * 2, area.Y + Inset * 2);
+
+    /// <summary>A row's name, beside its picture.</summary>
     protected static TextRuntime Name(FreshPanel row, string text, Color color)
     {
-        var name = new TextRuntime
-        {
-            X = 38,
-            Y = 3,
-            WidthUnits = DimensionUnitType.RelativeToChildren,
-            HeightUnits = DimensionUnitType.RelativeToChildren,
-            Width = 0,
-            Height = 0,
-            FontSize = 10,
-            Text = text,
-            Color = color,
-            HasEvents = false,
-        };
-        GumText.SetOutline(name, 0.75f, Color.Black);
+        TextRuntime name = Text(text, 10, color);
+        (name.X, name.Y) = (TextX, Inset + 1);
         row.Children.Add(name);
         return name;
     }
 
+    /// <summary>A row's details under its name, side by side (<see cref="Detail"/>s, <see cref="DetailIcon"/>s).</summary>
+    protected static void Details(FreshPanel row, params GraphicalUiElement[] parts)
+    {
+        var line = new ContainerRuntime
+        {
+            X = TextX,
+            Y = DetailsY,
+            WidthUnits = DimensionUnitType.RelativeToChildren,
+            HeightUnits = DimensionUnitType.RelativeToChildren,
+            Width = 0,
+            Height = 0,
+            ChildrenLayout = Gum.Managers.ChildrenLayout.LeftToRightStack,
+            StackSpacing = 3,
+            HasEvents = false,
+        };
+        foreach (GraphicalUiElement part in parts)
+            line.Children.Add(part);
+        row.Children.Add(line);
+    }
+
+    /// <summary>A detail's text, smaller than the name; a wider gap before it than an icon's.</summary>
+    protected static TextRuntime Detail(string text, Color color, bool spaced = false)
+    {
+        TextRuntime detail = Text(text, 8.5f, color);
+        // A stack's spacing is between every part: the gap before a new group is its own.
+        if (spaced)
+            detail.X = 5;
+        return detail;
+    }
+
+    /// <summary>A small picture before a detail (the life and mana icons): the game's 2×2-texel art, centred on the text.</summary>
+    protected static SpriteRuntime DetailIcon(string texture, bool spaced = false)
+    {
+        Texture2D art = GumTextures.Load(texture);
+        return new SpriteRuntime
+        {
+            Texture = art,
+            X = spaced ? 5 : 0,
+            // Centred on the capitals, about 3.5 below the detail text's top.
+            Y = MathF.Round(3.5f - art.Height / 4f),
+            WidthUnits = DimensionUnitType.Absolute,
+            HeightUnits = DimensionUnitType.Absolute,
+            Width = art.Width / 2f,
+            Height = art.Height / 2f,
+        };
+    }
+
+    /// <summary>A row's aside: muted text at the right of its details line (a world's creation date, a player's time played).</summary>
+    protected static void Aside(FreshPanel row, string text)
+    {
+        TextRuntime aside = Text(text, 8.5f, FreshStyle.MutedText);
+        aside.XUnits = Gum.Converters.GeneralUnitType.PixelsFromLarge;
+        aside.XOrigin = RenderingLibrary.Graphics.HorizontalAlignment.Right;
+        (aside.X, aside.Y) = (-Inset, DetailsY);
+        row.Children.Add(aside);
+    }
+
+    private static TextRuntime Text(string text, float size, Color color)
+    {
+        var runtime = new TextRuntime
+        {
+            WidthUnits = DimensionUnitType.RelativeToChildren,
+            HeightUnits = DimensionUnitType.RelativeToChildren,
+            Width = 0,
+            Height = 0,
+            FontSize = size,
+            Text = text,
+            Color = color,
+            HasEvents = false,
+        };
+        GumText.SetOutline(runtime, 0.75f, Color.Black);
+        return runtime;
+    }
+
     /// <summary>
-    /// One of a row's image buttons along its bottom (or with its bottom at <paramref name="bottom"/>), as FreshUI draws
-    /// the game's list buttons: just the icon (its button's frame and fill dropped), a texel a UI pixel, gold while
-    /// hovered; its name as its tooltip.
+    /// One of a row's image buttons on its button line, as FreshUI draws the game's list buttons: just the icon (its
+    /// button's frame and fill dropped), a texel a UI pixel, a little dim at rest and backed by the lit panel while
+    /// hovered or focused, its name as its tooltip (under it while focused).
     /// </summary>
-    protected static FreshIconButton Icon(FreshPanel row, ref float x, string texture, string name, Action onClick, float? bottom = null)
+    protected static FreshIconButton Icon(FreshPanel row, ref float x, string texture, string name, Action onClick)
     {
         Texture2D art = FreshUI.Legacy.PixelImages.Icon(GumTextures.Load(texture));
-        var button = new FreshIconButton { Look = new FreshIconButtonLook(art), TexelSize = 1, HoverColor = FreshStyle.Gold };
+        var button = new FreshIconButton { Look = new FreshIconButtonLook(art), TexelSize = 1, IdleColor = new Color(205, 205, 205), HasBacking = true };
         button.Visual.Width = art.Width;
         button.Visual.Height = art.Height;
         button.Visual.X = x;
-        button.Visual.Y = (bottom ?? RowHeight - 3) - art.Height;
+        button.Visual.Y = ButtonsY;
         button.Click += (_, _) => onClick();
         // Its name for automation too (the tree's label).
         button.Visual.Name = name;
-        FreshTooltip.Attach(button.Visual, () => name);
+        FreshTooltip.Attach(button, () => name);
         row.Children.Add(button.Visual);
         x += art.Width;
         return button;
     }
 
-    /// <summary>Where a row's delete button goes: its right end.</summary>
-    protected const float DeleteX = WindowWidth - 12 - 6 - 26;
+    /// <summary>A row's delete button, at the right end of its button line.</summary>
+    protected static FreshIconButton Delete(FreshPanel row, Action onClick)
+    {
+        float x = 0;
+        FreshIconButton delete = Icon(row, ref x, "Images/UI/ButtonDelete", Terraria.Localization.Language.GetTextValue("UI.Delete"), onClick);
+        delete.Visual.XUnits = Gum.Converters.GeneralUnitType.PixelsFromLarge;
+        delete.Visual.XOrigin = RenderingLibrary.Graphics.HorizontalAlignment.Right;
+        delete.Visual.X = -ButtonsX;
+        return delete;
+    }
 }

@@ -9,9 +9,11 @@ using Microsoft.Xna.Framework;
 namespace FreshUI.Components;
 
 /// <summary>
-/// Text that follows the cursor while it's over an element (<see cref="Attach"/>): bordered distance
-/// field text (see GumText) just below and right of the cursor, kept inside the canvas, above all other
-/// UI. One tooltip shows at a time. Sizes are in UI pixels (see UiPixels).
+/// Text that follows the cursor while it's over an element (<see cref="Attach(InteractiveGue, Func{string?})"/>),
+/// or sits under a control while it has the gamepad's focus (<see cref="Attach(FrameworkElement, Func{string?})"/>):
+/// outlined distance field text (see GumText) with the hotbar's drop shadow, just below and right of the cursor,
+/// kept inside the canvas, over the menus (the overlay's root, which FreshUI draws; Gum's popup root isn't).
+/// One tooltip shows at a time. Sizes are in UI pixels (see UiPixels).
 /// </summary>
 static class FreshTooltip
 {
@@ -46,7 +48,21 @@ static class FreshTooltip
         element.RollOff += (_, _) => Hide(element);
     }
 
-    private static void Show(InteractiveGue owner, Func<string?> content)
+    /// <summary>
+    /// As <see cref="Attach(InteractiveGue, Func{string?})"/> for the cursor, and while the control has the
+    /// gamepad's focus, under it.
+    /// </summary>
+    public static void Attach(FrameworkElement control, Func<string?> text)
+    {
+        var element = (InteractiveGue)control.Visual;
+        Attach(element, text);
+        control.GotFocus += (_, _) => Show(element, text, below: true);
+        control.LostFocus += (_, _) => Hide(element);
+    }
+
+    private static void Show(InteractiveGue owner, Func<string?> content) => Show(owner, content, below: false);
+
+    private static void Show(InteractiveGue owner, Func<string?> content, bool below)
     {
         _owner = owner;
         TextRuntime text = _text ??= Create();
@@ -61,16 +77,18 @@ static class FreshTooltip
         text.FontSize = FontSize;
         text.Color = Color;
         GumText.SetOutline(text, OutlineWidth, Microsoft.Xna.Framework.Color.Black);
-        text.HasDropshadow = true;
-        text.DropshadowColor = Color.Black;
-        text.DropshadowBlur = 1;
-        text.DropshadowOffsetX = 0;
-        text.DropshadowOffsetY = 1;
-        text.DropshadowAlpha = 100;
+        GumText.SetDropShadow(text, 1);
+        // Over everything else on the overlay, screens added since included.
+        GraphicalUiElement parent = GumHost.OverlayRoot;
+        if (parent.Children[^1] != text)
+        {
+            parent.Children.Remove(text);
+            parent.Children.Add(text);
+        }
 
         ICursor cursor = FrameworkElement.MainCursor;
-        float x = cursor.XRespectingGumZoomAndBounds() + CursorOffset;
-        float y = cursor.YRespectingGumZoomAndBounds() + CursorOffset;
+        float x = below ? owner.AbsoluteLeft : cursor.XRespectingGumZoomAndBounds() + CursorOffset;
+        float y = below ? owner.AbsoluteTop + owner.AbsoluteHeight + 1 : cursor.YRespectingGumZoomAndBounds() + CursorOffset;
         // Kept inside the canvas, moved back left or up from the edge it would cross.
         x = MathF.Min(x, GumService.Default.CanvasWidth - text.AbsoluteWidth - EdgeMargin);
         y = MathF.Min(y, GumService.Default.CanvasHeight - text.AbsoluteHeight - EdgeMargin);
@@ -100,7 +118,7 @@ static class FreshTooltip
         };
         // Never under the cursor as far as input goes, or it would take the hover from its element.
         text.HasEvents = false;
-        GumService.Default.PopupRoot.Children.Add(text);
+        GumHost.OverlayRoot.Children.Add(text);
         return text;
     }
 }

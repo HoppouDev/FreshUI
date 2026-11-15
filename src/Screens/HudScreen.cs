@@ -322,6 +322,9 @@ public sealed partial class HudScreen : ContainerRuntime
         _current.PresentBuffs();
         _current.PresentMinimapFrame();
         _current.PresentInfoAccs();
+        _current.PresentInvasion();
+        _current.PresentNotifications();
+        _current.PresentDeath();
         _current.PresentInventory();
         _current.PresentHotbar();
         _current.PresentEquipment();
@@ -330,6 +333,7 @@ public sealed partial class HudScreen : ContainerRuntime
         _current.PresentContainers();
         _current.PresentChestControls();
         _current.PresentCrafting();
+        _current.PresentBanners();
         _current._crafting.Present();
         _current.PresentShopInfo();
         _current.PresentNpcChat();

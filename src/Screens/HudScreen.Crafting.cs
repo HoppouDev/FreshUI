@@ -42,9 +42,11 @@ public sealed partial class HudScreen
             titled = PresentRecipeList();
         if (IsReady && RecipeGridAsked())
             PresentRecipeGrid();
-        if (_filterTitle != null && _filterTitle.Visible != titled)
-            _filterTitle.Visible = titled;
+        _craftTitled = titled;
     }
+
+    // Whether the crafting list's title shows this frame (the banners' list sets its own after).
+    private bool _craftTitled;
 
     private void CraftIcon(Item item, Vector2 position, float scale)
     {

@@ -1,9 +1,4 @@
-using FreshUI.Components;
 using FreshUI.GumUi;
-using Gum.DataTypes;
-using Gum.Forms.Controls;
-using Gum.GueDeriving;
-using Gum.Wireframe;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Terraria;
@@ -15,72 +10,30 @@ using Terraria.ID;
 using Terraria.IO;
 using Terraria.Localization;
 using Terraria.Social;
-using Terraria.UI;
-using Terraria.UI.Gamepad;
 
 namespace FreshUI.Screens;
 
 /// <summary>
-/// The player select (the game's <see cref="UICharacterSelect"/>, which still loads the players when it opens):
-/// a <see cref="FreshWindow"/> with a row per player in a <see cref="FreshScrollViewer"/> (favourites first, then
-/// the last played), each with the player's portrait (the game's), name, life and mana, difficulty and time
-/// played, and its play, favourite, cloud, rename and delete buttons, as the game's rows; Back and New under it.
+/// The player select (the game's <see cref="UICharacterSelect"/>, which still loads the players when it opens), a
+/// <see cref="SelectScreen"/>: a row per player (favourites first, then the last played, as the game's) with the
+/// player's portrait (the game's), name, life and mana, difficulty and time played, and its play, favourite, cloud,
+/// rename and delete buttons, calling <see cref="PlayerFileData"/> as the game's rows do.
 /// </summary>
-internal sealed class PlayerSelectScreen : ContainerRuntime, IGumScreenUpdate
+internal sealed class PlayerSelectScreen : SelectScreen
 {
     public static readonly Func<bool> Shows = GumRoutes.State<UICharacterSelect>();
-    private const float WindowWidth = 325, RowHeight = 48, Gap = 4, ButtonHeight = 25, Top = 110;
 
     public static PlayerSelectScreen? Instance { get; private set; }
 
-    private readonly FreshWindow _window = new(Language.GetTextValue("UI.SelectPlayer"));
-    private readonly FreshPanel _panel = new();
-    private readonly FreshScrollViewer _list = new() { WheelStep = RowHeight + Gap, IsFocusable = false };
-    private readonly FreshPanelButton _back, _new;
-    private readonly List<FreshIconButton> _plays = [];
     private List<PlayerFileData> _shown = [];
 
-    public PlayerSelectScreen()
+    public PlayerSelectScreen() : base(Language.GetTextValue("UI.SelectPlayer"), GoBack, Language.GetTextValue("UI.New"), () =>
     {
-        WidthUnits = HeightUnits = DimensionUnitType.RelativeToParent;
-        Width = Height = 0;
-        HasEvents = false;
-        InteractiveGue zone = GumGamepad.SpatialZone();
-        Children.Add(zone);
-        zone.Children.Add(_window);
-        _panel.WidthUnits = _panel.HeightUnits = DimensionUnitType.RelativeToParent;
-        _panel.Width = 0;
-        _window.Add(_panel);
-        _list.Visual.X = _list.Visual.Y = 6;
-        _list.Visual.WidthUnits = _list.Visual.HeightUnits = DimensionUnitType.RelativeToParent;
-        _list.Visual.Width = _list.Visual.Height = -12;
-        _list.InnerPanel.ChildrenLayout = Gum.Managers.ChildrenLayout.TopToBottomStack;
-        _list.InnerPanel.StackSpacing = Gap;
-        _panel.Children.Add(_list.Visual);
-        _back = Button(Language.GetTextValue("UI.Back"), GoBack);
-        _new = Button(Language.GetTextValue("UI.New"), () =>
-        {
-            SoundEngine.PlaySound(10);
-            Main.PendingPlayer = new Player();
-            Main.menuMode = 888;
-            Main.MenuUI.SetState(new UICharacterCreation(Main.PendingPlayer));
-        });
-        zone.Children.Add(_back.Visual);
-        zone.Children.Add(_new.Visual);
-        Instance = this;
-    }
-
-    /// <summary>The first player's play button, else New (the gamepad's focus starts there).</summary>
-    public FrameworkElement First => _plays.Count > 0 ? _plays[0] : _new;
-
-    private static FreshPanelButton Button(string text, Action onClick)
-    {
-        var button = new FreshPanelButton { Text = text };
-        button.Visual.WidthUnits = button.Visual.HeightUnits = DimensionUnitType.Absolute;
-        button.Visual.Height = ButtonHeight;
-        button.Click += (_, _) => onClick();
-        return button;
-    }
+        SoundEngine.PlaySound(10);
+        Main.PendingPlayer = new Player();
+        Main.menuMode = 888;
+        Main.MenuUI.SetState(new UICharacterCreation(Main.PendingPlayer));
+    }) => Instance = this;
 
     private static void GoBack()
     {
@@ -88,76 +41,35 @@ internal sealed class PlayerSelectScreen : ContainerRuntime, IGumScreenUpdate
         Main.menuMode = 0;
     }
 
-    public void UpdateScreen()
+    protected override void UpdateRows()
     {
-        // As the game's: favourites first, then the last played.
         List<PlayerFileData> players = Main.PlayerList.OrderByDescending(p => p.IsFavorite).ThenByDescending(p => p.LastPlayed)
             .ThenBy(p => p.Name).ThenBy(p => p.GetFileName()).ToList();
-        if (!players.SequenceEqual(_shown))
-            Build(players);
-        float canvasWidth = GraphicalUiElement.CanvasWidth, canvasHeight = GraphicalUiElement.CanvasHeight;
-        float height = MathF.Floor(canvasHeight - Top - 20 - ButtonHeight - Gap);
-        float x = MathF.Floor((canvasWidth - WindowWidth) / 2);
-        if (_window.X != x || _window.Height != height)
-        {
-            (_window.X, _window.Y, _window.Width, _window.Height) = (x, Top, WindowWidth, height);
-            _panel.Height = 0;
-            _window.Layout();
-            float half = MathF.Floor((WindowWidth - Gap) / 2);
-            (_back.Visual.X, _back.Visual.Y, _back.Visual.Width) = (x, Top + height + Gap, half);
-            (_new.Visual.X, _new.Visual.Y, _new.Visual.Width) = (x + WindowWidth - half, Top + height + Gap, half);
-        }
-        // B (the inventory key, the menu's back on the title menu) goes back.
-        if (UILinkPointNavigator.Shortcuts.BackButtonInUse && !UILinkPointNavigator.Shortcuts.BackButtonLock)
-        {
-            UILinkPointNavigator.Shortcuts.BackButtonLock = true;
-            GoBack();
-        }
-    }
-
-    private void Build(List<PlayerFileData> players)
-    {
+        if (players.SequenceEqual(_shown))
+            return;
         _shown = players;
-        _list.InnerPanel.Children.Clear();
-        _plays.Clear();
+        ClearRows();
         foreach (PlayerFileData data in players)
-            _list.InnerPanel.Children.Add(Row(data));
+            AddRow(data);
     }
 
     // A player's row, as the game's UICharacterListItem.
-    private GraphicalUiElement Row(PlayerFileData data)
+    private void AddRow(PlayerFileData data)
     {
-        var row = new FreshPanel { WidthUnits = DimensionUnitType.RelativeToParent, Width = 0, Height = RowHeight };
+        FreshUI.Components.FreshPanel row = Row();
         var portrait = new UICharacter(data.Player, animated: false, hasBackPanel: true, 1f, useAClone: true);
-        var info = new FreshGameView
+        row.Children.Add(new FreshUI.Components.FreshGameView
         {
-            WidthUnits = DimensionUnitType.RelativeToParent,
-            HeightUnits = DimensionUnitType.RelativeToParent,
+            WidthUnits = Gum.DataTypes.DimensionUnitType.RelativeToParent,
+            HeightUnits = Gum.DataTypes.DimensionUnitType.RelativeToParent,
             Width = 0,
             Height = 0,
             Draw = (batch, area) => DrawInfo(batch, area, data, portrait),
-        };
-        row.Children.Add(info);
-        var name = new TextRuntime
-        {
-            X = 38,
-            Y = 3,
-            WidthUnits = DimensionUnitType.RelativeToChildren,
-            HeightUnits = DimensionUnitType.RelativeToChildren,
-            Width = 0,
-            Height = 0,
-            FontSize = 10,
-            Text = data.Name,
-            Color = data.Player.loadStatus == StatusID.Ok ? Color.White : Color.Gray,
-            HasEvents = false,
-        };
-        GumText.SetOutline(name, 0.75f, Color.Black);
-        row.Children.Add(name);
-
-        float buttonX = 38;
-        FreshIconButton play = Icon(row, ref buttonX, "Images/UI/ButtonPlay", Language.GetTextValue("UI.Play"), () => Play(data));
-        _plays.Add(play);
-        Icon(row, ref buttonX, data.IsFavorite ? "Images/UI/ButtonFavoriteActive" : "Images/UI/ButtonFavoriteInactive",
+        });
+        Name(row, data.Name, data.Player.loadStatus == StatusID.Ok ? Color.White : Color.Gray);
+        float x = 38;
+        Plays.Add(Icon(row, ref x, "Images/UI/ButtonPlay", Language.GetTextValue("UI.Play"), () => Play(data)));
+        Icon(row, ref x, data.IsFavorite ? "Images/UI/ButtonFavoriteActive" : "Images/UI/ButtonFavoriteInactive",
             Language.GetTextValue(data.IsFavorite ? "UI.Unfavorite" : "UI.Favorite"), () =>
             {
                 data.ToggleFavorite();
@@ -165,7 +77,7 @@ internal sealed class PlayerSelectScreen : ContainerRuntime, IGumScreenUpdate
             });
         if (SocialAPI.Cloud != null)
         {
-            Icon(row, ref buttonX, data.IsCloudSave ? "Images/UI/ButtonCloudActive" : "Images/UI/ButtonCloudInactive",
+            Icon(row, ref x, data.IsCloudSave ? "Images/UI/ButtonCloudActive" : "Images/UI/ButtonCloudInactive",
                 Language.GetTextValue(data.IsCloudSave ? "UI.MoveOffCloud" : "UI.MoveToCloud"), () =>
                 {
                     if (data.IsCloudSave)
@@ -175,30 +87,12 @@ internal sealed class PlayerSelectScreen : ContainerRuntime, IGumScreenUpdate
                     _shown = [];
                 });
         }
-        Icon(row, ref buttonX, "Images/UI/ButtonRename", Language.GetTextValue("UI.Rename"), () => Rename(data));
+        Icon(row, ref x, "Images/UI/ButtonRename", Language.GetTextValue("UI.Rename"), () => Rename(data));
         if (!data.IsFavorite)
         {
-            float right = WindowWidth - 12 - 6 - 26;
+            float right = DeleteX;
             Icon(row, ref right, "Images/UI/ButtonDelete", Language.GetTextValue("UI.Delete"), () => Delete(data));
         }
-        return row;
-    }
-
-    // One of a row's image buttons, as FreshUI draws the game's list buttons: just the icon (its button's frame
-    // and fill dropped), a texel a UI pixel; its name as its tooltip.
-    private static FreshIconButton Icon(FreshPanel row, ref float x, string texture, string name, Action onClick)
-    {
-        Texture2D art = FreshUI.Legacy.PixelImages.Icon(GumTextures.Load(texture));
-        var button = new FreshIconButton { Look = new FreshIconButtonLook(art), TexelSize = 1, HoverColor = FreshStyle.Gold };
-        button.Visual.Width = art.Width;
-        button.Visual.Height = art.Height;
-        button.Visual.X = x;
-        button.Visual.Y = RowHeight - 3 - art.Height;
-        button.Click += (_, _) => onClick();
-        FreshTooltip.Attach(button.Visual, () => name);
-        row.Children.Add(button.Visual);
-        x += art.Width;
-        return button;
     }
 
     private static void Play(PlayerFileData data)

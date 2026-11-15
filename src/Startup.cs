@@ -32,6 +32,8 @@ public sealed class Startup : IModInitializer
                 showWhen: () => TitleMenuScreen.Shows, defaultFocus: () => TitleMenuScreen.Instance?.First);
             GumScreens.Register("fresh-ui:player-select", () => new PlayerSelectScreen(), layer: GumLayer.Overlay,
                 showWhen: PlayerSelectScreen.Shows, defaultFocus: () => PlayerSelectScreen.Instance?.First);
+            GumScreens.Register("fresh-ui:world-select", () => new WorldSelectScreen(), layer: GumLayer.Overlay,
+                showWhen: WorldSelectScreen.Shows, defaultFocus: () => WorldSelectScreen.Instance?.First);
         }
     }
 

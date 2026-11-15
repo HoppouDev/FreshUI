@@ -33,10 +33,10 @@ internal abstract class SelectScreen : ContainerRuntime, IGumScreenUpdate
 
     // The buttons' art (22 square) keeps a few pixels' margin around its glyph (11 to 14 tall, the trash can the
     // tallest): the line starts that much early, so the glyphs line up with the picture (and delete's with the
-    // aside), and its band sits 2 under the picture and 3 over the border, about 6 clear above and below every glyph.
+    // aside), and its band sits 1 under the picture and 4 over the border, the glyphs about evenly clear above and below.
     private const float ArtMargin = 4, ButtonArt = 22;
 
-    protected const float ButtonsY = Inset + ArtSize + 2, RowHeight = ButtonsY + ButtonArt + 3;
+    protected const float ButtonsY = Inset + ArtSize + 1, RowHeight = ButtonsY + ButtonArt + 4;
 
     /// <summary>Where a row's first button goes.</summary>
     protected const float ButtonsX = Inset - ArtMargin;

@@ -46,6 +46,8 @@
 		"FreshUI.Hooks.Mixins.UserInterfaceMixin",
 		"FreshUI.Hooks.Mixins.InstructionBarMixin",
 		"FreshUI.Hooks.Mixins.UIMinimapFrameMixin",
+		"FreshUI.Hooks.Mixins.MouseTextMixin",
+		"FreshUI.Hooks.Mixins.ChatInputBoxMixin",
 		"FreshUI.Legacy.Mixins.AchievementAdvisorMixin",
 		"FreshUI.Legacy.Mixins.BigProgressBarHelperMixin",
 		"FreshUI.Legacy.Mixins.SdfTextMixin",

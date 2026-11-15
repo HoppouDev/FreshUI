@@ -1,6 +1,8 @@
 using System.Reflection;
 using FreshUI.Components;
 using FreshUI.GumUi;
+using Gum.DataTypes;
+using Gum.GueDeriving;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Terraria;
@@ -20,8 +22,9 @@ namespace FreshUI.Screens;
 /// <summary>
 /// The world select (the game's <see cref="UIWorldSelect"/>, which still loads the worlds when it opens), a
 /// <see cref="SelectScreen"/>: a row per world in the game's order (worlds the player can join, a newly generated
-/// one, favourites, ones the player has played…) with its icon (the game's, with its badges), name, difficulty, size
-/// and creation date, and its play, favourite, cloud, seed, rename and delete buttons. Each row stands for one of the
+/// one, favourites, ones the player has played…): its icon (the game's, with its badges) at the top left, its name
+/// beside it with its size and difficulty under that and its creation date at the right, and under the icon its play,
+/// favourite, cloud, seed and rename buttons, delete at the line's right end. Each row stands for one of the
 /// game's own <see cref="UIWorldListItem"/>s, whose handlers its buttons call (the creative mismatch's rejection,
 /// multiplayer's next step, the seed copied…).
 /// </summary>
@@ -33,6 +36,9 @@ internal sealed class WorldSelectScreen : SelectScreen
 
     public static WorldSelectScreen? Instance { get; private set; }
 
+    // A row, in UI pixels: the icon (30, the game's 60 units) at its top left, two lines of text beside it, the buttons under it.
+    private const float WorldRowHeight = 58, Inset = 6, IconSize = 30, TextX = Inset + IconSize + 6, ButtonsBottom = WorldRowHeight - 4, ArtMargin = 4;
+
     private List<WorldFileData> _shown = [];
     private readonly List<(bool Favorite, bool Cloud)> _states = [];
 
@@ -42,7 +48,11 @@ internal sealed class WorldSelectScreen : SelectScreen
         Main.newWorldName = Lang.gen[57].Value + " " + (Main.WorldList.Count + 1);
         Main.menuMode = 888;
         Main.MenuUI.SetState(new UIWorldCreation());
-    }) => Instance = this;
+    })
+    {
+        Instance = this;
+        List.WheelStep = WorldRowHeight + Gap;
+    }
 
     private static void GoBack()
     {
@@ -81,7 +91,7 @@ internal sealed class WorldSelectScreen : SelectScreen
     // A world's row, standing for the game's list item.
     private void AddRow(WorldFileData data, UIWorldListItem item)
     {
-        FreshPanel row = Row();
+        FreshPanel row = Row(WorldRowHeight);
         var icon = (UIElement)WorldIcon.GetValue(item)!;
         object?[] difficulty = [null, null];
         Difficulty.Invoke(item, difficulty);
@@ -91,26 +101,54 @@ internal sealed class WorldSelectScreen : SelectScreen
             HeightUnits = Gum.DataTypes.DimensionUnitType.RelativeToParent,
             Width = 0,
             Height = 0,
-            Draw = (batch, area) => DrawInfo(batch, area, data, icon, (string)difficulty[0]!, (Color)difficulty[1]!),
+            Draw = (batch, area) => DrawIcon(batch, area, icon),
         });
         string name = data.GetWorldName(allowCropping: true);
-        Name(row, data.IsValid ? name : "(" + StatusID.Search.GetName(data.LoadStatus) + ") " + name, data.IsValid ? Color.White : Color.Gray);
-        float x = 38;
-        Plays.Add(Icon(row, ref x, "Images/UI/ButtonPlay", Language.GetTextValue("UI.Play"), () => Act(item, "PlayGame")));
+        TextRuntime title = Name(row, data.IsValid ? name : "(" + StatusID.Search.GetName(data.LoadStatus) + ") " + name, data.IsValid ? Color.White : Color.Gray);
+        (title.X, title.Y) = (TextX, Inset + 1);
+        // Under the name: the size, then the difficulty in its colour; the creation date at the right.
+        var details = new ContainerRuntime
+        {
+            X = TextX,
+            Y = Inset + 16,
+            WidthUnits = DimensionUnitType.RelativeToChildren,
+            HeightUnits = DimensionUnitType.RelativeToChildren,
+            Width = 0,
+            Height = 0,
+            ChildrenLayout = Gum.Managers.ChildrenLayout.LeftToRightStack,
+            StackSpacing = 6,
+            HasEvents = false,
+        };
+        details.Children.Add(Detail(Language.GetTextValue("UI.WorldSizeFormat", data.WorldSizeName), FreshStyle.MutedText));
+        details.Children.Add(Detail((string)difficulty[0]!, (Color)difficulty[1]!));
+        row.Children.Add(details);
+        string created = GameCulture.FromCultureName(GameCulture.CultureName.English).IsActive ? data.CreationTime.ToString("d MMMM yyyy") : data.CreationTime.ToShortDateString();
+        TextRuntime date = Detail(created, FreshStyle.MutedText);
+        date.XUnits = Gum.Converters.GeneralUnitType.PixelsFromLarge;
+        date.XOrigin = RenderingLibrary.Graphics.HorizontalAlignment.Right;
+        (date.X, date.Y) = (-Inset, details.Y);
+        row.Children.Add(date);
+        // The buttons' art has a few pixels' margin: their glyphs line up with the icon and the date.
+        float x = Inset - ArtMargin;
+        Plays.Add(Icon(row, ref x, "Images/UI/ButtonPlay", Language.GetTextValue("UI.Play"), () => Act(item, "PlayGame"), ButtonsBottom));
         Icon(row, ref x, data.IsFavorite ? "Images/UI/ButtonFavoriteActive" : "Images/UI/ButtonFavoriteInactive",
-            Language.GetTextValue(data.IsFavorite ? "UI.Unfavorite" : "UI.Favorite"), () => Act(item, "FavoriteButtonClick"));
+            Language.GetTextValue(data.IsFavorite ? "UI.Unfavorite" : "UI.Favorite"), () => Act(item, "FavoriteButtonClick"), ButtonsBottom);
         if (SocialAPI.Cloud != null)
         {
             Icon(row, ref x, data.IsCloudSave ? "Images/UI/ButtonCloudActive" : "Images/UI/ButtonCloudInactive",
-                Language.GetTextValue(data.IsCloudSave ? "UI.MoveOffCloud" : "UI.MoveToCloud"), () => Act(item, "CloudButtonClick"));
+                Language.GetTextValue(data.IsCloudSave ? "UI.MoveOffCloud" : "UI.MoveToCloud"), () => Act(item, "CloudButtonClick"), ButtonsBottom);
         }
         if (data.WorldGeneratorVersion != 0)
-            Icon(row, ref x, "Images/UI/ButtonSeed", Language.GetTextValue("UI.CopySeed", data.GetFullSeedText(allowCropping: true)), () => Act(item, "SeedButtonClick"));
-        Icon(row, ref x, "Images/UI/ButtonRename", Language.GetTextValue("UI.Rename"), () => Act(item, "RenameButtonClick"));
+            Icon(row, ref x, "Images/UI/ButtonSeed", Language.GetTextValue("UI.CopySeed", data.GetFullSeedText(allowCropping: true)), () => Act(item, "SeedButtonClick"), ButtonsBottom);
+        Icon(row, ref x, "Images/UI/ButtonRename", Language.GetTextValue("UI.Rename"), () => Act(item, "RenameButtonClick"), ButtonsBottom);
         if (!data.IsFavorite)
         {
-            float right = DeleteX;
-            Icon(row, ref right, "Images/UI/ButtonDelete", Language.GetTextValue("UI.Delete"), () => Act(item, "DeleteButtonClick"));
+            float right = 0;
+            FreshIconButton delete = Icon(row, ref right, "Images/UI/ButtonDelete", Language.GetTextValue("UI.Delete"), () => Act(item, "DeleteButtonClick"), ButtonsBottom);
+            // At the line's right end, whether or not the list has its scrollbar.
+            delete.Visual.XUnits = Gum.Converters.GeneralUnitType.PixelsFromLarge;
+            delete.Visual.XOrigin = RenderingLibrary.Graphics.HorizontalAlignment.Right;
+            delete.Visual.X = -(Inset - ArtMargin - 1);
         }
     }
 
@@ -122,18 +160,30 @@ internal sealed class WorldSelectScreen : SelectScreen
             .Invoke(item, [new UIMouseEvent(button, Vector2.Zero), button]);
     }
 
-    // The game's part of a row: the world's icon, and its difficulty, size and creation date.
-    private static void DrawInfo(SpriteBatch batch, Rectangle area, WorldFileData data, UIElement icon, string difficulty, Color color)
+    // A detail line's text: smaller than the name, outlined as it.
+    private static TextRuntime Detail(string text, Color color)
     {
-        icon.Left.Set(area.X + 8, 0f);
-        icon.Top.Set(area.Y + (area.Height - icon.Height.Pixels) / 2, 0f);
+        var detail = new TextRuntime
+        {
+            WidthUnits = DimensionUnitType.RelativeToChildren,
+            HeightUnits = DimensionUnitType.RelativeToChildren,
+            Width = 0,
+            Height = 0,
+            FontSize = 8.5f,
+            Text = text,
+            Color = color,
+            HasEvents = false,
+        };
+        GumText.SetOutline(detail, 0.75f, Color.Black);
+        return detail;
+    }
+
+    // The game's part of a row: the world's icon (with its badges), at the row's top left.
+    private static void DrawIcon(SpriteBatch batch, Rectangle area, UIElement icon)
+    {
+        icon.Left.Set(area.X + Inset * 2, 0f);
+        icon.Top.Set(area.Y + Inset * 2, 0f);
         icon.Recalculate();
         icon.Draw(batch);
-        var at = new Vector2(area.X + 300, area.Y + 6);
-        Utils.DrawBorderString(batch, Language.GetTextValue("UI.WorldSizeFormat", data.WorldSizeName), at, Color.White);
-        var second = new Vector2(area.X + 300, area.Y + 52);
-        Utils.DrawBorderString(batch, difficulty, second, color);
-        string date = GameCulture.FromCultureName(GameCulture.CultureName.English).IsActive ? data.CreationTime.ToString("d MMMM yyyy") : data.CreationTime.ToShortDateString();
-        Utils.DrawBorderString(batch, date, second + new Vector2(130, 0), Color.White);
     }
 }

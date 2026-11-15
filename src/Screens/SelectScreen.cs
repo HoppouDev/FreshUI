@@ -99,10 +99,10 @@ internal abstract class SelectScreen : ContainerRuntime, IGumScreenUpdate
         Plays.Clear();
     }
 
-    /// <summary>A new row, added to the list.</summary>
-    protected FreshPanel Row()
+    /// <summary>A new row, <paramref name="height"/> UI pixels tall, added to the list.</summary>
+    protected FreshPanel Row(float height = RowHeight)
     {
-        var row = new FreshPanel { WidthUnits = DimensionUnitType.RelativeToParent, Width = 0, Height = RowHeight };
+        var row = new FreshPanel { WidthUnits = DimensionUnitType.RelativeToParent, Width = 0, Height = height };
         List.InnerPanel.Children.Add(row);
         return row;
     }
@@ -129,17 +129,18 @@ internal abstract class SelectScreen : ContainerRuntime, IGumScreenUpdate
     }
 
     /// <summary>
-    /// One of a row's image buttons along its bottom, as FreshUI draws the game's list buttons: just the icon (its
-    /// button's frame and fill dropped), a texel a UI pixel, gold while hovered; its name as its tooltip.
+    /// One of a row's image buttons along its bottom (or with its bottom at <paramref name="bottom"/>), as FreshUI draws
+    /// the game's list buttons: just the icon (its button's frame and fill dropped), a texel a UI pixel, gold while
+    /// hovered; its name as its tooltip.
     /// </summary>
-    protected static FreshIconButton Icon(FreshPanel row, ref float x, string texture, string name, Action onClick)
+    protected static FreshIconButton Icon(FreshPanel row, ref float x, string texture, string name, Action onClick, float? bottom = null)
     {
         Texture2D art = FreshUI.Legacy.PixelImages.Icon(GumTextures.Load(texture));
         var button = new FreshIconButton { Look = new FreshIconButtonLook(art), TexelSize = 1, HoverColor = FreshStyle.Gold };
         button.Visual.Width = art.Width;
         button.Visual.Height = art.Height;
         button.Visual.X = x;
-        button.Visual.Y = RowHeight - 3 - art.Height;
+        button.Visual.Y = (bottom ?? RowHeight - 3) - art.Height;
         button.Click += (_, _) => onClick();
         // Its name for automation too (the tree's label).
         button.Visual.Name = name;

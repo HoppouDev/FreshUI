@@ -65,11 +65,15 @@ internal sealed class GameUiMirror : ContainerRuntime
             _laidOutFor = size;
             Source.Recalculate();
         }
+        // The game's own per-update work for its elements (their OnUpdate), as its interface's update would.
+        Source.Update(Main.gameTimeCache);
         int count = Count(Source);
         if (Source != _built || count != _builtCount)
         {
             _built = Source;
             _builtCount = count;
+            // Elements the game added since it last laid out (a category's) are laid out first.
+            Source.Recalculate();
             Build();
         }
         foreach (Mirror mirror in _mirrors)
@@ -89,48 +93,88 @@ internal sealed class GameUiMirror : ContainerRuntime
         _zone.Children.Clear();
         _mirrors.Clear();
         foreach (UIElement child in Source!.Children)
-            Add(child);
+            Add(child, _zone, Zero);
     }
 
-    private static bool Listened(UIElement element) => MouseDownEvent.GetValue(element) != null || ClickEvent.GetValue(element) != null;
+    private static readonly Func<Vector2> Zero = () => Vector2.Zero;
+    private static readonly FieldInfo InnerList = typeof(UIList).GetField("_innerList", BindingFlags.NonPublic | BindingFlags.Instance)!;
 
-    // An element and what's in it.
-    private void Add(UIElement element)
+    private static readonly Dictionary<Type, bool> OverridesClicks = [];
+
+    // Whether the game acts on clicks on the element: a handler on it, or its type's own mouse down or click.
+    private static bool Listened(UIElement element)
+    {
+        if (MouseDownEvent.GetValue(element) != null || ClickEvent.GetValue(element) != null)
+            return true;
+        Type type = element.GetType();
+        if (!OverridesClicks.TryGetValue(type, out bool overrides))
+        {
+            overrides = type.GetMethod(nameof(UIElement.LeftMouseDown))!.DeclaringType != typeof(UIElement) ||
+                type.GetMethod(nameof(UIElement.LeftClick))!.DeclaringType != typeof(UIElement);
+            OverridesClicks[type] = overrides;
+        }
+        return overrides;
+    }
+
+    // An element and what's in it, in a container whose origin is at the given game position (UI units).
+    private void Add(UIElement element, GraphicalUiElement container, Func<Vector2> origin, ListMirror? list = null)
     {
         Type type = element.GetType();
         bool listened = Listened(element);
+        if (element is UIScrollbar)
+            return; // A list's own (its mirror scrolls).
+        if (element is UIList gameList)
+        {
+            var mirror = new ListMirror(gameList);
+            Keep(mirror, container, origin);
+            var inner = (UIElement)InnerList.GetValue(gameList)!;
+            Func<Vector2> innerOrigin = () => inner.GetDimensions().Position();
+            foreach (UIElement item in inner.Children)
+                Add(item, mirror.Items, innerOrigin, mirror);
+            return;
+        }
         if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(GroupOptionButton<>))
-            Keep(new OptionMirror(element));
-        else if (element is UITextPanel<string> or UITextPanel<Terraria.Localization.LocalizedText> || type.IsGenericType && type.GetGenericTypeDefinition() == typeof(UITextPanel<>))
-            Keep(new TextPanelMirror((UIPanel)element, listened));
+            Keep(new OptionMirror(element), container, origin);
+        else if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(UITextPanel<>))
+            Keep(new TextPanelMirror((UIPanel)element, listened), container, origin);
+        else if (element is UIDifficultyButton difficulty)
+            Keep(new DifficultyMirror(difficulty), container, origin);
+        else if (element is UIColoredImageButton imageButton)
+            Keep(new ImageButtonMirror(imageButton), container, origin);
+        else if (element is UIColoredSlider slider)
+        {
+            Keep(new SliderMirror(slider), container, origin);
+            return;
+        }
         else if (element is UICharacterNameButton || listened && element is UIPanel)
-            Keep(new ButtonMirror(element, ""));
+            Keep(new ButtonMirror(element, ""), container, origin);
         else if (element is UIPanel panel)
-            Keep(new PanelMirror(element, () => panel.BackgroundColor));
+            Keep(new PanelMirror(element, () => panel.BackgroundColor), container, origin);
         else if (element is UISlicedImage image)
-            Keep(new PanelMirror(element, () => image.Color));
+            Keep(new PanelMirror(element, () => image.Color), container, origin);
         else if (element is UIHorizontalSeparator)
-            Keep(new SeparatorMirror(element));
+            Keep(new SeparatorMirror(element), container, origin);
         else if (element is UIText text)
-            Keep(new TextMirror(text));
-        else if (!element.Children.Any() && element.GetType() != typeof(UIElement))
+            Keep(new TextMirror(text), container, origin);
+        else if (!element.Children.Any() && type != typeof(UIElement))
         {
             // The game's own art (a preview, a portrait…); a control too where the game listens to it.
-            Keep(new GameMirror(element));
+            Keep(new GameMirror(element, list), container, origin);
             if (listened)
-                Keep(new HitMirror(element));
+                Keep(new HitMirror(element), container, origin);
             return;
         }
         else if (listened)
-            Keep(new HitMirror(element));
+            Keep(new HitMirror(element), container, origin);
         foreach (UIElement child in element.Children)
-            Add(child);
+            Add(child, container, origin, list);
     }
 
-    private void Keep(Mirror mirror)
+    private void Keep(Mirror mirror, GraphicalUiElement container, Func<Vector2> origin)
     {
+        mirror.Origin = origin;
         _mirrors.Add(mirror);
-        _zone.Children.Add(mirror.Visual);
+        container.Children.Add(mirror.Visual);
         mirror.Place();
     }
 
@@ -138,6 +182,7 @@ internal sealed class GameUiMirror : ContainerRuntime
     private abstract class Mirror(UIElement element)
     {
         public readonly UIElement Element = element;
+        public Func<Vector2> Origin = Zero;
         public abstract GraphicalUiElement Visual { get; }
         public virtual FreshPanelButton? Button => null;
 
@@ -145,6 +190,9 @@ internal sealed class GameUiMirror : ContainerRuntime
         public void Place()
         {
             CalculatedStyle area = Element.GetDimensions();
+            Vector2 origin = Origin();
+            area.X -= origin.X;
+            area.Y -= origin.Y;
             float x = MathF.Round(area.X / 2), y = MathF.Round(area.Y / 2);
             float width = MathF.Round((area.X + area.Width) / 2) - x, height = MathF.Round((area.Y + area.Height) / 2) - y;
             GraphicalUiElement visual = Visual;
@@ -261,6 +309,114 @@ internal sealed class GameUiMirror : ContainerRuntime
         }
     }
 
+    /// <summary>An image button (a category, copy, paste, random…): its icon in its colour, chosen while selected.</summary>
+    private sealed class ImageButtonMirror : ButtonMirror
+    {
+        private static readonly FieldInfo Texture = typeof(UIColoredImageButton).GetField("_texture", BindingFlags.NonPublic | BindingFlags.Instance)!;
+        private static readonly FieldInfo IconColor = typeof(UIColoredImageButton).GetField("_color", BindingFlags.NonPublic | BindingFlags.Instance)!;
+        private static readonly FieldInfo Selected = typeof(UIColoredImageButton).GetField("_selected", BindingFlags.NonPublic | BindingFlags.Instance)!;
+        private Texture2D? _shownIcon;
+        private Color _shownColor;
+
+        public ImageButtonMirror(UIColoredImageButton element) : base(element, "") { }
+
+        public override void Sync()
+        {
+            base.Sync();
+            Button.IsChosen = (bool)Selected.GetValue(Element)!;
+            Texture2D icon = ((ReLogic.Content.Asset<Texture2D>)Texture.GetValue(Element)!).Value;
+            var color = (Color)IconColor.GetValue(Element)!;
+            if (icon != _shownIcon || color != _shownColor)
+            {
+                (_shownIcon, _shownColor) = (icon, color);
+                Button.SetIcon(icon, null, color);
+                Button.CentreIcon();
+            }
+        }
+    }
+
+    /// <summary>A difficulty: chosen while it's the player's.</summary>
+    private sealed class DifficultyMirror(UIDifficultyButton element) : ButtonMirror(element, "")
+    {
+        private static readonly FieldInfo Player = typeof(UIDifficultyButton).GetField("_player", BindingFlags.NonPublic | BindingFlags.Instance)!;
+        private static readonly FieldInfo Value = typeof(UIDifficultyButton).GetField("_difficulty", BindingFlags.NonPublic | BindingFlags.Instance)!;
+
+        public override void Sync()
+        {
+            base.Sync();
+            Button.IsChosen = ((Player)Player.GetValue(Element)!).difficulty == (byte)Value.GetValue(Element)!;
+        }
+    }
+
+    /// <summary>A colour slider: a <see cref="FreshSlider"/> on the game's value, its track the game's colours.</summary>
+    private sealed class SliderMirror : Mirror
+    {
+        private static readonly FieldInfo Get = typeof(UIColoredSlider).GetField("_getStatusTextAct", BindingFlags.NonPublic | BindingFlags.Instance)!;
+        private static readonly FieldInfo Set = typeof(UIColoredSlider).GetField("_slideKeyboardAction", BindingFlags.NonPublic | BindingFlags.Instance)!;
+        private static readonly FieldInfo Blip = typeof(UIColoredSlider).GetField("_blipFunc", BindingFlags.NonPublic | BindingFlags.Instance)!;
+        private readonly FreshSlider _slider = new() { Minimum = 0, Maximum = 1 };
+        private readonly Func<float> _get;
+        private bool _syncing;
+
+        public SliderMirror(UIColoredSlider element) : base(element)
+        {
+            _get = (Func<float>)Get.GetValue(element)!;
+            var set = (Action<float>)Set.GetValue(element)!;
+            var blip = (Func<float, Color>)Blip.GetValue(element)!;
+            _slider.Visual.WidthUnits = DimensionUnitType.Absolute;
+            _slider.Ramp = blip;
+            _slider.ValueChanged += (_, _) =>
+            {
+                if (!_syncing)
+                    set((float)_slider.Value);
+            };
+        }
+
+        public override GraphicalUiElement Visual => _slider.Visual;
+
+        public override void Sync()
+        {
+            base.Sync();
+            float value = _get();
+            if (MathF.Abs((float)_slider.Value - value) > 1e-4f)
+            {
+                _syncing = true;
+                _slider.Value = value;
+                _syncing = false;
+            }
+            // The other bars' colours move this one's track.
+            _slider.UpdateRamp();
+        }
+    }
+
+    /// <summary>A list: a <see cref="FreshScrollViewer"/> holding its items, as tall as their content.</summary>
+    private sealed class ListMirror : Mirror
+    {
+        private readonly FreshScrollViewer _viewer = new();
+        private readonly UIList _list;
+
+        public ListMirror(UIList list) : base(list)
+        {
+            _list = list;
+            _viewer.Visual.WidthUnits = _viewer.Visual.HeightUnits = DimensionUnitType.Absolute;
+            _viewer.InnerPanel.ChildrenLayout = Gum.Managers.ChildrenLayout.Regular;
+            _viewer.InnerPanel.HeightUnits = DimensionUnitType.Absolute;
+        }
+
+        /// <summary>The container its items' components go in.</summary>
+        public GraphicalUiElement Items => _viewer.InnerPanel;
+
+        public override GraphicalUiElement Visual => _viewer.Visual;
+
+        public override void Sync()
+        {
+            base.Sync();
+            float height = MathF.Ceiling(_list.GetTotalHeight() / 2);
+            if (_viewer.InnerPanel.Height != height)
+                _viewer.InnerPanel.Height = height;
+        }
+    }
+
     private sealed class PanelMirror : Mirror
     {
         private readonly FreshPanel _panel = new();
@@ -306,6 +462,9 @@ internal sealed class GameUiMirror : ContainerRuntime
         public override void Sync()
         {
             CalculatedStyle inner = _source.GetInnerDimensions();
+            Vector2 origin = Origin();
+            inner.X -= origin.X;
+            inner.Y -= origin.Y;
             float scale = (float)TextScale.GetValue(_source)!;
             bool large = (bool)TextLarge.GetValue(_source)!;
             float size = (large ? DeathTextEm : MouseTextEm) / 2 * scale, baseline = (large ? DeathTextBaseline : MouseTextBaseline) * scale;
@@ -335,13 +494,55 @@ internal sealed class GameUiMirror : ContainerRuntime
         }
     }
 
-    /// <summary>The game's own drawing of a leaf (a preview, a portrait), in Gum's order.</summary>
+    /// <summary>
+    /// The game's own drawing of a leaf (a preview, a portrait), in Gum's order; in a list, moved with the list's
+    /// scroll (the game draws it where it laid it out) and clipped to the list's view.
+    /// </summary>
     private sealed class GameMirror : Mirror
     {
+        private static readonly RasterizerState Clipped = new() { CullMode = CullMode.CullCounterClockwiseFace, ScissorTestEnable = true };
         private readonly FreshGameView _view;
+        private readonly ListMirror? _list;
 
-        public GameMirror(UIElement element) : base(element) => _view = new FreshGameView { Draw = (batch, _) => Element.Draw(batch) };
+        public GameMirror(UIElement element, ListMirror? list) : base(element)
+        {
+            _list = list;
+            _view = new FreshGameView { Draw = Draw };
+        }
 
         public override GraphicalUiElement Visual => _view;
+
+        private void Draw(SpriteBatch batch, Rectangle area)
+        {
+            if (_list == null)
+            {
+                Element.Draw(batch);
+                return;
+            }
+            GraphicsDevice device = Main.instance.GraphicsDevice;
+            Matrix transform = GumHost.BatchTransform(batch);
+            Vector2 offset = area.Location.ToVector2() - Element.GetDimensions().Position();
+            GraphicalUiElement view = _list.Visual;
+            float scale = UiPixels.Scale;
+            Rectangle clip = Rectangle.Intersect(device.Viewport.Bounds, new Rectangle((int)(view.AbsoluteLeft * scale), (int)(view.AbsoluteTop * scale),
+                (int)(view.GetAbsoluteWidth() * scale), (int)(view.GetAbsoluteHeight() * scale)));
+            if (clip.Width <= 0 || clip.Height <= 0)
+                return;
+            Rectangle scissor = device.ScissorRectangle;
+            batch.End();
+            device.ScissorRectangle = clip;
+            batch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, FreshUI.Legacy.Sharp.Snapped, DepthStencilState.None, Clipped, null,
+                Matrix.CreateTranslation(offset.X, offset.Y, 0) * transform);
+            try
+            {
+                Element.Draw(batch);
+            }
+            finally
+            {
+                batch.End();
+                device.ScissorRectangle = scissor;
+                batch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, FreshUI.Legacy.Sharp.Snapped, DepthStencilState.None, RasterizerState.CullCounterClockwise, null, transform);
+            }
+        }
     }
 }

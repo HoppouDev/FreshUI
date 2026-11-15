@@ -36,6 +36,8 @@ public sealed class Startup : IModInitializer
                 showWhen: WorldSelectScreen.Shows, defaultFocus: () => WorldSelectScreen.Instance?.First);
             GumScreens.Register("fresh-ui:world-creation", () => new WorldCreationScreen(), layer: GumLayer.Overlay,
                 showWhen: WorldCreationScreen.Shows, defaultFocus: () => WorldCreationScreen.Instance?.First);
+            GumScreens.Register("fresh-ui:character-creation", () => new CharacterCreationScreen(), layer: GumLayer.Overlay,
+                showWhen: CharacterCreationScreen.Shows, defaultFocus: () => CharacterCreationScreen.Instance?.First);
         }
     }
 

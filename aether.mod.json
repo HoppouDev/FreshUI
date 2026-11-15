@@ -54,7 +54,6 @@
 		"FreshUI.Legacy.Mixins.UIWorldListItemMixin",
 		"FreshUI.Legacy.Mixins.UIScrollbarMixin",
 		"FreshUI.Legacy.Mixins.UIListMixin",
-		"FreshUI.Legacy.Mixins.UIBestiaryEntryInfoPageMixin",
 		"FreshUI.Legacy.Mixins.ChatMixin"
 	],
 

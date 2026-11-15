@@ -38,7 +38,7 @@ internal sealed class GameUiMirror : ContainerRuntime
     private readonly InteractiveGue _zone = GumGamepad.SpatialZone();
     private readonly List<Mirror> _mirrors = [];
     private UIElement? _built;
-    private int _builtCount;
+    private int _builtShape;
     private Point _laidOutFor;
 
     public GameUiMirror()
@@ -78,13 +78,15 @@ internal sealed class GameUiMirror : ContainerRuntime
         }
         // The game's own per-update work for its elements (their OnUpdate), as its interface's update would.
         Source.Update(Main.gameTimeCache);
-        int count = Count(Source);
-        if (Source != _built || count != _builtCount)
+        int shape = Shape(Source);
+        if (Source != _built || shape != _builtShape)
         {
             _built = Source;
-            _builtCount = count;
-            // Elements the game added since it last laid out (a category's) are laid out first.
-            Source.Recalculate();
+            _builtShape = shape;
+            // Elements the game added since it last laid out (a category's) are laid out first: its children, not the
+            // screen itself, whose own Recalculate can do more (the bestiary's refills its grid, dropping the selection).
+            foreach (UIElement child in Source.Children)
+                child.Recalculate();
             Build();
         }
         foreach (Mirror mirror in _mirrors)
@@ -138,21 +140,29 @@ internal sealed class GameUiMirror : ContainerRuntime
         PlayerInput.UsingGamepadUI && UILinkPointNavigator.InUse && UILinkPointNavigator.Points.TryGetValue(UILinkPointNavigator.CurrentPoint, out UILinkPoint? point)
             ? point.Position / Main.UIScale : null;
 
-    private static int Count(UIElement element)
+    // The tree's elements, by identity and order: it changes when the game adds, removes or replaces elements (a
+    // bestiary page's entries are all new buttons, as many as before).
+    private static int Shape(UIElement element)
     {
-        int count = 1;
+        int shape = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(element);
         foreach (UIElement child in element.Children)
-            count += Count(child);
-        return count;
+            shape = shape * 31 + Shape(child);
+        return shape;
     }
+
+    private readonly Dictionary<(UIElement, Type), Mirror> _previous = [];
 
     private void Build()
     {
         _underCursor = null;
+        _previous.Clear();
+        foreach (Mirror mirror in _mirrors)
+            _previous.TryAdd((mirror.Element, mirror.GetType()), mirror);
         _zone.Children.Clear();
         _mirrors.Clear();
         foreach (UIElement child in Source!.Children)
             Add(child, _zone, Zero);
+        _previous.Clear();
     }
 
     private static readonly Func<Vector2> Zero = () => Vector2.Zero;
@@ -198,8 +208,7 @@ internal sealed class GameUiMirror : ContainerRuntime
             return; // A list's own (its mirror scrolls).
         if (element is UIList gameList)
         {
-            var mirror = new ListMirror(gameList);
-            Keep(mirror, container, origin);
+            var mirror = (ListMirror)Keep(new ListMirror(gameList), container, origin);
             var inner = (UIElement)InnerList.GetValue(gameList)!;
             Func<Vector2> innerOrigin = () => inner.GetDimensions().Position();
             foreach (UIElement item in inner.Children)
@@ -224,14 +233,14 @@ internal sealed class GameUiMirror : ContainerRuntime
         else if (element is UICharacterNameButton || listened && element is UIPanel)
             Keep(new ButtonMirror(element, ""), container, origin);
         else if (element is UIPanel panel)
-            Keep(new PanelMirror(element, () => panel.BackgroundColor), container, origin);
+            Keep(new PanelMirror(element, () => panel.BackgroundColor, () => panel.BorderColor), container, origin);
         else if (element is UISlicedImage image)
             Keep(new PanelMirror(element, () => image.Color), container, origin);
         else if (element is UIHorizontalSeparator)
             Keep(new SeparatorMirror(element), container, origin);
         else if (element is UIText text)
             Keep(new TextMirror(text), container, origin);
-        else if (element is UIImage or UIImageFramed && element.Children.Any())
+        else if (element is UIImage or UIImageFramed or UIImageButton && element.Children.Any())
         {
             // Art with something on it (the research slot's frame, the pistons and their sparks): all the game's
             // drawing, with a place to click for what on it takes input.
@@ -255,12 +264,21 @@ internal sealed class GameUiMirror : ContainerRuntime
             Add(child, container, origin, list);
     }
 
-    private void Keep(Mirror mirror, GraphicalUiElement container, Func<Vector2> origin)
+    // The component kept for the element: the last build's, if it had one of this kind (so a control being pressed
+    // survives a rebuild, as a bestiary entry's hover border coming and going), else the new one.
+    private Mirror Keep(Mirror mirror, GraphicalUiElement container, Func<Vector2> origin)
     {
+        if (_previous.Remove((mirror.Element, mirror.GetType()), out Mirror? last))
+        {
+            mirror = last;
+            if (mirror is ListMirror list)
+                list.Items.Children.Clear();
+        }
         mirror.Origin = origin;
         _mirrors.Add(mirror);
         container.Children.Add(mirror.Visual);
         mirror.Place();
+        return mirror;
     }
 
     /// <summary>A component standing for a game element.</summary>
@@ -565,12 +583,15 @@ internal sealed class GameUiMirror : ContainerRuntime
     {
         private readonly FreshPanel _panel = new();
         private readonly Func<Color> _color;
+        private readonly Func<Color>? _border;
 
-        public PanelMirror(UIElement element, Func<Color> color) : base(element)
+        public PanelMirror(UIElement element, Func<Color> color, Func<Color>? border = null) : base(element)
         {
             _color = color;
-            // It takes the mouse, as a Gum panel: in a world, clicks on it don't reach the world (the game's hover handlers that stopped them run only for controls here).
-            _panel.HasEvents = true;
+            _border = border;
+            // It takes the mouse, as a Gum panel, unless the game's ignores it (a border laid over a page): in a world,
+            // clicks on it don't reach the world (the game's hover handlers that stopped them run only for controls here).
+            _panel.HasEvents = !element.IgnoresMouseInteraction;
         }
 
         public override GraphicalUiElement Visual => _panel;
@@ -580,10 +601,11 @@ internal sealed class GameUiMirror : ContainerRuntime
             base.Sync();
             Color color = _color();
             if (_panel.BackgroundColor != color)
-            {
                 _panel.BackgroundColor = color;
-                _panel.BorderColor = Color.Black * (color.A / 255f);
-            }
+            // The game's border (a panel's own colour), else black at the fill's alpha.
+            Color border = _border?.Invoke() ?? Color.Black * (color.A / 255f);
+            if (_panel.BorderColor != border)
+                _panel.BorderColor = border;
         }
     }
 

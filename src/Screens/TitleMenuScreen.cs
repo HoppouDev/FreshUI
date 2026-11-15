@@ -92,8 +92,23 @@ internal sealed class TitleMenuScreen : ContainerRuntime, IGumScreenUpdate
         // Aether's colours: the menu's tint brightened.
         byte tint = (byte)((255 + Main.tileColor.R * 2) / 3);
         int grey = (255 + tint) / 2;
+        float spread = Spread(screen);
         foreach (Entry entry in _items)
-            entry.Update(grey);
+            entry.Update(grey, spread);
+    }
+
+    // Aether's main menu is 45 units a line (from 220) to fit Mods; vanilla's is 52, roomier: as vanilla's, while the
+    // window is tall enough for the last item (and the version text under it), else as much as fits.
+    private const float MainTop = 220, AetherSpacing = 45, VanillaSpacing = 52;
+
+    /// <summary>How much further apart than Aether's the screen's items go (1: as Aether's).</summary>
+    private float Spread(UIMenuScreen screen)
+    {
+        int lines = _items.Count - 1;
+        if (screen is not UIMainMenu || lines < 1)
+            return 1;
+        float room = (GraphicalUiElement.CanvasHeight * 2 - MainTop - 90) / lines;
+        return Math.Clamp(room, AetherSpacing, VanillaSpacing) / AetherSpacing;
     }
 
     private void Build(UIMenuScreen screen, int count)
@@ -150,7 +165,7 @@ internal sealed class TitleMenuScreen : ContainerRuntime, IGumScreenUpdate
             _label.Width = _label.Height = 0;
             _label.HorizontalAlignment = RenderingLibrary.Graphics.HorizontalAlignment.Center;
             _label.VerticalAlignment = RenderingLibrary.Graphics.VerticalAlignment.Center;
-            GumText.SetOutline(_label, 1, Color.Black);
+            GumText.SetOutline(_label, 0.75f, Color.Black);
             GumText.SetDropShadow(_label, 2, blur: 2);
             if (Button == null)
             {
@@ -159,7 +174,7 @@ internal sealed class TitleMenuScreen : ContainerRuntime, IGumScreenUpdate
             }
         }
 
-        public void Update(int grey)
+        public void Update(int grey, float spread)
         {
             string value = _text() ?? "";
             if (_label.Text != value)
@@ -169,7 +184,7 @@ internal sealed class TitleMenuScreen : ContainerRuntime, IGumScreenUpdate
                 _label.FontSize = fontSize;
             // Aether's item: as wide as its text, 50 units a line; the text centred on its first line.
             Vector2 size = FontAssets.DeathText.Value.MeasureString(value) * _item.TextScale / 2;
-            float top = MathF.Round(_item.Top.Pixels / 2), middle = size.Y / 2;
+            float top = MathF.Round((MainTop + (_item.Top.Pixels - MainTop) * spread) / 2), middle = size.Y / 2;
             if (Button != null)
             {
                 bool enabled = _item.IsInteractive;
@@ -189,12 +204,15 @@ internal sealed class TitleMenuScreen : ContainerRuntime, IGumScreenUpdate
                 _label.FontScale = _hover;
             int alpha = _item.IsLabel ? 255 : (int)(255 * (_hover * 2 - 1));
             int shade = Math.Max(0, grey - (255 - alpha));
-            Color color = new(shade, shade, shade, alpha);
+            float r = shade, g = shade, b = shade;
             if (lit)
             {
                 float blend = alpha / 255f;
-                color = new Color((int)(shade * (1 - blend) + 255 * blend), (int)(shade * (1 - blend) + 215 * blend), (int)(shade * (1 - blend)), alpha);
+                (r, g, b) = (shade * (1 - blend) + 255 * blend, shade * (1 - blend) + 215 * blend, shade * (1 - blend));
             }
+            // Aether's colours are premultiplied (for the game's blending); Gum's text takes them straight and multiplies itself.
+            float straight = alpha > 0 ? 255f / alpha : 0;
+            Color color = new((int)MathF.Min(255, r * straight), (int)MathF.Min(255, g * straight), (int)MathF.Min(255, b * straight), alpha);
             if (_label.Color != color)
             {
                 _label.Color = color;

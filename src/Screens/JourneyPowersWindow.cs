@@ -28,7 +28,7 @@ internal sealed class JourneyPowersWindow : ContainerRuntime
     private static readonly Action<UICreativePowersMenu> SetupGamepadPoints = (Action<UICreativePowersMenu>)Delegate.CreateDelegate(typeof(Action<UICreativePowersMenu>),
         typeof(UICreativePowersMenu).GetMethod("SetupGamepadPoints", BindingFlags.NonPublic | BindingFlags.Instance)!);
 
-    private readonly GameUiMirror _mirror = new() { FollowsGameCursor = true };
+    private readonly GameUiMirror _mirror = new() { FollowsGameCursor = true, PanelsTakeMouse = true };
 
     public JourneyPowersWindow()
     {

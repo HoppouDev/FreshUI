@@ -61,6 +61,12 @@ internal sealed class GameUiMirror : ContainerRuntime
 
     private Mirror? _underCursor;
 
+    /// <summary>
+    /// Whether its panels take the mouse, so clicks on them don't reach a world behind (on the HUD; a menu's backdrop
+    /// already takes them). The game's hover handlers that stopped them run only for controls here.
+    /// </summary>
+    public bool PanelsTakeMouse { get; init; }
+
     /// <summary>The first control (the gamepad's focus starts there), if any.</summary>
     public FreshPanelButton? First => _mirrors.Select(m => m.Button).FirstOrDefault(b => b is { IsEnabled: true });
 
@@ -233,9 +239,9 @@ internal sealed class GameUiMirror : ContainerRuntime
         else if (element is UICharacterNameButton || listened && element is UIPanel)
             Keep(new ButtonMirror(element, ""), container, origin);
         else if (element is UIPanel panel)
-            Keep(new PanelMirror(element, () => panel.BackgroundColor, () => panel.BorderColor), container, origin);
+            Keep(new PanelMirror(element, () => panel.BackgroundColor, () => panel.BorderColor, PanelsTakeMouse), container, origin);
         else if (element is UISlicedImage image)
-            Keep(new PanelMirror(element, () => image.Color), container, origin);
+            Keep(new PanelMirror(element, () => image.Color, takesMouse: PanelsTakeMouse), container, origin);
         else if (element is UIHorizontalSeparator)
             Keep(new SeparatorMirror(element), container, origin);
         else if (element is UIText text)
@@ -585,13 +591,12 @@ internal sealed class GameUiMirror : ContainerRuntime
         private readonly Func<Color> _color;
         private readonly Func<Color>? _border;
 
-        public PanelMirror(UIElement element, Func<Color> color, Func<Color>? border = null) : base(element)
+        public PanelMirror(UIElement element, Func<Color> color, Func<Color>? border = null, bool takesMouse = false) : base(element)
         {
             _color = color;
             _border = border;
-            // It takes the mouse, as a Gum panel, unless the game's ignores it (a border laid over a page): in a world,
-            // clicks on it don't reach the world (the game's hover handlers that stopped them run only for controls here).
-            _panel.HasEvents = !element.IgnoresMouseInteraction;
+            // Where asked (PanelsTakeMouse), unless the game's ignores the mouse (a border laid over a page).
+            _panel.HasEvents = takesMouse && !element.IgnoresMouseInteraction;
         }
 
         public override GraphicalUiElement Visual => _panel;

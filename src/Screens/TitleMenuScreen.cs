@@ -37,6 +37,11 @@ internal sealed class TitleMenuScreen : ContainerRuntime, IGumScreenUpdate
     private static readonly FieldInfo ItemText = typeof(UIMenuItem).GetField("_text", BindingFlags.NonPublic | BindingFlags.Instance)!;
     private static readonly FieldInfo ItemClick = typeof(UIMenuItem).GetField("_onClick", BindingFlags.NonPublic | BindingFlags.Instance)!;
 
+    private static readonly Func<UIStatusMenu, bool> StatusShowsTips = Expression.Lambda<Func<UIStatusMenu, bool>>(
+        Expression.Field(StatusParameter, typeof(UIStatusMenu).GetField("_showTips", BindingFlags.NonPublic | BindingFlags.Instance)!), StatusParameter).Compile();
+    private static ParameterExpression StatusParameter => _statusParameter ??= Expression.Parameter(typeof(UIStatusMenu));
+    private static ParameterExpression? _statusParameter;
+
     static TitleMenuScreen() => GumRoutes.StateKind(state => state is UIMenuScreen);
 
     /// <summary>The menu screen Aether shows now, if it's one of its item lists.</summary>
@@ -57,6 +62,19 @@ internal sealed class TitleMenuScreen : ContainerRuntime, IGumScreenUpdate
         Width = Height = 0;
         HasEvents = false;
         Children.Add(_zone);
+        // The loading tips, which the connecting and loading screens drew (their update still runs).
+        Children.Add(new FreshGameView
+        {
+            WidthUnits = DimensionUnitType.RelativeToParent,
+            HeightUnits = DimensionUnitType.RelativeToParent,
+            Width = 0,
+            Height = 0,
+            Draw = (_, _) =>
+            {
+                if (Current is UIConnectingMenu || Current is UIStatusMenu status && StatusShowsTips(status))
+                    Main.gameTips.Draw();
+            },
+        });
         Instance = this;
     }
 

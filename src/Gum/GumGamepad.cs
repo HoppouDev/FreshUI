@@ -15,7 +15,7 @@ namespace FreshUI.GumUi;
 /// (<see cref="GumHost.GamepadEnabled"/>). Using the gamepad focuses the screen's default control and
 /// the mouse clears the focus, as in most games' menus. The game's instruction bar shows the focused
 /// control's hints, then the screen's, from a gamepad page of FreshUI's own whose one point (the game's
-/// cursor) follows the focus; in a world, the HUD stays the game's own gamepad UI.
+/// cursor) follows the focus. In a world the HUD's focus is <see cref="GumHudFocus"/>'s, on the game's points.
 /// </summary>
 public static class GumGamepad
 {
@@ -33,7 +33,8 @@ public static class GumGamepad
             if (screen.Layer == GumLayer.Overlay && screen.DefaultFocus != null && screen.IsShown)
                 _active = screen;
         }
-        GumHost.GamepadEnabled = _active != null;
+        GumHudFocus.Update();
+        GumHost.GamepadEnabled = _active != null || GumHudFocus.Active;
         if (_active == null)
             return;
         object? focused = InteractiveGue.CurrentInputReceiver;

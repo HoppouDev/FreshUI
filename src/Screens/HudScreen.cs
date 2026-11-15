@@ -82,6 +82,8 @@ public sealed partial class HudScreen : ContainerRuntime
             _overDraws.Clear();
         };
         Children.Add(_over);
+        // The gamepad's focus targets, on the points the HUD's controls place.
+        Children.Add(GumHudFocus.Zone);
         FreshTooltip.Attach(_hotbarLock.Visual, () => Main.LocalPlayer.hbLocked ? "Hotbar locked" : "Hotbar unlocked");
         _current = this;
     }
@@ -275,8 +277,8 @@ public sealed partial class HudScreen : ContainerRuntime
         bool focused = false;
         if (Main.playerInventory)
         {
-            FreshUI.Legacy.InventoryNavigation.PlaceHotbarLock(new Vector2(button.Visual.X + button.Visual.Width / 2, button.Visual.Y + button.Visual.Height / 2) * 2);
-            focused = FreshUI.Legacy.InventoryNavigation.OnHotbarLock;
+            GumHudFocus.PlaceHotbarLock(new Vector2(button.Visual.X + button.Visual.Width / 2, button.Visual.Y + button.Visual.Height / 2) * 2);
+            focused = GumHudFocus.OnHotbarLock;
             if (focused && Main.mouseLeft && Main.mouseLeftRelease)
             {
                 Main.mouseLeftRelease = false;

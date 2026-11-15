@@ -48,6 +48,8 @@ public sealed class Startup : IModInitializer
                 showWhen: VirtualKeyboardScreen.Shows, defaultFocus: () => VirtualKeyboardScreen.Instance?.First, hints: VirtualKeyboardScreen.Hints);
             GumScreens.Register("fresh-ui:bestiary", () => new BestiaryScreen(), layer: GumLayer.Overlay,
                 showWhen: BestiaryScreen.Shows, defaultFocus: () => BestiaryScreen.Instance?.First);
+            GumScreens.Register("fresh-ui:game-state", () => new GameStateScreen(), layer: GumLayer.Overlay,
+                showWhen: () => GameStateScreen.Shows, defaultFocus: () => GameStateScreen.Instance?.First);
             GumScreens.Register("fresh-ui:world-load", () => new WorldLoadScreen(), layer: GumLayer.Overlay, showWhen: WorldLoadScreen.Shows);
         }
     }

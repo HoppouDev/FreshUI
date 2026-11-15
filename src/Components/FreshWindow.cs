@@ -46,6 +46,36 @@ class FreshWindow : ContainerRuntime
     /// <summary>Adds a panel (or anything else), under the title tab.</summary>
     public void Add(GraphicalUiElement element) => Children.Insert(Children.IndexOf(_tab), element);
 
+    // A menu window's place, in UI pixels (as the settings window's): on the title menu under the logo down to near
+    // the bottom; in game a shorter one, centred.
+    private const float MenuWidth = 480, GameHeight = 320, GameMargin = 24, MenuTop = 109, MenuMargin = 22;
+
+    /// <summary>
+    /// Places the window as FreshUI's menu windows (the settings, the Mods window): up to <paramref name="maxWidth"/>
+    /// wide (and 88% of the screen), centred; returns whether its size or place changed.
+    /// </summary>
+    public bool PlaceAsMenu(bool inGame, float maxWidth = MenuWidth)
+    {
+        float canvasWidth = GraphicalUiElement.CanvasWidth, canvasHeight = GraphicalUiElement.CanvasHeight;
+        float width = MathF.Floor(MathF.Min(maxWidth, canvasWidth * 0.88f)), height, top;
+        if (inGame)
+        {
+            height = MathF.Floor(MathF.Min(GameHeight, canvasHeight - GameMargin * 2));
+            top = MathF.Floor((canvasHeight - height) / 2 + GameMargin / 4);
+        }
+        else
+        {
+            top = MenuTop;
+            height = MathF.Floor(canvasHeight - MenuTop - MenuMargin);
+        }
+        float x = MathF.Floor((canvasWidth - width) / 2);
+        if (X == x && Y == top && Width == width && Height == height)
+            return false;
+        (X, Y, Width, Height) = (x, top, width, height);
+        Layout();
+        return true;
+    }
+
     /// <summary>Centres the title tab on whole pixels, once the window's width is set (each update, as the title's width can change).</summary>
     public void Layout() => _tab.X = MathF.Floor((AbsoluteWidth - _tab.AbsoluteWidth) / 2);
 }

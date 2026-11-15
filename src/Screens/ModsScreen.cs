@@ -31,7 +31,6 @@ namespace FreshUI.Screens;
 internal sealed class ModsScreen : ContainerRuntime, IGumScreenUpdate
 {
     // In UI pixels, as the settings window's.
-    private const float WindowWidth = 480, GameHeight = 320, GameMargin = 24, MenuTop = 109, MenuMargin = 22;
     private const float Gap = 5, Padding = 6, LeftShare = 0.4f, ActionHeight = 25, LinkHeight = 16;
     private const float RowHeight = 29, IconSize = 20, SearchHeight = 16, CountHeight = 14;
 
@@ -287,25 +286,10 @@ internal sealed class ModsScreen : ContainerRuntime, IGumScreenUpdate
 
     private void Layout(bool inGame)
     {
-        float canvasWidth = GraphicalUiElement.CanvasWidth, canvasHeight = GraphicalUiElement.CanvasHeight;
-        float width = MathF.Floor(MathF.Min(WindowWidth, canvasWidth * 0.88f));
-        float height, top;
-        if (inGame)
-        {
-            height = MathF.Floor(MathF.Min(GameHeight, canvasHeight - GameMargin * 2));
-            top = MathF.Floor((canvasHeight - height) / 2 + GameMargin / 4);
-        }
-        else
-        {
-            top = MenuTop;
-            height = MathF.Floor(canvasHeight - MenuTop - MenuMargin);
-        }
-        float x = MathF.Floor((canvasWidth - width) / 2);
-        if (_window.X == x && _window.Y == top && _window.Width == width && _window.Height == height && _homepage.Visual.Visible == _homepageShown && _source.Visual.Visible == _sourceShown)
+        if (!_window.PlaceAsMenu(inGame) && _homepage.Visual.Visible == _homepageShown && _source.Visual.Visible == _sourceShown)
             return;
-        (_window.X, _window.Y, _window.Width, _window.Height) = (x, top, width, height);
         (_homepageShown, _sourceShown) = (_homepage.Visual.Visible, _source.Visual.Visible);
-        _window.Layout();
+        float width = _window.Width, height = _window.Height;
         float left = MathF.Floor(width * LeftShare), inner = left - 2 * Padding;
         (_browser.X, _browser.Width, _browser.Height) = (0, left, height);
         float right = width - left - Gap;

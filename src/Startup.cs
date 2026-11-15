@@ -40,6 +40,8 @@ public sealed class Startup : IModInitializer
                 showWhen: CharacterCreationScreen.Shows, defaultFocus: () => CharacterCreationScreen.Instance?.First);
             GumScreens.Register("fresh-ui:mods", () => new ModsScreen(), layer: GumLayer.Overlay,
                 showWhen: () => ModsScreen.Shows, defaultFocus: () => ModsScreen.Instance?.First);
+            GumScreens.Register("fresh-ui:achievements", () => new AchievementsScreen(), layer: GumLayer.Overlay,
+                showWhen: AchievementsScreen.Shows, defaultFocus: () => AchievementsScreen.Instance?.First);
             GumScreens.Register("fresh-ui:world-load", () => new WorldLoadScreen(), layer: GumLayer.Overlay, showWhen: WorldLoadScreen.Shows);
         }
     }

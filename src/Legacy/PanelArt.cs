@@ -21,41 +21,12 @@ public static class PanelArt
     private static Rectangle _lastPanel;
 
     private static int Floor2(float value) => (int)MathF.Floor(value / 2) * 2;
-    private static int Round2(float value) => (int)MathF.Round(value / 2) * 2;
-
-    /// <summary>A menu's title tab (the text panel saying <paramref name="key"/>'s text) at the settings window's title size.</summary>
-    public static void TitleSize(UIElement menu, string key)
-    {
-        foreach (UIElement child in menu.Children)
-        {
-            if (child is Terraria.GameContent.UI.Elements.UITextPanel<Terraria.Localization.LocalizedText> title && title.Text == Terraria.Localization.Language.GetTextValue(key))
-            {
-                title.TextScale = TitleScale;
-                title.SetText(Terraria.Localization.Language.GetText(key));
-                return;
-            }
-            TitleSize(child, key);
-        }
-    }
-
-    /// <summary>The large font's scale for a window's title (the settings window's, Gum's FontSize 16).</summary>
-    public const float TitleScale = 0.8f;
 
     /// <summary>A position on whole UI pixels (even UI units, rounded down).</summary>
     public static Vector2 Snap(Vector2 position) => new(Floor2(position.X), Floor2(position.Y));
 
-    /// <summary>A list row's panel in the settings window's rows' colours: <see cref="FreshStyle.ButtonLit"/> with a gold border while lit (hovered), else <see cref="FreshStyle.Button"/> with a black one.</summary>
-    public static void LightRow(Terraria.GameContent.UI.Elements.UIPanel row, bool lit)
-    {
-        row.BackgroundColor = lit ? FreshStyle.ButtonLit : FreshStyle.Button;
-        row.BorderColor = lit ? FreshStyle.Gold : Color.Black;
-    }
-
     /// <summary>A sprite's draw position such that its top left (<paramref name="position"/> less its scaled <paramref name="origin"/>) is on a whole UI pixel.</summary>
     public static Vector2 SnapCorner(Vector2 position, Vector2 origin) => Snap(position - origin) + origin;
-
-    /// <summary>A width from <paramref name="x"/> that ends on a whole UI pixel too, measured from the snapped <paramref name="x"/>.</summary>
-    public static float SnapWidth(float x, float width) => Round2(x + width) - Floor2(x);
 
     /// <summary>
     /// An element's area on whole UI pixels: its edges at even UI units, moved inwards (never outside the
@@ -68,34 +39,6 @@ public static class PanelArt
     }
 
     private static int Ceiling2(float value) => (int)MathF.Ceiling(value / 2) * 2;
-
-    /// <summary>A flat strip on whole UI pixels (an achievement's title and description boxes): its fill, and a black border a UI pixel wide.</summary>
-    public static void DrawStrip(SpriteBatch batch, Vector2 position, float width, float height, bool lit)
-    {
-        Texture2D pixel = Terraria.GameContent.TextureAssets.MagicPixel.Value;
-        Vector2 at = Snap(position);
-        int w = (int)SnapWidth(position.X, width), h = (int)SnapWidth(position.Y, height);
-        var area = new Rectangle((int)at.X, (int)at.Y, w, h);
-        batch.Draw(pixel, area, Color.Black);
-        area.Inflate(-2, -2);
-        batch.Draw(pixel, area, lit ? StripLit : Strip);
-    }
-
-    private static readonly Color Strip = new(21, 28, 61);
-    private static readonly Color StripLit = new(39, 51, 104);
-
-    /// <summary>
-    /// The scale (UI units per texel) nearest <paramref name="scale"/> at which art drawn by the game at the
-    /// UI's scale has a whole number of screen pixels per texel (at least one), or its half for small art.
-    /// </summary>
-    public static float WholeTexels(float scale)
-    {
-        float perTexel = scale * Main.UIScale;
-        float whole = MathF.Max(0.5f, MathF.Floor(perTexel * 2) / 2);
-        if (whole > 1)
-            whole = MathF.Floor(whole);
-        return whole / Main.UIScale;
-    }
 
     /// <summary>A spliced panel the game draws: in FreshUI's style if it's a character-creation panel (true), else left to the game.</summary>
     public static bool DrawSpliced(SpriteBatch batch, Texture2D texture, int x, int y, int width, int height, Color color)

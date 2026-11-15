@@ -1,6 +1,6 @@
-using FreshUI.Legacy;
+using FreshUI.Hooks;
 using Aether.UI.Game;
-using FreshUI.Legacy.Mixins;
+using FreshUI.Hooks.Mixins;
 using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.GameContent;

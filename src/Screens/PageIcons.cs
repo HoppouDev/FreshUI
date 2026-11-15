@@ -1,4 +1,4 @@
-using FreshUI.Legacy;
+using FreshUI.Hooks;
 using Aether.UI.Game;
 using Microsoft.Xna.Framework;
 using Terraria;

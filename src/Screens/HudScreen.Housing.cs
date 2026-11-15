@@ -111,7 +111,7 @@ public sealed partial class HudScreen
             Children.Insert(Children.IndexOf(_over), created.Visual);
         }
         FreshItemSlot view = _housing[index];
-        float size = FreshItemSlot.SizeAt(Legacy.Hud.SlotScale) * 2;
+        float size = FreshItemSlot.SizeAt(Hooks.Hud.SlotScale) * 2;
         bool hovered = Main.mouseX >= position.X && Main.mouseX <= position.X + size && Main.mouseY >= position.Y && Main.mouseY <= position.Y + size;
         if (hovered)
         {
@@ -133,8 +133,8 @@ public sealed partial class HudScreen
         }
         UILinkPointNavigator.SetPosition(600 + index, position + TextureAssets.InventoryBack.Size() * 0.75f);
         bool selected = UILinkPointNavigator.CurrentPoint - 600 == index;
-        if (view.Scale != Legacy.Hud.SlotScale)
-            view.Scale = Legacy.Hud.SlotScale;
+        if (view.Scale != Hooks.Hud.SlotScale)
+            view.Scale = Hooks.Hud.SlotScale;
         string background = selected ? "Images/Inventory_Back14" : "Images/Inventory_Back11";
         if (view.BackgroundPath != background)
             view.BackgroundPath = background;

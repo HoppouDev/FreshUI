@@ -98,9 +98,9 @@ sealed class GameIconButtons : FreshGameView
             if (hovered && button.TickOnHover)
                 SoundEngine.PlaySound(12);
         }
-        FreshUI.Legacy.Sharp.WholePixels(batch, true);
+        FreshUI.Hooks.Sharp.WholePixels(batch, true);
         button.DrawIcon(batch, area, hovered);
-        FreshUI.Legacy.Sharp.WholePixels(batch, false);
+        FreshUI.Hooks.Sharp.WholePixels(batch, false);
         if (hovered && button.Tooltip != null && !Main.mouseText)
             Main.instance.MouseTextNoOverride(button.Tooltip(), 0, 0);
     }

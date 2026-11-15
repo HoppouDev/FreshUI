@@ -1,7 +1,7 @@
 using Aether.Graphics.Terrain;
 using Aether.UI;
 using FreshUI.Components;
-using FreshUI.Legacy;
+using FreshUI.Hooks;
 using Microsoft.Xna.Framework;
 using Terraria;
 using Terraria.Audio;

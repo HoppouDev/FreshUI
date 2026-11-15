@@ -149,7 +149,7 @@ public sealed partial class HudScreen : ContainerRuntime
         {
             if (!TrySlotPosition(13, i, out Vector2 position))
                 continue;
-            FreshUI.Legacy.Hud.Bottom = position.Y + Cell * 2;
+            FreshUI.Hooks.Hud.Bottom = position.Y + Cell * 2;
             if (new Rectangle((int)position.X, (int)position.Y, (int)(Cell * 2), (int)(Cell * 2)).Contains(Main.mouseX, Main.mouseY) &&
                 !player.hbLocked && !Terraria.GameInput.PlayerInput.IgnoreMouseInterface && !player.controlTorch && !player.channel)
             {
@@ -180,11 +180,11 @@ public sealed partial class HudScreen : ContainerRuntime
         // Whatever is held when the hotbar appears (entering a world, closing the inventory) is taken as
         // is: only a change while it's shown shows the name.
         bool appearing = _nameClock == 0;
-        float ticks = FreshUI.Legacy.Hud.TicksSince(ref _nameClock);
-        if (appearing || ticks > FreshUI.Legacy.Hud.HotbarGap)
+        float ticks = FreshUI.Hooks.Hud.TicksSince(ref _nameClock);
+        if (appearing || ticks > FreshUI.Hooks.Hud.HotbarGap)
         {
             (_nameSlot, _nameType, _namePrefix) = (player.selectedItem, selected.type, selected.prefix);
-            _nameTicks = FreshUI.Legacy.Hud.NameShown + FreshUI.Legacy.Hud.NameFade;
+            _nameTicks = FreshUI.Hooks.Hud.NameShown + FreshUI.Hooks.Hud.NameFade;
         }
         else if (player.selectedItem != _nameSlot || selected.type != _nameType || selected.prefix != _namePrefix)
         {
@@ -195,7 +195,7 @@ public sealed partial class HudScreen : ContainerRuntime
         {
             _nameTicks += ticks;
         }
-        float opacity = 1f - MathHelper.Clamp((_nameTicks - FreshUI.Legacy.Hud.NameShown) / FreshUI.Legacy.Hud.NameFade, 0f, 1f);
+        float opacity = 1f - MathHelper.Clamp((_nameTicks - FreshUI.Hooks.Hud.NameShown) / FreshUI.Hooks.Hud.NameFade, 0f, 1f);
         if (opacity <= 0f)
             return;
         // The name with its prefix (AffixName builds it anew each call), kept while the item is the same.
@@ -209,7 +209,7 @@ public sealed partial class HudScreen : ContainerRuntime
             (_nameOfType, _nameOfPrefix) = (selected.type, selected.prefix);
             _name = selected.AffixName();
         }
-        PresentName(_name, 0, FreshUI.Legacy.Hud.NameColor(selected) * opacity);
+        PresentName(_name, 0, FreshUI.Hooks.Hud.NameColor(selected) * opacity);
     }
 
     // One of the inventory's slots: the game's handling while the cursor's on it, then presented.

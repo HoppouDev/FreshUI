@@ -3,7 +3,7 @@ using System.Reflection;
 using Aether.UI.Menu;
 using FreshUI.Components;
 using FreshUI.GumUi;
-using FreshUI.Legacy;
+using FreshUI.Hooks;
 using Gum.DataTypes;
 using Gum.DataTypes.Variables;
 using Gum.Forms.Controls;

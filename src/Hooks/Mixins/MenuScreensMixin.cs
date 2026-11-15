@@ -1,7 +1,7 @@
 using Aether.Modding;
 using Aether.UI.Menu;
 using FreshUI.GumUi;
-using FreshUI.Legacy;
+using FreshUI.Hooks;
 using FreshUI.Screens;
 
 namespace FreshUI.Hooks.Mixins;

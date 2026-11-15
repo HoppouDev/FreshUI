@@ -302,7 +302,7 @@ internal sealed class DresserWindow : ContainerRuntime
         // As the game's window: the player drawn immediately (its shaders), in the view's transform.
         Matrix transform = GumHost.BatchTransform(batch);
         batch.End();
-        batch.Begin(SpriteSortMode.Immediate, null, FreshUI.Legacy.Sharp.Snapped, null, null, null, transform);
+        batch.Begin(SpriteSortMode.Immediate, null, FreshUI.Hooks.Sharp.Snapped, null, null, null, transform);
         Main.PlayerRenderer.DrawPlayer(Main.Camera, dummy, dummy.position, dummy.fullRotation, dummy.fullRotationOrigin);
     }
 }

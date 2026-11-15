@@ -43,7 +43,7 @@ class FreshGameView : InteractiveGue
                 return;
             float units = UiPixels.Scale / 2f;
             SpriteBatch batch = Main.spriteBatch;
-            batch.Begin(SpriteSortMode.Deferred, Microsoft.Xna.Framework.Graphics.BlendState.AlphaBlend, FreshUI.Legacy.Sharp.Snapped, DepthStencilState.None,
+            batch.Begin(SpriteSortMode.Deferred, Microsoft.Xna.Framework.Graphics.BlendState.AlphaBlend, FreshUI.Hooks.Sharp.Snapped, DepthStencilState.None,
                 RasterizerState.CullCounterClockwise, null, Matrix.CreateScale(units, units, 1));
             try
             {

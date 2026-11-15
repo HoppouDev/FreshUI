@@ -246,7 +246,7 @@ internal abstract class SelectScreen : ContainerRuntime, IGumScreenUpdate
     /// </summary>
     protected static FreshIconButton Icon(FreshPanel row, ref float x, string texture, string name, Action onClick)
     {
-        Texture2D art = FreshUI.Legacy.PixelImages.Icon(GumTextures.Load(texture));
+        Texture2D art = FreshUI.Hooks.PixelImages.Icon(GumTextures.Load(texture));
         var button = new FreshIconButton { Look = new FreshIconButtonLook(art), TexelSize = 1, IdleColor = new Color(205, 205, 205), HasBacking = true };
         button.Visual.Width = art.Width;
         button.Visual.Height = art.Height;

@@ -58,7 +58,7 @@ public sealed partial class HudScreen
         int advisorRow = Main.HasSpaceForControllerAchievementAdvisor ? defenseRow - 1 : -1;
         DrawLoadoutButtons(top, demonHeart, masterMode);
         float saved = Main.inventoryScale;
-        Main.inventoryScale = Legacy.Hud.SlotScale;
+        Main.inventoryScale = Hooks.Hud.SlotScale;
         int row = -1;
         for (int i = 0; i < 10; i++)
         {
@@ -159,7 +159,7 @@ public sealed partial class HudScreen
         Player player = Main.LocalPlayer;
         int top = (int)MiscTop.GetValue(UIMiscEquipSlots.Instance)!;
         float saved = Main.inventoryScale;
-        Main.inventoryScale = Legacy.Hud.SlotScale;
+        Main.inventoryScale = Hooks.Hud.SlotScale;
         for (int i = 0; i < 5; i++)
         {
             int y = Even(top + i * EquipmentPitch);
@@ -194,7 +194,7 @@ public sealed partial class HudScreen
     // In the HUD's game view, over the slots: the defense counter and the achievement card.
     private void DrawEquipmentExtras(SpriteBatch batch)
     {
-        Legacy.Sharp.WholePixels(batch, true);
+        Hooks.Sharp.WholePixels(batch, true);
         if (_defenseAt is Point defense)
             DrawDefenseCounter(defense.X, defense.Y);
         if (_advisorAt is Vector2 advisor)
@@ -202,6 +202,6 @@ public sealed partial class HudScreen
             Main.AchievementAdvisor.DrawOneAchievement(batch, advisor, large: false);
             Terraria.UI.Gamepad.UILinkPointNavigator.SetPosition(1570, advisor + new Vector2(20f) * Main.inventoryScale);
         }
-        Legacy.Sharp.WholePixels(batch, false);
+        Hooks.Sharp.WholePixels(batch, false);
     }
 }

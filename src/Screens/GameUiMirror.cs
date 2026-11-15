@@ -742,7 +742,7 @@ internal sealed class GameUiMirror : ContainerRuntime
             Rectangle scissor = device.ScissorRectangle;
             batch.End();
             device.ScissorRectangle = clip;
-            batch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, FreshUI.Legacy.Sharp.Snapped, DepthStencilState.None, Clipped, null,
+            batch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, FreshUI.Hooks.Sharp.Snapped, DepthStencilState.None, Clipped, null,
                 Matrix.CreateTranslation(offset.X, offset.Y, 0) * transform);
             try
             {
@@ -752,7 +752,7 @@ internal sealed class GameUiMirror : ContainerRuntime
             {
                 batch.End();
                 device.ScissorRectangle = scissor;
-                batch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, FreshUI.Legacy.Sharp.Snapped, DepthStencilState.None, RasterizerState.CullCounterClockwise, null, transform);
+                batch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, FreshUI.Hooks.Sharp.Snapped, DepthStencilState.None, RasterizerState.CullCounterClockwise, null, transform);
             }
         }
     }

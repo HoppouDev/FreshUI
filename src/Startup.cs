@@ -28,6 +28,8 @@ public sealed class Startup : IModInitializer
             Settings("fresh-ui:settings", inGame: true, () => PauseMenu.ShowsSettings);
             Settings("fresh-ui:menu-settings", inGame: false, () => MenuSettingsScreen.Shows);
             GumScreens.Register("fresh-ui:command-popup", () => new CommandPopupScreen(), layer: GumLayer.Overlay, showWhen: () => CommandPopupScreen.Shows);
+            GumScreens.Register("fresh-ui:title-menu", () => new TitleMenuScreen(), layer: GumLayer.Overlay,
+                showWhen: () => TitleMenuScreen.Shows, defaultFocus: () => TitleMenuScreen.Instance?.First);
         }
     }
 

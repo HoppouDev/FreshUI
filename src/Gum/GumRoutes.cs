@@ -80,8 +80,25 @@ public static class GumRoutes
         return () => Main.MenuUI?.CurrentState is T || Main.InGameUI?.CurrentState is T && Main.inFancyUI;
     }
 
+    private static readonly List<Func<UIState, bool>> StateKinds = [];
+
+    /// <summary>Gum in place of every game <see cref="UIState"/> that <paramref name="match"/> accepts (states of a kind): their interface neither updates nor draws them.</summary>
+    public static void StateKind(Func<UIState, bool> match) => StateKinds.Add(match);
+
     /// <summary>Whether a user interface's state is Gum's (the interface neither updates nor draws it).</summary>
-    public static bool IsState(UIState? state) => state != null && StateTypes.Contains(state.GetType());
+    public static bool IsState(UIState? state)
+    {
+        if (state == null)
+            return false;
+        if (StateTypes.Contains(state.GetType()))
+            return true;
+        foreach (Func<UIState, bool> match in StateKinds)
+        {
+            if (match(state))
+                return true;
+        }
+        return false;
+    }
 }
 
 /// <summary>The title menu's screen for a mode a Gum screen replaces: nothing of its own.</summary>

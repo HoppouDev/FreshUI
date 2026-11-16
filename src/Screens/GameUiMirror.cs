@@ -310,6 +310,13 @@ internal sealed class GameUiMirror : ContainerRuntime
             Keep(new SeparatorMirror(element), container, origin);
         else if (element is UIText text)
             Keep(new TextMirror(text), container, origin);
+        else if (element is UIImageButton labelled && element.Children.OfType<UIText>().FirstOrDefault() is { } label)
+        {
+            // A button of the game's art with a label on it (the bestiary's sorting and filtering): the menus' button
+            // with the label. Its art has a texel per pixel, so its glyph can't be both its size and whole art pixels.
+            Keep(new LabelledImageButtonMirror(labelled, label), container, origin);
+            return;
+        }
         else if (element is UIImage or UIImageFramed or UIImageButton && element.Children.Any())
         {
             // Art with something on it (the research slot's frame, the pistons and their sparks): all the game's
@@ -563,6 +570,25 @@ internal sealed class GameUiMirror : ContainerRuntime
                 Button.SetIcon(icon, null, color);
                 Button.CentreIcon();
             }
+        }
+    }
+
+    /// <summary>An image button with a label on it: a <see cref="FreshPanelButton"/> with the label's text, in its size.</summary>
+    private sealed class LabelledImageButtonMirror : ButtonMirror
+    {
+        private readonly UIText _label;
+
+        public LabelledImageButtonMirror(UIImageButton element, UIText label) : base(element, "")
+        {
+            _label = label;
+            Button.FontSize = MouseTextEm / 2 * (float)TextScale.GetValue(label)!;
+        }
+
+        public override void Sync()
+        {
+            base.Sync();
+            if (Button.Text != _label.Text)
+                Button.Text = _label.Text;
         }
     }
 

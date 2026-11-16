@@ -13,8 +13,8 @@ using RenderingLibrary.Graphics;
 namespace FreshUI.Components;
 
 /// <summary>
-/// A horizontal slider in the same art as <see cref="FreshToggleSwitch"/>: the scrollbar's pill as its
-/// track, filled in teal up to the value, and the settings toggle's round knob, gold while hovered,
+/// A horizontal slider in the same art as <see cref="FreshToggleSwitch"/>: FreshUI's slider art as its
+/// track, filled in teal up to the value, and the switch's square knob, gold while hovered,
 /// dragged or focused. A Forms <see cref="Slider"/>, so Minimum, Maximum, Value, snapping
 /// (IsSnapToTickEnabled with TicksFrequency) and its events work as usual. Focused by the gamepad, the
 /// D-pad (or left stick) steps it by 1% of its range and the bumpers by 10%, or by whole ticks when it
@@ -23,17 +23,16 @@ namespace FreshUI.Components;
 /// </summary>
 class FreshSlider : Slider
 {
-    private const float Texel = 0.5f;
-    // As FreshToggleSwitch: a track 9 pixels tall with ends rounded over 6 texels, and the 7-pixel knob
-    // a pixel inside it all round.
-    private const int TrackCorner = 6;
-    private const float TrackHeight = 9;
-    private const float Inset = 1;
-    private static readonly float KnobSize = FreshToggleSwitch.KnobSource.Width * Texel;
-    // Where the knob's travel (its middle) starts: the inset and half the knob in from the left.
-    private static readonly float TravelStart = Inset + KnobSize / 2;
+    // A thin track, 5 pixels tall (FreshUI's slider art: outline, rim and one fill row, flat ends with their corners
+    // cut), under the 7-pixel knob, which stands a pixel out of it above and below.
+    private const int TrackCorner = 2;
+    private const float TrackHeight = 5;
+    private const float KnobSize = FreshToggleSwitch.KnobSize;
+    // Where the knob's travel (its middle, the value) starts: the middle of the first pixel inside the track's outline,
+    // so the value reaches the track's ends (a colour bar's end colours); the knob then overhangs the end by 2 pixels.
+    private const float TravelStart = 1.5f;
 
-    private static readonly Color Gold = new(255, 231, 69);
+    private static Color Gold => new(255, 231, 69);
 
     private readonly FreshPill _track;
     private readonly FreshPill _fill;
@@ -48,7 +47,7 @@ class FreshSlider : Slider
     {
         var visual = (SliderVisual)Visual;
         visual.Width = 89;
-        visual.Height = TrackHeight;
+        visual.Height = KnobSize;
         visual.FocusedIndicator.Visible = false;
 
         // The knob travels the track's length less its own width, so it stays within the pill; the
@@ -58,12 +57,13 @@ class FreshSlider : Slider
         visual.TrackInstance.X = TravelStart;
         visual.TrackInstance.Width = -2 * TravelStart;
         // The track (Gum's own nine-slice hidden: see FreshPill) out to the travel's ends under the
-        // knob's halves, and the value, filled in from its left end to the knob's middle.
+        // knob's halves, and the value, filled in from its left end to the knob's middle, square there.
         visual.TrackBackground.Visible = false;
-        _track = Pill(FreshToggleSwitch.TrackOffPath);
+        _track = Pill(on: false);
         _track.WidthUnits = DimensionUnitType.RelativeToParent;
         _track.Width = 2 * TravelStart;
-        _fill = Pill(FreshToggleSwitch.TrackOnPath);
+        _fill = Pill(on: true);
+        _fill.SquareRight = true;
         int at = visual.TrackInstance.Children.IndexOf(visual.TrackBackground) + 1;
         visual.TrackInstance.Children.Insert(at, _track);
         visual.TrackInstance.Children.Insert(at + 1, _fill);
@@ -77,12 +77,8 @@ class FreshSlider : Slider
         thumb.FocusedIndicator.Visible = false;
         _knob = new SpriteRuntime
         {
-            Texture = GumTextures.Load(FreshToggleSwitch.KnobPath),
-            TextureAddress = TextureAddress.Custom,
-            TextureLeft = FreshToggleSwitch.KnobSource.X,
-            TextureTop = FreshToggleSwitch.KnobSource.Y,
-            TextureWidth = FreshToggleSwitch.KnobSource.Width,
-            TextureHeight = FreshToggleSwitch.KnobSource.Height,
+            Texture = FreshToggleSwitch.Knob(),
+            TextureAddress = TextureAddress.EntireTexture,
             WidthUnits = DimensionUnitType.RelativeToParent,
             HeightUnits = DimensionUnitType.RelativeToParent,
             Width = 0,
@@ -124,7 +120,11 @@ class FreshSlider : Slider
         };
         LostFocus += (_, _) => Refresh();
         ValueChanged += (_, _) => Refresh();
-        visual.TrackInstance.SizeChanged += (_, _) => Refresh();
+        visual.TrackInstance.SizeChanged += (_, _) =>
+        {
+            Refresh();
+            UpdateRamp();
+        };
         UpdateState();
         Refresh();
     }
@@ -171,9 +171,6 @@ class FreshSlider : Slider
         return true;
     }
 
-    // The ramp's texture is this many texels across, one a step.
-    private const int RampSteps = 64;
-
     /// <summary>
     /// A colour bar (as the cursor colour settings): the track shows this function's colour at each value
     /// (0 to 1) in place of the teal fill, under the knob. Call <see cref="UpdateRamp"/> when what it
@@ -188,15 +185,16 @@ class FreshSlider : Slider
             if (value != null && _ramp == null)
             {
                 var visual = (SliderVisual)Visual;
+                // The track's whole inside (its rim and fill, to its flat ends: see UpdateRamp), from a pixel in
+                // from its left end to a pixel in from its right.
                 _ramp = new SpriteRuntime
                 {
-                    Texture = new Texture2D(Terraria.Main.instance.GraphicsDevice, RampSteps, 1),
                     TextureAddress = TextureAddress.EntireTexture,
+                    X = 1 - TravelStart,
                     WidthUnits = DimensionUnitType.RelativeToParent,
                     HeightUnits = DimensionUnitType.Absolute,
-                    Width = 0,
-                    // Inside the pill's rim, a pixel clear of it.
-                    Height = TrackHeight - 4,
+                    Width = 2 * TravelStart - 2,
+                    Height = TrackHeight - 2,
                     YUnits = GeneralUnitType.PixelsFromMiddle,
                     YOrigin = VerticalAlignment.Center,
                 };
@@ -209,27 +207,47 @@ class FreshSlider : Slider
         }
     }
 
-    /// <summary>Redraws the colour bar's ramp (<see cref="Ramp"/>) if its colours changed.</summary>
+    /// <summary>
+    /// Redraws the colour bar's ramp (<see cref="Ramp"/>) if its colours changed: a texel a UI pixel, the track's
+    /// inside (3 rows, to its flat ends), each column the colour of the value under it, the end colours on past the
+    /// knob's travel.
+    /// </summary>
     public void UpdateRamp()
     {
         if (_rampColor == null || _ramp == null)
             return;
-        _rampColors ??= new Color[RampSteps];
+        float travel = ((SliderVisual)Visual).TrackInstance.AbsoluteWidth;
+        int columns = (int)MathF.Round(travel + 2 * TravelStart - 2), rows = (int)(TrackHeight - 2);
+        if (columns < 2)
+            return;
         bool changed = false;
-        for (int i = 0; i < RampSteps; i++)
+        if (_ramp.Texture is not Texture2D texture || texture.Width != columns)
         {
-            Color color = _rampColor(i / (float)(RampSteps - 1));
-            changed |= color != _rampColors[i];
-            _rampColors[i] = color;
+            _ramp.Texture?.Dispose();
+            _ramp.Texture = new Texture2D(Terraria.Main.instance.GraphicsDevice, columns, rows);
+            _rampColors = new Color[columns * rows];
+            changed = true;
+        }
+        for (int column = 0; column < columns; column++)
+        {
+            // The column's middle, from the travel's start (the pill's left end is a pixel left of the ramp's).
+            float value = travel > 0 ? Math.Clamp((column + 1.5f - TravelStart) / travel, 0, 1) : 0;
+            Color color = _rampColor(value);
+            for (int row = 0; row < rows; row++)
+            {
+                ref Color at = ref _rampColors![row * columns + column];
+                changed |= at != color;
+                at = color;
+            }
         }
         if (changed)
-            _ramp.Texture!.SetData(_rampColors);
+            _ramp.Texture!.SetData(_rampColors!);
     }
 
-    // The scrollbar's pill, 9 pixels tall, from the left end of the travel (under the knob's half).
-    private static FreshPill Pill(string texture) => new(TrackCorner)
+    // The slider art, blue or teal (on), from the left end of the travel (under the knob's half).
+    private static FreshPill Pill(bool on) => new(TrackCorner, 1)
     {
-        Texture = FreshToggleSwitch.Track(texture),
+        Texture = FreshToggleSwitch.Art("slider", (int)TrackHeight, TrackCorner, on),
         XUnits = GeneralUnitType.PixelsFromSmall,
         X = -TravelStart,
         YUnits = GeneralUnitType.PixelsFromMiddle,
@@ -260,7 +278,8 @@ class FreshSlider : Slider
         // nearest whole screen pixel, so its art stays even.
         float left = TravelStart + share * travel - KnobSize / 2;
         _knob.X = UiPixels.Snap(left) - left;
-        _fill.Width = UiPixels.Snap(TravelStart + share * travel);
+        // At least its rounded left end (under the knob near the start), so its middle never goes negative.
+        _fill.Width = MathF.Max(TrackCorner, UiPixels.Snap(TravelStart + share * travel));
         Color tint = _disabled ? new Color(110, 110, 110) : Color.White;
         _track.Color = tint;
         _fill.Color = tint;

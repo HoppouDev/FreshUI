@@ -40,6 +40,52 @@ public static class GumTextures
     }
 
     /// <summary>
+    /// A PNG in FreshUI's resources (<c>textures/components/knob.png</c>), loaded once. FreshUI's own art is a texel a UI
+    /// pixel, opaque or clear, so its straight alpha is as premultiplied.
+    /// </summary>
+    public static Texture2D Resource(string path)
+    {
+        string key = "fresh-ui:" + path;
+        if (!Loaded.TryGetValue(key, out Texture2D? texture))
+        {
+            using Stream stream = Aether.Modding.ModResources.OpenRead(Startup.ModId, path);
+            Loaded[key] = texture = Texture2D.FromStream(Main.instance.GraphicsDevice, stream);
+        }
+        return texture;
+    }
+
+    /// <summary>
+    /// <paramref name="source"/> nine-sliced to <paramref name="width"/>×<paramref name="height"/> texels: the
+    /// <paramref name="corner"/> texels at each edge kept, the middle stretched or shrunk (nearest texel), for art drawn
+    /// at its texels' size.
+    /// </summary>
+    public static Texture2D Sliced(Texture2D source, int width, int height, int corner)
+    {
+        var texels = new Microsoft.Xna.Framework.Color[source.Width * source.Height];
+        source.GetData(texels);
+        var sliced = new Microsoft.Xna.Framework.Color[width * height];
+        for (int y = 0; y < height; y++)
+        {
+            int from = Slice(y, height, source.Height, corner);
+            for (int x = 0; x < width; x++)
+                sliced[y * width + x] = texels[from * source.Width + Slice(x, width, source.Width, corner)];
+        }
+        var texture = new Texture2D(source.GraphicsDevice, width, height);
+        texture.SetData(sliced);
+        return texture;
+    }
+
+    // The source texel for texel at of size: corners as they are, the middle spread over the source's middle.
+    private static int Slice(int at, int size, int sourceSize, int corner)
+    {
+        if (at < corner)
+            return at;
+        if (at >= size - corner)
+            return sourceSize - (size - at);
+        return corner + (at - corner) * (sourceSize - 2 * corner) / (size - 2 * corner);
+    }
+
+    /// <summary>
     /// <paramref name="name"/> with its texel rows from <paramref name="row"/> to
     /// <paramref name="row"/> + <paramref name="count"/> repeated once, below themselves: art made taller
     /// by whole pixels, for a nine-slice to draw at that height without stretching its middle unevenly.

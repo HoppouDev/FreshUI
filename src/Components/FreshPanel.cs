@@ -11,7 +11,7 @@ namespace FreshUI.Components;
 /// <see cref="BackgroundColor"/> under its border in <see cref="BorderColor"/>, nine-sliced to any size.
 /// A container: add its content as children.
 /// </summary>
-class FreshPanel : ContainerRuntime
+public class FreshPanel : ContainerRuntime
 {
     private readonly NineSliceRuntime _background;
     private readonly NineSliceRuntime _border;

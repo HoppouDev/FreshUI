@@ -9,7 +9,7 @@ namespace FreshUI.Components;
 /// A horizontal rule between groups in a panel, as the world creation's between its rows of options: the
 /// game's separator art (its ends kept, its middle stretched) as wide as its parent, in a pale panel blue.
 /// </summary>
-class FreshSeparator : ContainerRuntime
+public class FreshSeparator : ContainerRuntime
 {
     public static string TexturePath { get; set; } = "Images/UI/CharCreation/Separator1";
 

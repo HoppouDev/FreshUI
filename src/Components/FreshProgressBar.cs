@@ -12,7 +12,7 @@ namespace FreshUI.Components;
 /// 9 pixels tall) filled from its left in the slider's teal up to <see cref="Value"/> (0 to 1), on whole screen
 /// pixels. Takes no input.
 /// </summary>
-class FreshProgressBar : ContainerRuntime
+public class FreshProgressBar : ContainerRuntime
 {
     private const int Corner = 6;
     public const float BarHeight = 9;

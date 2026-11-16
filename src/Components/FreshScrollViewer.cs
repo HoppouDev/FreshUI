@@ -17,7 +17,7 @@ namespace FreshUI.Components;
 /// handle stops it. A Forms <see cref="ScrollViewer"/>: add content with AddChild or to InnerPanel.
 /// Sizes are in UI pixels; the scrollbar art is 2×2 texels a pixel.
 /// </summary>
-class FreshScrollViewer : ScrollViewer
+public class FreshScrollViewer : ScrollViewer
 {
     public static string TrackPath { get; set; } = "Images/UI/Scrollbar";
     public static string ThumbPath { get; set; } = "Images/UI/ScrollbarInner";

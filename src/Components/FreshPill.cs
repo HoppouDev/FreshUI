@@ -15,7 +15,7 @@ namespace FreshUI.Components;
 /// nine-slice, which also slices the art across its height and places the bottom slices a screen pixel
 /// off, so the ends' lower halves don't meet the rest.
 /// </summary>
-sealed class FreshPill : ContainerRuntime
+public sealed class FreshPill : ContainerRuntime
 {
     private readonly float _texel;
     private readonly int _end;

@@ -15,7 +15,7 @@ namespace FreshUI.Components;
 /// kept inside the canvas, over the menus (the overlay's root, which FreshUI draws; Gum's popup root isn't).
 /// One tooltip shows at a time. Sizes are in UI pixels (see UiPixels).
 /// </summary>
-static class FreshTooltip
+public static class FreshTooltip
 {
     /// <summary>The text's size, in UI pixels per em.</summary>
     public static float FontSize { get; set; } = 9.5f;

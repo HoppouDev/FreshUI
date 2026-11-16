@@ -12,7 +12,7 @@ namespace FreshUI.Components;
 /// shows) and <see cref="Set"/> takes a bar's change. Lightness stays at or above <see cref="MinLightness"/>,
 /// its bar spanning the rest.
 /// </summary>
-class FreshColorPicker : ContainerRuntime
+public class FreshColorPicker : ContainerRuntime
 {
     public const float BarWidth = 84, RowHeight = 13;
 

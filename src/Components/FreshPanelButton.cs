@@ -16,7 +16,7 @@ namespace FreshUI.Components;
 /// <see cref="IsChosen"/> (an open tab), with the menus' tick as the mouse or the gamepad's focus comes
 /// onto it. A Forms <see cref="Button"/>: Click, focus, gamepad (A) and automation as usual.
 /// </summary>
-class FreshPanelButton : Button
+public class FreshPanelButton : Button
 {
     private readonly NineSliceRuntime _border;
     private SpriteRuntime? _icon;

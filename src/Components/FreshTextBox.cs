@@ -15,7 +15,7 @@ namespace FreshUI.Components;
 /// it's empty; lit with a gold border while hovered or being typed in. A Forms <see cref="TextBox"/>:
 /// typing, the caret, selection, the clipboard, focus and automation (<c>set_text</c>) work as usual.
 /// </summary>
-class FreshTextBox : TextBox
+public class FreshTextBox : TextBox
 {
     private const float Indent = 5;
 

@@ -14,7 +14,7 @@ namespace FreshUI.Components;
 /// while hovered, pushed or focused, as the game's hovered UI text. A Forms <see cref="Button"/>, so it
 /// takes the mouse, the gamepad (A) and automation as any button. Sized to its text.
 /// </summary>
-class FreshValueButton : Button
+public class FreshValueButton : Button
 {
     private bool _lit, _disabled;
     private Color _color = FreshStyle.MutedText;

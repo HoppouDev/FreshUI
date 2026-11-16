@@ -17,7 +17,7 @@ namespace FreshUI.Components;
 /// remote automation work as for any toggle. Hovered or focused (by the gamepad), the knob is gold.
 /// Sizes are in UI pixels; FreshUI's art is a texel a pixel.
 /// </summary>
-class FreshToggleSwitch : ToggleButton
+public class FreshToggleSwitch : ToggleButton
 {
     public static string TrackOffPath { get; set; } = "Images/UI/Scrollbar";
     public static string TrackOnPath { get; set; } = "Images/UI/Scrollbar2";

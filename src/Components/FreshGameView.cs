@@ -14,7 +14,7 @@ namespace FreshUI.Components;
 /// the element's area in those units. For what only the game can draw: chat text with its tags (item
 /// icons, colours), NPC portraits, coins, item and buff art at the game's own scales.
 /// </summary>
-class FreshGameView : InteractiveGue
+public class FreshGameView : InteractiveGue
 {
     /// <summary>Draws the content within (or around) the given area, in UI units.</summary>
     public Action<SpriteBatch, Rectangle>? Draw { get; set; }

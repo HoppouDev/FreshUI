@@ -9,7 +9,7 @@ namespace FreshUI.Components;
 /// (<see cref="Add"/>, laid out by the screen) under a title tab in <see cref="FreshStyle.ButtonLit"/>
 /// that sits over the window's top edge, centred on whole pixels (<see cref="Layout"/>).
 /// </summary>
-class FreshWindow : ContainerRuntime
+public class FreshWindow : ContainerRuntime
 {
     /// <summary>How far the title tab's top is above the window's.</summary>
     public const float TitleLift = 14;

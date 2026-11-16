@@ -21,7 +21,7 @@ namespace FreshUI.Components;
 /// snaps. The art is 2×2 texels a UI
 /// pixel, so it stays even at every UI scale.
 /// </summary>
-class FreshSlider : Slider
+public class FreshSlider : Slider
 {
     // A thin track, 5 pixels tall (FreshUI's slider art: outline, rim and one fill row, flat ends with their corners
     // cut), under the 7-pixel knob, which stands a pixel out of it above and below.

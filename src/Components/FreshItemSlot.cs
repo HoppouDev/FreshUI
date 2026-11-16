@@ -14,7 +14,7 @@ using Terraria.UI;
 namespace FreshUI.Components;
 
 /// <summary>What a slot holds, which picks its background.</summary>
-enum FreshItemSlotKind
+public enum FreshItemSlotKind
 {
     Inventory,
     /// <summary>The first row, whose slots are numbered.</summary>
@@ -39,7 +39,7 @@ enum FreshItemSlotKind
 /// (see GumText). Sizes are in UI pixels (see UiPixels), one per pixel of the slot and item art
 /// (2×2 texels), so the art stays on the UI's grid.
 /// </summary>
-class FreshItemSlot : FrameworkElement
+public class FreshItemSlot : FrameworkElement
 {
     /// <summary>The background for each kind, relative to the executable. Set them before creating slots.</summary>
     public static Dictionary<FreshItemSlotKind, string> BackgroundPaths { get; } = [];
@@ -106,7 +106,7 @@ class FreshItemSlot : FrameworkElement
     internal Func<bool, bool>? HudAction { get; set; }
 
     /// <summary>Updates a live item in one pass, including animated icons and empty equipment silhouettes; <paramref name="light"/> tints the icon (a recipe that can't be made).</summary>
-    internal void SetItem(Item item, int context, int index, float scale, Color? light = null)
+    public void SetItem(Item item, int context, int index, float scale, Color? light = null)
     {
         _scale = scale;
         _kind = context switch

@@ -16,7 +16,7 @@ namespace FreshUI.Components;
 /// for the game's 2×2-texel art) and dimmed with the text when disabled. With no
 /// text, the icon alone is centred.
 /// </summary>
-class FreshIconTextButton : FreshButton
+public class FreshIconTextButton : FreshButton
 {
     private readonly ContainerRuntime _content;
     private readonly SpriteRuntime _icon;

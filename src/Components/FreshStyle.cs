@@ -8,7 +8,7 @@ namespace FreshUI.Components;
 /// The look every component shares: the Mods window's palette (Aether's, which FreshUI's menus have always
 /// used), the game's gold for hover and focus, and the game's panel art (2×2 texels a UI pixel).
 /// </summary>
-static class FreshStyle
+public static class FreshStyle
 {
     /// <summary>A window's panels.</summary>
     public static Color Panel => new Color(33, 43, 79) * 0.85f;

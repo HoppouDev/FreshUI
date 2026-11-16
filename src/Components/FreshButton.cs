@@ -15,7 +15,7 @@ namespace FreshUI.Components;
 /// black border, as <see cref="FreshLabel"/> text can have. Focused (by the gamepad), its text is gold,
 /// as the game's menus mark the selected item.
 /// </summary>
-class FreshButton : Button
+public class FreshButton : Button
 {
     /// <summary>The backing texture every button uses, relative to the executable. Set it before creating buttons.</summary>
     public static string BackingPath { get; set; } = "";

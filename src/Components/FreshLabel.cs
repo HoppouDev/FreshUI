@@ -6,7 +6,7 @@ using Microsoft.Xna.Framework;
 namespace FreshUI.Components;
 
 /// <summary>A Forms label drawn from the text font's distance field (see GumText), sharp at any font size.</summary>
-class FreshLabel : Label
+public class FreshLabel : Label
 {
     private TextRuntime TextVisual => (TextRuntime)Visual;
 

@@ -13,7 +13,7 @@ namespace FreshUI.Components;
 /// How a <see cref="FreshIconButton"/> looks: its icon (a texture, or a region of one) and, optionally,
 /// an overlay drawn over it while it's hovered, such as an outline.
 /// </summary>
-record FreshIconButtonLook(
+public record FreshIconButtonLook(
     Texture2D Icon,
     Rectangle? IconSource = null,
     Texture2D? HoverOverlay = null,
@@ -27,7 +27,7 @@ record FreshIconButtonLook(
 /// It takes the gamepad's focus (as an <see cref="IInputReceiver"/>): focused, it shows its overlay, A
 /// activates it as a click does, and the D-pad moves on.
 /// </summary>
-class FreshIconButton : FrameworkElement, IInputReceiver
+public class FreshIconButton : FrameworkElement, IInputReceiver
 {
     private readonly SpriteRuntime _icon;
     private readonly SpriteRuntime _overlay;

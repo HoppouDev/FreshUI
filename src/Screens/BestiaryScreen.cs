@@ -22,9 +22,9 @@ internal sealed class BestiaryScreen : ContainerRuntime, IGumScreenUpdate
 
     public static BestiaryScreen? Instance { get; private set; }
 
-    // An entry's size, in UI units (two a UI pixel), and the gaps between entries: a UI pixel across, two down (the
-    // slot art has a pixel of shadow under it).
-    private const float Entry = 72, EntryGapX = 2, EntryGapY = 4;
+    // An entry's size, in UI units (two a UI pixel), and the gaps added between entries: the slot art has a pixel of
+    // shadow at its right and bottom, so none across (a pixel shows) and a pixel down (two show).
+    private const float Entry = 72, EntryGapX = 0, EntryGapY = 2;
     // The top bar's height (the game's), the arrows' width, the gap between the bar's items, Back's height and its gap
     // under the window, in UI units.
     private const float BarHeight = 24, ArrowWidth = 24, BarGap = 2, BackHeight = 50, BackGap = 8;
@@ -100,7 +100,7 @@ internal sealed class BestiaryScreen : ContainerRuntime, IGumScreenUpdate
 
     // The game spreads its entries over the grid's space by fractions of it, so they land on fractional units, their
     // layered art (back, frame, overlay) a screen pixel apart and the gaps uneven: they go on whole UI pixels instead,
-    // a UI pixel apart across and two down (none where the space is too tight), the block centred. Each time the grid fills anew.
+    // a UI pixel apart across and two down, shadow included (closer where the space is too tight), the block centred. Each time the grid fills anew.
     private void LayOutEntries(UIBestiaryEntryGrid grid)
     {
         List<UIElement> entries = grid.Children.ToList();

@@ -29,17 +29,16 @@ internal abstract class SelectScreen : ContainerRuntime, IGumScreenUpdate
     /// square at the top left; the text beside it, the name level with its top and the details line ending level with
     /// its bottom; the button line under it.
     /// </summary>
-    protected const float Inset = 6, ArtSize = 29, TextX = Inset + ArtSize + 6, DetailsY = Inset + ArtSize - 6;
+    protected const float Inset = 6, ArtSize = 29, TextX = Inset + ArtSize + 6, DetailsY = Inset + ArtSize - 9;
 
-    // The buttons' art (22 square) keeps a few pixels' margin around its glyph (11 to 14 tall, the trash can the
-    // tallest): the line starts that much early, so the glyphs line up with the picture (and delete's with the
-    // aside), and its band sits 1 under the picture and 4 over the border, the glyphs about evenly clear above and below.
-    private const float ArtMargin = 4, ButtonArt = 22;
+    // The buttons' art (22 square, its backing shown while lit) sits as the picture does: its left and the row's bottom
+    // Inset from the border, and Inset under the picture.
+    private const float ButtonArt = 22;
 
-    protected const float ButtonsY = Inset + ArtSize + 1, RowHeight = ButtonsY + ButtonArt + 4;
+    protected const float ButtonsY = Inset + ArtSize + Inset, RowHeight = ButtonsY + ButtonArt + Inset;
 
     /// <summary>Where a row's first button goes.</summary>
-    protected const float ButtonsX = Inset - ArtMargin;
+    protected const float ButtonsX = Inset;
 
     private readonly FreshWindow _window;
     private readonly FreshPanel _panel = new();
@@ -53,6 +52,9 @@ internal abstract class SelectScreen : ContainerRuntime, IGumScreenUpdate
     protected readonly List<FreshIconButton> Plays = [];
 
     private readonly List<FreshPanel> _rows = [];
+
+    // A row at rest: a little lighter than the panel it's on.
+    private static Color Card => new Color(60, 72, 140) * 0.75f;
 
     protected SelectScreen(string title, Action goBack, string newText, Action onNew)
     {
@@ -131,7 +133,7 @@ internal abstract class SelectScreen : ContainerRuntime, IGumScreenUpdate
             bool lit = inList && GumHost.Contains(row, x, y) || focus is FrameworkElement { Visual.Parent: var parent } && parent == row;
             Color border = lit ? FreshStyle.Gold : Color.Black;
             if (row.BorderColor != border)
-                (row.BorderColor, row.BackgroundColor) = (border, lit ? FreshStyle.Button : FreshStyle.Panel);
+                (row.BorderColor, row.BackgroundColor) = (border, lit ? FreshStyle.Button : Card);
         }
     }
 
@@ -146,7 +148,9 @@ internal abstract class SelectScreen : ContainerRuntime, IGumScreenUpdate
     /// <summary>A new row, added to the list.</summary>
     protected FreshPanel Row()
     {
-        var row = new FreshPanel { WidthUnits = DimensionUnitType.RelativeToParent, Width = 0, Height = RowHeight };
+        var row = new FreshPanel { WidthUnits = DimensionUnitType.RelativeToParent, Width = 0, Height = RowHeight, BackgroundColor = Card };
+        // Taking the cursor for a double click on it (as the game's rows: play); its buttons take their own.
+        row.HasEvents = true;
         List.InnerPanel.Children.Add(row);
         _rows.Add(row);
         return row;
@@ -211,13 +215,13 @@ internal abstract class SelectScreen : ContainerRuntime, IGumScreenUpdate
         };
     }
 
-    /// <summary>A row's aside: muted text at the right of its details line (a world's creation date, a player's time played).</summary>
+    /// <summary>A row's aside: muted text at its top right, level with the name (a world's creation date, a player's time played).</summary>
     protected static void Aside(FreshPanel row, string text)
     {
         TextRuntime aside = Text(text, 8.5f, FreshStyle.MutedText);
         aside.XUnits = Gum.Converters.GeneralUnitType.PixelsFromLarge;
         aside.XOrigin = RenderingLibrary.Graphics.HorizontalAlignment.Right;
-        (aside.X, aside.Y) = (-Inset, DetailsY);
+        (aside.X, aside.Y) = (-Inset, Inset + 1);
         row.Children.Add(aside);
     }
 
@@ -256,7 +260,7 @@ internal abstract class SelectScreen : ContainerRuntime, IGumScreenUpdate
         button.Visual.Name = name;
         FreshTooltip.Attach(button, () => name);
         row.Children.Add(button.Visual);
-        x += art.Width;
+        x += art.Width + 4; // 4 pixels between buttons
         return button;
     }
 

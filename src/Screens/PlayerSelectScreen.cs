@@ -83,6 +83,7 @@ internal sealed class PlayerSelectScreen : SelectScreen
         Aside(row, ((int)played.TotalHours).ToString("D2") + played.ToString("\\:mm\\:ss"));
         float x = ButtonsX;
         Plays.Add(Icon(row, ref x, "Images/UI/ButtonPlay", Language.GetTextValue("UI.Play"), () => Play(data)));
+        row.DoubleClick += (_, _) => Play(data);
         Icon(row, ref x, data.IsFavorite ? "Images/UI/ButtonFavoriteActive" : "Images/UI/ButtonFavoriteInactive",
             Language.GetTextValue(data.IsFavorite ? "UI.Unfavorite" : "UI.Favorite"), () =>
             {

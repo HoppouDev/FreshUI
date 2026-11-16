@@ -101,6 +101,7 @@ internal sealed class WorldSelectScreen : SelectScreen
         Aside(row, GameCulture.FromCultureName(GameCulture.CultureName.English).IsActive ? data.CreationTime.ToString("d MMMM yyyy") : data.CreationTime.ToShortDateString());
         float x = ButtonsX;
         Plays.Add(Icon(row, ref x, "Images/UI/ButtonPlay", Language.GetTextValue("UI.Play"), () => Act(item, "PlayGame")));
+        row.DoubleClick += (_, _) => Act(item, "PlayGame");
         Icon(row, ref x, data.IsFavorite ? "Images/UI/ButtonFavoriteActive" : "Images/UI/ButtonFavoriteInactive",
             Language.GetTextValue(data.IsFavorite ? "UI.Unfavorite" : "UI.Favorite"), () => Act(item, "FavoriteButtonClick"));
         if (SocialAPI.Cloud != null)

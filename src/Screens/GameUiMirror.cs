@@ -87,12 +87,17 @@ internal sealed class GameUiMirror : ContainerRuntime
         int shape = Shape(Source);
         if (Source != _built || shape != _builtShape)
         {
+            if (Source != _built)
+                _known.Clear();
             _built = Source;
-            _builtShape = shape;
-            // Elements the game added since it last laid out (a category's) are laid out first: its children, not the
-            // screen itself, whose own Recalculate can do more (the bestiary's refills its grid, dropping the selection).
+            // Elements the game added since the last build (a category's) are laid out first; only those: an element's
+            // own Recalculate can do more (the bestiary's grid refills itself with new entries, the screen drops its
+            // selection), and laying out what was already there would change the tree again every update.
             foreach (UIElement child in Source.Children)
-                child.Recalculate();
+                LayOutNew(child);
+            _known.Clear();
+            Remember(Source);
+            _builtShape = Shape(Source);
             Build();
         }
         foreach (Mirror mirror in _mirrors)
@@ -146,29 +151,88 @@ internal sealed class GameUiMirror : ContainerRuntime
         PlayerInput.UsingGamepadUI && UILinkPointNavigator.InUse && UILinkPointNavigator.Points.TryGetValue(UILinkPointNavigator.CurrentPoint, out UILinkPoint? point)
             ? point.Position / Main.UIScale : null;
 
+    // The elements of the last build (by identity).
+    private readonly HashSet<UIElement> _known = new(ReferenceEqualityComparer.Instance);
+
+    private void LayOutNew(UIElement element)
+    {
+        if (!_known.Contains(element))
+        {
+            element.Recalculate();
+            return;
+        }
+        foreach (UIElement child in element.Children)
+            LayOutNew(child);
+    }
+
+    private void Remember(UIElement element)
+    {
+        _known.Add(element);
+        foreach (UIElement child in element.Children)
+            Remember(child);
+    }
+
     // The tree's elements, by identity and order: it changes when the game adds, removes or replaces elements (a
     // bestiary page's entries are all new buttons, as many as before).
+    // Every update: the element list itself (UIElement.Children is an IEnumerable, boxing its enumerator per element).
     private static int Shape(UIElement element)
     {
         int shape = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(element);
-        foreach (UIElement child in element.Children)
+        foreach (UIElement child in Elements(element))
             shape = shape * 31 + Shape(child);
         return shape;
     }
 
+    private static readonly Func<UIElement, List<UIElement>> Elements = CompileElements();
+
+    private static Func<UIElement, List<UIElement>> CompileElements()
+    {
+        var element = System.Linq.Expressions.Expression.Parameter(typeof(UIElement));
+        FieldInfo field = typeof(UIElement).GetField("Elements", BindingFlags.NonPublic | BindingFlags.Instance)!;
+        return System.Linq.Expressions.Expression.Lambda<Func<UIElement, List<UIElement>>>(System.Linq.Expressions.Expression.Field(element, field), element).Compile();
+    }
+
     private readonly Dictionary<(UIElement, Type), Mirror> _previous = [];
+    // Each container's components in the new build's order.
+    private readonly Dictionary<GraphicalUiElement, List<GraphicalUiElement>> _wanted = [];
 
     private void Build()
     {
-        _underCursor = null;
+        // _underCursor is kept: a reused mirror is the same control, and one that went is unlit as the cursor moves on.
         _previous.Clear();
         foreach (Mirror mirror in _mirrors)
             _previous.TryAdd((mirror.Element, mirror.GetType()), mirror);
-        _zone.Children.Clear();
         _mirrors.Clear();
+        _wanted.Clear();
+        _wanted[_zone] = [];
         foreach (UIElement child in Source!.Children)
             Add(child, _zone, Zero);
         _previous.Clear();
+        foreach ((GraphicalUiElement container, List<GraphicalUiElement> wanted) in _wanted)
+            Reconcile(container, wanted);
+        _wanted.Clear();
+    }
+
+    // Only what changed is removed, added or moved: Gum counts a control taken out of the tree and put back as the
+    // cursor leaving it (a roll-off, a press dropped), and a hover that changes the game's tree (a bestiary entry's
+    // borders) would then rebuild every update.
+    private static void Reconcile(GraphicalUiElement container, List<GraphicalUiElement> wanted)
+    {
+        var keep = new HashSet<GraphicalUiElement>(wanted);
+        for (int i = container.Children.Count - 1; i >= 0; i--)
+        {
+            if (container.Children[i] is GraphicalUiElement child && !keep.Contains(child))
+                container.Children.RemoveAt(i);
+        }
+        for (int i = 0; i < wanted.Count; i++)
+        {
+            GraphicalUiElement visual = wanted[i];
+            if (i < container.Children.Count && container.Children[i] == visual)
+                continue;
+            if (visual.Parent is GraphicalUiElement parent)
+                parent.Children.Remove(visual);
+            container.Children.Insert(Math.Min(i, container.Children.Count), visual);
+        }
     }
 
     private static readonly Func<Vector2> Zero = () => Vector2.Zero;
@@ -275,14 +339,12 @@ internal sealed class GameUiMirror : ContainerRuntime
     private Mirror Keep(Mirror mirror, GraphicalUiElement container, Func<Vector2> origin)
     {
         if (_previous.Remove((mirror.Element, mirror.GetType()), out Mirror? last))
-        {
             mirror = last;
-            if (mirror is ListMirror list)
-                list.Items.Children.Clear();
-        }
         mirror.Origin = origin;
         _mirrors.Add(mirror);
-        container.Children.Add(mirror.Visual);
+        _wanted[container].Add(mirror.Visual);
+        if (mirror is ListMirror list)
+            _wanted[list.Items] = [];
         mirror.Place();
         return mirror;
     }
@@ -318,7 +380,8 @@ internal sealed class GameUiMirror : ContainerRuntime
         UIMouseEvent At(Vector2 position) => new(element, position);
         onClick(() =>
         {
-            UIMouseEvent evt = At(new Vector2(Main.mouseX, Main.mouseY));
+            // At the element (UI units): Gum's mouse isn't in the game's UI space here, and A on a focus has no mouse.
+            UIMouseEvent evt = At(element.GetDimensions().Center());
             element.LeftMouseDown(evt);
             element.LeftMouseUp(evt);
             element.LeftClick(evt);

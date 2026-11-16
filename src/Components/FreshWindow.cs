@@ -12,7 +12,7 @@ namespace FreshUI.Components;
 class FreshWindow : ContainerRuntime
 {
     /// <summary>How far the title tab's top is above the window's.</summary>
-    public const float TitleLift = 20;
+    public const float TitleLift = 14;
     private const float TitlePadding = 6;
 
     private readonly FreshPanel _tab;

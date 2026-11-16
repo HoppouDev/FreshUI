@@ -10,9 +10,7 @@ namespace FreshUI.Hooks.Mixins;
 [Mixin("Aether.Graphics.PixelArt")]
 public static class PixelArtMixin
 {
-    [Inject("Sampler(Microsoft.Xna.Framework.Graphics.SamplerState)", At.RETURN, Cancellable = true)]
-    private static void Snap(SamplerState requested, CallbackInfoReturnable<SamplerState> callback)
-    {
-        callback.SetReturnValue(Sharp.Snapped);
-    }
+    // An overwrite, not an inject: it's called for every UI element drawn, and an inject's callback is an allocation each.
+    [Overwrite]
+    internal static SamplerState Sampler(SamplerState requested) => Sharp.Snapped;
 }

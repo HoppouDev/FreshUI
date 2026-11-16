@@ -1,6 +1,7 @@
 using Aether.Modding;
 using FreshUI.GumUi;
 using Microsoft.Xna.Framework;
+using Terraria;
 using Terraria.UI.Gamepad;
 
 namespace FreshUI.Hooks.Mixins;
@@ -9,6 +10,12 @@ namespace FreshUI.Hooks.Mixins;
 [Mixin(typeof(UILinkPointNavigator))]
 public static class UILinkPointNavigatorMixin
 {
-    [Inject("SetPosition(System.Int32,Microsoft.Xna.Framework.Vector2)", At.HEAD)]
-    private static void Placed(int id, Vector2 position, CallbackInfo callback) => GumHudFocus.Place(id);
+    // The game's, recording the point: an overwrite, not an inject, as it's called for every point every frame (an
+    // inject's callback is an allocation each).
+    [Overwrite]
+    public static void SetPosition(int ID, Vector2 Position)
+    {
+        UILinkPointNavigator.Points[ID].Position = Position * Main.UIScale;
+        GumHudFocus.Place(ID);
+    }
 }

@@ -200,7 +200,10 @@ public static class GumHost
         try
         {
             // As GumService.Update(time) does for its root: each root covers the canvas.
-            foreach (GraphicalUiElement root in new GraphicalUiElement[] { GumService.Default.Root, OverlayRoot })
+            Roots.Clear();
+            Roots.Add(GumService.Default.Root);
+            Roots.Add(OverlayRoot);
+            foreach (GraphicalUiElement root in Roots)
             {
                 root.X = root.Y = 0;
                 root.WidthUnits = root.HeightUnits = Gum.DataTypes.DimensionUnitType.Absolute;
@@ -210,9 +213,6 @@ public static class GumHost
             // While the gamepad drives a menu, the mouse (left wherever it was) hovers nothing: the focus is what's lit.
             if (FrameworkElement.MainCursor is Gum.Input.Cursor cursor)
                 cursor.TransformMatrix = GamepadEnabled && Terraria.GameInput.PlayerInput.UsingGamepadUI ? OffCanvas : Matrix.Identity;
-            Roots.Clear();
-            Roots.Add(GumService.Default.Root);
-            Roots.Add(OverlayRoot);
             GumService.Default.Update(time, Roots);
         }
         finally

@@ -439,20 +439,31 @@ class FreshItemSlot : FrameworkElement
             return;
         }
 
+        // Only what changed: it runs for every slot every frame, and Gum's setters raise events (and build strings) even
+        // for the value they have.
         float fontSize = TextSize * TexelSize;
-        text.Text = value;
-        text.FontSize = fontSize;
-        text.Color = color;
-        GumText.SetOutline(text, TexelSize, Color.Black);
-        text.HasDropshadow = true;
-        text.DropshadowColor = Color.Black;
-        text.DropshadowBlur = 1;
-        text.DropshadowOffsetX = 0;
-        text.DropshadowOffsetY = 1;
-        text.DropshadowAlpha = 100;
-        text.X = (left + TextInset) * TexelSize;
+        if (text.Text != value)
+            text.Text = value;
+        if (text.FontSize != fontSize)
+            text.FontSize = fontSize;
+        if (text.Color != color)
+            text.Color = color;
+        if (GumText.GetOutline(text).Width != TexelSize)
+            GumText.SetOutline(text, TexelSize, Color.Black);
+        if (!text.HasDropshadow)
+        {
+            text.HasDropshadow = true;
+            text.DropshadowColor = Color.Black;
+            text.DropshadowBlur = 1;
+            text.DropshadowOffsetX = 0;
+            text.DropshadowOffsetY = 1;
+            text.DropshadowAlpha = 100;
+        }
+        float x = (left + TextInset) * TexelSize;
         // Placed by its baseline, whatever the font's own metrics.
-        text.Y = (top + TextBaseline) * TexelSize - fontSize * GumText.Baseline;
+        float y = (top + TextBaseline) * TexelSize - fontSize * GumText.Baseline;
+        if (text.X != x || text.Y != y)
+            (text.X, text.Y) = (x, y);
     }
 
     private static Texture2D? LoadTexture(string? path)

@@ -74,10 +74,6 @@ static class FreshTooltip
         }
 
         text.Text = value!;
-        text.FontSize = FontSize;
-        text.Color = Color;
-        GumText.SetOutline(text, OutlineWidth, Microsoft.Xna.Framework.Color.Black);
-        GumText.SetDropShadow(text, 1);
         // Over everything else on the overlay, screens added since included.
         GraphicalUiElement parent = GumHost.OverlayRoot;
         if (parent.Children[^1] != text)
@@ -128,6 +124,10 @@ static class FreshTooltip
         };
         // Never under the cursor as far as input goes, or it would take the hover from its element.
         text.HasEvents = false;
+        text.FontSize = FontSize;
+        text.Color = Color;
+        GumText.SetOutline(text, OutlineWidth, Microsoft.Xna.Framework.Color.Black);
+        GumText.SetDropShadow(text, 1);
         GumHost.OverlayRoot.Children.Add(text);
         return text;
     }

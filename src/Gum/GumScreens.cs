@@ -14,7 +14,8 @@ public static class GumScreens
 {
     private static readonly List<GumScreen> Registered = [];
 
-    internal static IReadOnlyList<GumScreen> All => Registered;
+    // A List, so a foreach over it boxes no enumerator (it runs every update and frame).
+    internal static List<GumScreen> All => Registered;
 
     /// <summary>
     /// Adds a screen, shown at first if <paramref name="initiallyVisible" />, on <paramref name="layer" />:

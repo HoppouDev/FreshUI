@@ -51,6 +51,7 @@ sealed class GameIconButtons : FreshGameView
             }
         }
         _asked.Clear();
+        SideButtons.BannerToggleShown = false;
     }
 
     // FreshUI's places for the buttons, once per screen (their areas are lambdas, wrapped): the quick stack,

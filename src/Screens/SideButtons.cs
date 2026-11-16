@@ -22,6 +22,35 @@ public static class SideButtons
         origin = ammo + new Vector2(46, 0);
         return true;
     }
+    /// <summary>
+    /// Whether the game drew the banners' toggle this frame (there are banners to claim), set as it draws, before Gum
+    /// draws the side buttons, and cleared after: the bestiary and emotes take its row when it's not there.
+    /// </summary>
+    public static bool BannerToggleShown;
+
+    /// <summary>
+    /// The top left of a cell (a slot's 44 units square) in the column right of the ammo (<paramref name="column"/> 0 and
+    /// on, rightwards) or left of the coins (-1 and on, leftwards), on the inventory's rows (<paramref name="row"/> 0 its
+    /// top, 4 the hotbar's).
+    /// </summary>
+    public static bool TryCell(int column, int row, out Vector2 cell)
+    {
+        cell = default;
+        if (column >= 0 ? !TryOrigin(out Vector2 origin) : !HudScreen.TrySlotPosition(1, 50, out origin))
+            return false;
+        cell = origin + new Vector2(column * 46, row * 46);
+        return true;
+    }
+
+    /// <summary>A toggle (drawn centred on x, y) at the middle of a side button cell (<see cref="SideButtons.TryCell"/>).</summary>
+    public static void MoveToggle(ref int x, ref int y, int column, int row)
+    {
+        if (!SideButtons.TryCell(column, row, out Vector2 cell))
+            return;
+        x = (int)MathF.Round(cell.X + 22);
+        y = (int)MathF.Round(cell.Y + 22);
+    }
+
     /// <summary>The grid's first column's left edge (one art pixel right of the inventory's last column).</summary>
     public const float ColumnX = 482f;
 
@@ -54,16 +83,15 @@ public static class SideButtons
         button.Area = () =>
         {
             Rectangle rectangle = area();
-            if (TryOrigin(out Vector2 origin))
+            // Left of the coins, under the nearby chests toggle: quick stack, then sort; right of the ammo, under the
+            // crafting toggle and the banners' (while it shows): bestiary, then emotes.
+            (int column, int row) = button == InventoryButtons.QuickStackAll.Button ? (-1, 1)
+                : button == InventoryButtons.SortInventory.Button ? (-1, 2)
+                : (0, (BannerToggleShown ? 2 : 1) + (button == InventoryButtons.Emotes.Button ? 1 : 0));
+            if (TryCell(column, row, out Vector2 origin))
             {
-                bool leftSide = button == InventoryButtons.QuickStackAll.Button || button == InventoryButtons.SortInventory.Button;
-                if (leftSide && HudScreen.TrySlotPosition(1, 50, out Vector2 coins))
-                    origin = coins - new Vector2(46, 0);
-                int row = button == InventoryButtons.SortInventory.Button ? 3
-                    : button == InventoryButtons.QuickStackAll.Button ? 2
-                    : button == InventoryButtons.Emotes.Button ? 1 : 0;
                 rectangle.X = (int)MathF.Round(origin.X + (44 - rectangle.Width) / 2);
-                rectangle.Y = (int)MathF.Round(origin.Y + row * 46 + (44 - rectangle.Height) / 2);
+                rectangle.Y = (int)MathF.Round(origin.Y + (44 - rectangle.Height) / 2);
                 return rectangle;
             }
             // Centred under the 32-unit column, on even UI units.
@@ -126,12 +154,12 @@ public static class SideButtons
                 return rectangle;
             Point drawn = size(rectangle);
             int index = cell();
-            if (TryOrigin(out Vector2 origin))
+            // Left of the coins under sort (its last two rows), then on down columns further left, a row each.
+            (int column, int row) = index < 2 ? (-1, 3 + index) : (-2 - (index - 2) / 5, (index - 2) % 5);
+            if (TryCell(column, row, out Vector2 origin))
             {
-                // Keep the top two cells for bestiary/emotes; extra toggles continue to the right.
-                int row = 2 + index % 3;
-                float x = origin.X + index / 3 * 46 + (44 - drawn.X) / 2;
-                float y = origin.Y + row * 46 + (44 - drawn.Y) / 2;
+                float x = origin.X + (44 - drawn.X) / 2;
+                float y = origin.Y + (44 - drawn.Y) / 2;
                 return new Rectangle((int)MathF.Round(x), (int)MathF.Round(y), drawn.X, drawn.Y);
             }
             // Vanilla's bestiary row: 30 tall from 278, 168 lower (and 5 right) with a chest or shop

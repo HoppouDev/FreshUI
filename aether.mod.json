@@ -18,6 +18,7 @@
 		"FreshUI.Hooks.Mixins.PixelArtMixin",
 		"FreshUI.Hooks.Mixins.MainMixin",
 		"FreshUI.Hooks.Mixins.QuickCraftingLayoutMixin",
+		"FreshUI.Hooks.Mixins.BannerClaimingUIMixin",
 		"FreshUI.Hooks.Mixins.CraftingControlsMixin",
 		"FreshUI.Hooks.Mixins.UIIngameOptionsMixin",
 		"FreshUI.Hooks.Mixins.IngameOptionsMixin",

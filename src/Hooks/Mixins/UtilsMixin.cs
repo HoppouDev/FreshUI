@@ -9,6 +9,10 @@ namespace FreshUI.Hooks.Mixins;
 [Mixin(typeof(Utils))]
 public static class UtilsMixin
 {
+    // The crafting and banners toggles' gold backing for the open page isn't drawn: their art shows which is open.
+    [Inject("DrawSelectedCraftingBarIndicator(Microsoft.Xna.Framework.Graphics.SpriteBatch,System.Int32,System.Int32)", At.HEAD, Cancellable = true)]
+    private static void SelectedToggle(SpriteBatch batch, int x, int y, CallbackInfo callback) => callback.Cancel();
+
     [Inject("DrawInvBG(Microsoft.Xna.Framework.Graphics.SpriteBatch,System.Int32,System.Int32,System.Int32,System.Int32,Microsoft.Xna.Framework.Color)", At.HEAD, Cancellable = true)]
     private static void DrawBox(SpriteBatch batch, int x, int y, int width, int height, Color color, CallbackInfo callback)
     {

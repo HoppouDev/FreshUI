@@ -24,7 +24,7 @@ internal sealed class BestiaryScreen : ContainerRuntime, IGumScreenUpdate
 
     // An entry's size, in UI units (two a UI pixel), and the gaps added between entries: the slot art has a pixel of
     // shadow at its right and bottom, so none across (a pixel shows) and a pixel down (two show).
-    private const float Entry = 72, EntryGapX = 0, EntryGapY = 2;
+    private const float Entry = 72, EntryGapX = 1, EntryGapY = 2;
     // The top bar's height (the game's), the arrows' width, the gap between the bar's items, Back's height and its gap
     // under the window, in UI units.
     private const float BarHeight = 24, ArrowWidth = 24, BarGap = 2, BackHeight = 50, BackGap = 8;

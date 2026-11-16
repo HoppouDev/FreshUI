@@ -76,10 +76,12 @@ internal sealed class EmotesScreen : ContainerRuntime, IGumScreenUpdate
         _window.Add(_panel);
         _panel.WidthUnits = _panel.HeightUnits = DimensionUnitType.RelativeToParent;
         _panel.Width = _panel.Height = 0;
-        _list.Visual.X = _list.Visual.Y = Padding;
+        // The view from the panel's outer edge (clipped there), its content and bar Padding in from it.
+        (_list.Visual.X, _list.Visual.Y) = (Padding, -1);
         _list.Visual.WidthUnits = _list.Visual.HeightUnits = DimensionUnitType.RelativeToParent;
         _list.Visual.Width = -2 * Padding;
-        _list.Visual.Height = -(2 * Padding + ActionHeight + Gap);
+        _list.Visual.Height = 1 - (Padding + ActionHeight + Gap);
+        _list.SetContentInset(Padding + 1, 0);
         _list.InnerPanel.ChildrenLayout = ChildrenLayout.TopToBottomStack;
         _list.InnerPanel.StackSpacing = Gap;
         _panel.Children.Add(_list.Visual);

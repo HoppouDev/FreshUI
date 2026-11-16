@@ -67,9 +67,11 @@ internal abstract class SelectScreen : ContainerRuntime, IGumScreenUpdate
         _panel.WidthUnits = _panel.HeightUnits = DimensionUnitType.RelativeToParent;
         _panel.Width = _panel.Height = 0;
         _window.Add(_panel);
-        List.Visual.X = List.Visual.Y = 6;
+        // The view to the panel's outer edge (clipped there), its rows and bar 6 in from it.
+        (List.Visual.X, List.Visual.Y) = (6, -1);
         List.Visual.WidthUnits = List.Visual.HeightUnits = DimensionUnitType.RelativeToParent;
-        List.Visual.Width = List.Visual.Height = -12;
+        (List.Visual.Width, List.Visual.Height) = (-12, 2);
+        List.SetContentInset(7, 7);
         List.InnerPanel.ChildrenLayout = Gum.Managers.ChildrenLayout.TopToBottomStack;
         List.InnerPanel.StackSpacing = Gap;
         _panel.Children.Add(List.Visual);

@@ -32,7 +32,12 @@ static class FreshTooltip
     public static float EdgeMargin { get; set; } = 2;
 
     private static TextRuntime? _text;
+    // The text's container, clipping it: to the scroll area its element is in while under it (the gamepad's focus), so
+    // it scrolls out with its element; otherwise the canvas.
+    private static ContainerRuntime? _clip;
     private static InteractiveGue? _owner;
+    // Whether it shows under its element (the gamepad's focus) rather than by the cursor.
+    private static bool _below;
 
     /// <summary>
     /// Shows <paramref name="text"/>'s result while the cursor is over <paramref name="element"/>, read
@@ -65,7 +70,11 @@ static class FreshTooltip
     private static void Show(InteractiveGue owner, Func<string?> content, bool below)
     {
         _owner = owner;
-        TextRuntime text = _text ??= Create();
+        _below = below;
+        // Made once (again after a hot reload added the clip: the old text, on the overlay's root, hidden).
+        if (_clip == null && _text != null)
+            _text.Visible = false;
+        TextRuntime text = _clip == null ? _text = Create() : _text!;
         string? value = content();
         text.Visible = !string.IsNullOrEmpty(value);
         if (!text.Visible)
@@ -76,21 +85,35 @@ static class FreshTooltip
         text.Text = value!;
         // Over everything else on the overlay, screens added since included.
         GraphicalUiElement parent = GumHost.OverlayRoot;
-        if (parent.Children[^1] != text)
+        if (parent.Children[^1] != _clip)
         {
-            parent.Children.Remove(text);
-            parent.Children.Add(text);
+            parent.Children.Remove(_clip);
+            parent.Children.Add(_clip);
         }
+        Place(owner, text, below);
+    }
 
+    private static void Place(InteractiveGue owner, TextRuntime text, bool below)
+    {
         ICursor cursor = FrameworkElement.MainCursor;
         float x = below ? owner.AbsoluteLeft : cursor.XRespectingGumZoomAndBounds() + CursorOffset;
         float y = below ? owner.AbsoluteTop + owner.AbsoluteHeight + 1 : cursor.YRespectingGumZoomAndBounds() + CursorOffset;
         // Kept inside the canvas, moved back left or up from the edge it would cross.
         x = MathF.Min(x, GumService.Default.CanvasWidth - text.AbsoluteWidth - EdgeMargin);
         y = MathF.Min(y, GumService.Default.CanvasHeight - text.AbsoluteHeight - EdgeMargin);
+        float left = 0, top = 0, right = GumService.Default.CanvasWidth, bottom = GumService.Default.CanvasHeight;
+        for (var parent = below ? owner.Parent as GraphicalUiElement : null; parent != null; parent = parent.Parent as GraphicalUiElement)
+        {
+            if (!parent.ClipsChildren)
+                continue;
+            (left, top) = (MathF.Max(left, parent.AbsoluteLeft), MathF.Max(top, parent.AbsoluteTop));
+            (right, bottom) = (MathF.Min(right, parent.AbsoluteLeft + parent.GetAbsoluteWidth()), MathF.Min(bottom, parent.AbsoluteTop + parent.GetAbsoluteHeight()));
+        }
+        ContainerRuntime clip = _clip!;
+        (clip.X, clip.Y, clip.Width, clip.Height) = (left, top, MathF.Max(0, right - left), MathF.Max(0, bottom - top));
         // Snapped to screen pixels, not UI pixels, so it follows the cursor smoothly at any UI scale.
-        text.X = UiPixels.Snap(MathF.Max(EdgeMargin, x));
-        text.Y = UiPixels.Snap(MathF.Max(EdgeMargin, y));
+        text.X = UiPixels.Snap(MathF.Max(EdgeMargin, x)) - left;
+        text.Y = UiPixels.Snap(MathF.Max(EdgeMargin, y)) - top;
     }
 
     /// <summary>
@@ -101,6 +124,9 @@ static class FreshTooltip
     {
         if (_owner != null && !GumHost.IsShown(_owner))
             Hide(_owner);
+        // Under its focused element, following it as it moves (a list scrolled by the right stick, not the cursor).
+        else if (_owner != null && _below && _text is { Visible: true })
+            Place(_owner, _text, below: true);
     }
 
     private static void Hide(InteractiveGue owner)
@@ -128,7 +154,15 @@ static class FreshTooltip
         text.Color = Color;
         GumText.SetOutline(text, OutlineWidth, Microsoft.Xna.Framework.Color.Black);
         GumText.SetDropShadow(text, 1);
-        GumHost.OverlayRoot.Children.Add(text);
+        _clip = new ContainerRuntime
+        {
+            WidthUnits = DimensionUnitType.Absolute,
+            HeightUnits = DimensionUnitType.Absolute,
+            ClipsChildren = true,
+            HasEvents = false,
+        };
+        _clip.Children.Add(text);
+        GumHost.OverlayRoot.Children.Add(_clip);
         return text;
     }
 }

@@ -33,6 +33,8 @@ class FreshGameView : InteractiveGue
     {
         public FreshGameView? View;
 
+        private static readonly RasterizerState Clipped = new() { CullMode = CullMode.CullCounterClockwiseFace, ScissorTestEnable = true };
+
         // Its own batch key: Gum ends the batch it was drawing in before this draws, so what Gum drew
         // earlier stays under the game's content and what it draws later goes over it.
         public override string BatchKey => "FreshUI.GameView";
@@ -43,16 +45,33 @@ class FreshGameView : InteractiveGue
                 return;
             float units = UiPixels.Scale / 2f;
             SpriteBatch batch = Main.spriteBatch;
+            GraphicsDevice device = Main.instance.GraphicsDevice;
+            // Clipped as Gum clips its own drawing: to every ancestor that clips its children (a scroll area's view).
+            Rectangle clip = device.Viewport.Bounds;
+            for (var parent = View.Parent as GraphicalUiElement; parent != null; parent = parent.Parent as GraphicalUiElement)
+            {
+                if (parent.ClipsChildren)
+                    clip = Rectangle.Intersect(clip, new Rectangle((int)MathF.Round(parent.AbsoluteLeft * UiPixels.Scale), (int)MathF.Round(parent.AbsoluteTop * UiPixels.Scale),
+                        (int)MathF.Round(parent.GetAbsoluteWidth() * UiPixels.Scale), (int)MathF.Round(parent.GetAbsoluteHeight() * UiPixels.Scale)));
+            }
+            if (clip.Width <= 0 || clip.Height <= 0)
+                return;
+            Rectangle scissor = device.ScissorRectangle;
+            device.ScissorRectangle = clip;
+            // The area in whole game units, the rest of its place in the transform: drawn where Gum puts it (on whole screen
+            // pixels, as the rest), not a game unit (half a UI pixel) apart from it.
+            float left = View.AbsoluteLeft * 2, top = View.AbsoluteTop * 2;
+            int x = (int)MathF.Round(left), y = (int)MathF.Round(top);
             batch.Begin(SpriteSortMode.Deferred, Microsoft.Xna.Framework.Graphics.BlendState.AlphaBlend, FreshUI.Hooks.Sharp.Snapped, DepthStencilState.None,
-                RasterizerState.CullCounterClockwise, null, Matrix.CreateScale(units, units, 1));
+                Clipped, null, Matrix.CreateTranslation(left - x, top - y, 0) * Matrix.CreateScale(units, units, 1));
             try
             {
-                draw(batch, new Rectangle((int)MathF.Round(View.AbsoluteLeft * 2), (int)MathF.Round(View.AbsoluteTop * 2),
-                    (int)MathF.Round(View.AbsoluteWidth * 2), (int)MathF.Round(View.AbsoluteHeight * 2)));
+                draw(batch, new Rectangle(x, y, (int)MathF.Round(View.AbsoluteWidth * 2), (int)MathF.Round(View.AbsoluteHeight * 2)));
             }
             finally
             {
                 batch.End();
+                device.ScissorRectangle = scissor;
             }
         }
     }

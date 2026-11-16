@@ -93,7 +93,9 @@ public sealed class SettingsScreen : ContainerRuntime, IGumScreenUpdate
         _list.Visual.Y = Padding + HeadingHeight;
         _list.Visual.WidthUnits = _list.Visual.HeightUnits = DimensionUnitType.RelativeToParent;
         _list.Visual.Width = -2 * Padding;
-        _list.Visual.Height = -(2 * Padding + HeadingHeight);
+        // To the panel's outer edge (clipped there), its rows and bar ending Padding in from it.
+        _list.Visual.Height = 1 - (Padding + HeadingHeight);
+        _list.SetContentInset(0, Padding + 1);
         _list.InnerPanel.ChildrenLayout = Gum.Managers.ChildrenLayout.TopToBottomStack;
         _list.InnerPanel.StackSpacing = RowGap;
         _optionPanel.Children.Add(_list.Visual);
@@ -409,8 +411,8 @@ public sealed class SettingsScreen : ContainerRuntime, IGumScreenUpdate
         double scroll = _list.VerticalScrollBarValue;
         if (top < scroll)
             _list.VerticalScrollBarValue = top;
-        else if (top + row.AbsoluteHeight > scroll + view)
-            _list.VerticalScrollBarValue = top + row.AbsoluteHeight - view;
+        else if (top + row.AbsoluteHeight + _list.ContentTop + _list.ContentBottom > scroll + view)
+            _list.VerticalScrollBarValue = top + row.AbsoluteHeight + _list.ContentTop + _list.ContentBottom - view;
     }
 
     // --- gamepad -------------------------------------------------------------------------------

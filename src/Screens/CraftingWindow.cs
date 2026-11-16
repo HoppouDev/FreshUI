@@ -411,9 +411,13 @@ internal sealed class CraftingWindow : ContainerRuntime
         {
             _separator.Y = gridTop - 4;
             _grid.Visual.Y = gridTop;
-            _grid.Visual.Height = -gridTop - Pad;
+            // To the panel's outer edge (clipped there), its slots and bar ending Pad in from it.
+            _grid.Visual.Height = 1 - gridTop;
+            _grid.SetContentInset(0, Pad + 1);
         }
         Rectangle view = HudPoints.Units(_grid.Visual);
+        // Where the gamepad's slot is scrolled to: above the slots' bottom inset (in the game's units, two a UI pixel).
+        Rectangle inView = view with { Height = view.Height - (int)(_grid.ContentBottom * 2) };
         int? selected = Selected(ui);
         bool gridFocused = PlayerInput.UsingGamepad && UILinkPointNavigator.CurrentPoint is >= 20100 and < 21000;
         object? hovered = null;
@@ -428,8 +432,8 @@ internal sealed class CraftingWindow : ContainerRuntime
             {
                 UILinkPointNavigator.SetPosition(point, area.Center.ToVector2());
                 // The gamepad's slot in view.
-                if (gridFocused && UILinkPointNavigator.CurrentPoint == point && !view.Contains(area))
-                    ScrollTo(area, view);
+                if (gridFocused && UILinkPointNavigator.CurrentPoint == point && !inView.Contains(area))
+                    ScrollTo(area, inView);
             }
             bool over = view.Contains(Main.mouseX, Main.mouseY) && area.Contains(Main.mouseX, Main.mouseY) && !PlayerInput.IgnoreMouseInterface;
             if (over)

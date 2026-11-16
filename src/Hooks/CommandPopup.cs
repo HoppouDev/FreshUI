@@ -25,7 +25,7 @@ public static class CommandPopup
 {
     internal const int MaxRows = 10;
 
-    private static readonly Color HintColor = new(128, 128, 128);
+    private static Color HintColor => new(128, 128, 128);
 
     // The chat text and cursor the state is for, those the last completion produced (its list stays),
     // and those not to complete (a recalled message).

@@ -31,7 +31,7 @@ class FreshScrollViewer : ScrollViewer
     private readonly MomentumScroll.Glide _glide = new();
 
     // The handle at rest, a little dim, as the game's.
-    private static readonly Color ThumbColor = new(217, 217, 217);
+    private static Color ThumbColor => new(217, 217, 217);
 
     /// <summary>Whether the wheel glides (true) or jumps a notch at a time (false).</summary>
     public bool SmoothScrolling { get; set; } = true;

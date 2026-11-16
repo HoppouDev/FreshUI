@@ -22,9 +22,9 @@ public sealed class GalleryScreen : ContainerRuntime
     private const float CellWidth = 150, CellHeight = 104, Gap = 6, Margin = 8, ToolbarHeight = 22;
     private const int Columns = 4;
 
-    private static readonly Color Backdrop = new(23, 25, 48);
-    private static readonly Color PanelColor = new Color(63, 82, 151) * 0.7f;
-    private static readonly Color Muted = new(170, 175, 200);
+    private static Color Backdrop => new(23, 25, 48);
+    private static Color PanelColor => new Color(63, 82, 151) * 0.7f;
+    private static Color Muted => new(170, 175, 200);
 
     private readonly ContainerRuntime _grid;
     // The controls, in one spatial-navigation zone: the gamepad's focus moves to the nearest control in

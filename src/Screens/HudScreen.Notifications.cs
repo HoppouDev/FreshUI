@@ -32,7 +32,7 @@ public sealed partial class HudScreen
     private static readonly Func<object, Rectangle> PopupFrame = Member<object, Rectangle>(PopupType, "_achievementIconFrame");
     private static readonly Func<object, Achievement> PopupAchievement = Member<object, Achievement>(PopupType, "_theAchievement");
     private static readonly Action<object> DismissPopup = DismissAction();
-    private static readonly Color PopupColor = new(64, 109, 164);
+    private static Color PopupColor => new(64, 109, 164);
 
     private readonly Dictionary<IInGameNotification, (FreshPanel Panel, SpriteRuntime Icon, TextRuntime Title)> _popups = [];
     private readonly List<(IInGameNotification Notification, Vector2 Anchor)> _otherNotifications = [];

@@ -35,8 +35,9 @@ internal sealed class CraftingWindow : ContainerRuntime
 {
     private const float Left = 10, Top = 156, Width_ = 245, TabSize = 20, TabGap = 2, TabsHeight = 19;
     private const float Pad = 6, CraftTop = 22, CraftScale = FreshItemSlot.DefaultScale, MaterialScale = 0.6f, GridScale = FreshItemSlot.DefaultScale, GridGap = 2;
-    private static readonly Color Disabled = new(160, 160, 160, 255);
-    private static readonly Color Enough = new(144, 238, 144, 255), NotEnough = new(255, 140, 160, 255);
+    private static Color Disabled => new(160, 160, 160, 255);
+    private static Color Enough => new(144, 238, 144, 255);
+    private static Color NotEnough => new(255, 140, 160, 255);
 
     static CraftingWindow() => GumRoutes.State<NewCraftingUI>();
 

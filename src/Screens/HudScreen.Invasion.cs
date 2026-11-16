@@ -20,7 +20,7 @@ namespace FreshUI.Screens;
 public sealed partial class HudScreen
 {
     private static readonly Func<bool> InvasionAsked = GumRoutes.GameScreen<UIInvasionProgress>();
-    private static readonly Color ProgressPanelColor = new Color(63, 65, 151, 255) * 0.785f;
+    private static Color ProgressPanelColor => new Color(63, 65, 151, 255) * 0.785f;
 
     private ContainerRuntime? _invasion;
     private FreshPanel? _invasionTitle, _invasionPanel;

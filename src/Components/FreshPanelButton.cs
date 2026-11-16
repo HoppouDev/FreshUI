@@ -24,7 +24,7 @@ class FreshPanelButton : Button
     private bool _chosen, _lit, _disabled;
 
     // As the world creation's option buttons: an icon is dimmed towards the panel while the button is neither lit nor chosen.
-    private static readonly Color IdleIcon = Color.Lerp(new Color(63, 65, 151), Color.White, 0.7f) * 0.7f;
+    private static Color IdleIcon => Color.Lerp(new Color(63, 65, 151), Color.White, 0.7f) * 0.7f;
 
     public FreshPanelButton()
     {

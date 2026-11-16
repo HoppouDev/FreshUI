@@ -30,7 +30,7 @@ internal sealed class DresserWindow : ContainerRuntime
     private static readonly Func<Color[]> OldClothesColor = StylistWindow.MainField<Color[]>("oldClothesColor");
     private static readonly Func<int> OldClothesStyle = StylistWindow.MainField<int>("oldClothesStyle");
     private static readonly Func<int> OldVoiceStyle = StylistWindow.MainField<int>("oldVoiceStyle");
-    private static readonly Color ChoiceColor = new(255, 231, 128);
+    private static Color ChoiceColor => new(255, 231, 128);
     private const float PartsLeft = 141, PartSize = 26, PartPitch = 28;
     private static readonly (int Column, int Row)[] PartCells = [(0, 0), (1, 0), (0, 1), (1, 1), (2, 0), (2, 1)];
 

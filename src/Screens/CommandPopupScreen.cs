@@ -22,8 +22,8 @@ public sealed class CommandPopupScreen : ContainerRuntime, IGumScreenUpdate
     // The input's text starts this far in, and the popup's bottom is this far above the screen's (the chat's own units halved).
     private const float InputX = ChatInput.InputX / 2f, Bottom = 19;
 
-    private static readonly Color TextColor = new(200, 200, 200);
-    private static readonly Color ErrorColor = new(255, 85, 85);
+    private static Color TextColor => new(200, 200, 200);
+    private static Color ErrorColor => new(255, 85, 85);
 
     private readonly FreshPanel _list;
     private readonly List<(InteractiveGue Row, FreshLabel Label)> _rows = [];

@@ -15,7 +15,7 @@ class FreshSeparator : ContainerRuntime
 
     // The art's ends that keep their size, in texels, and its colour in the world creation.
     private const int End = 2;
-    public static readonly Color DefaultColor = Color.Lerp(Color.White, new Color(63, 65, 151), 0.85f) * 0.9f;
+    public static Color DefaultColor => Color.Lerp(Color.White, new Color(63, 65, 151), 0.85f) * 0.9f;
 
     public FreshSeparator()
     {

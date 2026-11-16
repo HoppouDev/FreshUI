@@ -27,7 +27,7 @@ class FreshButton : Button
     private TextRuntime TextVisual => ((ButtonVisual)Visual).TextInstance;
 
     /// <summary>The gold of the game's hovered and selected UI text.</summary>
-    public static readonly Color FocusColor = new(255, 231, 69);
+    public static Color FocusColor => new(255, 231, 69);
 
     public FreshButton()
     {

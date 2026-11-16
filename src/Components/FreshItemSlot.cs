@@ -63,8 +63,8 @@ class FreshItemSlot : FrameworkElement
     private const float IconMargin = 1.5f;
 
     // The background's tint: white at about 86%, so what's behind shows through a little.
-    private static readonly Color BackgroundColor = new(255, 255, 255, 220);
-    private static readonly Color NumberColor = new(255, 255, 255, 210);
+    private static Color BackgroundColor => new(255, 255, 255, 220);
+    private static Color NumberColor => new(255, 255, 255, 210);
 
     // The text, in texels of the slot art at its scale: 16.75 per em with a 1-texel border, its
     // baseline 13.62 below where the slot art places its top, and its ink 1 texel in from the pen.

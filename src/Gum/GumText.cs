@@ -49,7 +49,7 @@ static partial class GumText
     public const float DeathTextSize = 29.5f;
 
     /// <summary>The drop shadow's colour: black at alpha 100, as the hotbar's numbers'.</summary>
-    public static readonly Color DropShadowColor = new(0, 0, 0, 100);
+    public static Color DropShadowColor => new(0, 0, 0, 100);
 
     /// <summary>The weight of text with Gum's IsBold and no weight of its own: 700, or 200 above a bold font's.</summary>
     public static float BoldWeight => Math.Min(1000, Math.Max(700, DesignWeight + 200));

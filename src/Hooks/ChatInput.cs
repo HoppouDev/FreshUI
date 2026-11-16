@@ -35,7 +35,7 @@ public static class ChatInput
     private const int WheelLines = 3;
 
     // Premultiplied blue, behind the white text.
-    private static readonly Color SelectionColor = new(26, 77, 153, 160);
+    private static Color SelectionColor => new(26, 77, 153, 160);
 
     // The chat text the cursor is for, the cursor, and the selection's other end (the cursor without one).
     private static string text = "";

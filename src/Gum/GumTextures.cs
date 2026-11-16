@@ -12,6 +12,22 @@ namespace FreshUI.GumUi;
 public static class GumTextures
 {
     private static readonly Dictionary<string, Texture2D> Loaded = [];
+    // Textures FreshUI makes (from the game's art, or drawn), by a key of their own: cleared by a hot reload.
+    private static readonly Dictionary<string, Texture2D> MadeTextures = [];
+
+    /// <summary>
+    /// A texture FreshUI makes, made once by <paramref name="make"/> and kept under <paramref name="key"/> until a hot
+    /// reload (<see cref="ClearMade"/>), so an edit to how it's made shows without a restart.
+    /// </summary>
+    public static Texture2D Made(string key, Func<Texture2D> make)
+    {
+        if (!MadeTextures.TryGetValue(key, out Texture2D? texture))
+            MadeTextures[key] = texture = make();
+        return texture;
+    }
+
+    /// <summary>Forgets the textures FreshUI made (after a hot reload; the screens rebuilt then make them again).</summary>
+    internal static void ClearMade() => MadeTextures.Clear();
 
     public static Texture2D Load(string name)
     {

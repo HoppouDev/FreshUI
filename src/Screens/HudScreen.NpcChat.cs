@@ -32,7 +32,7 @@ public sealed partial class HudScreen
 {
     private static readonly Func<bool> NpcChatAsked = GumRoutes.GameScreen<UINpcChat>();
     private const float ChatWidth = 250, ChatTop = 50;
-    private static readonly Color ChatButtonColor = new(255, 231, 128);
+    private static Color ChatButtonColor => new(255, 231, 128);
 
     private FreshPanel? _chatBox;
     private FreshGameView? _chatView;

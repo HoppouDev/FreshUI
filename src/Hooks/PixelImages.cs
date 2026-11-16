@@ -37,6 +37,9 @@ public static class PixelImages
         spriteBatch.Draw(texture, position + offset, source, color, 0f, Vector2.Zero, scale, SpriteEffects.None, 0f);
     }
 
+    /// <summary>Forgets the icons made from list buttons' art (after a hot reload, so an edit to <see cref="Icon"/> shows).</summary>
+    internal static void ClearIcons() => Icons.Clear();
+
     // The list items' button art without its button: the 2-pixel frame (outline and bevel), the fill
     // (its colour inside the frame's top left) and the icon's shadow on it (the right bevel's colour).
     public static Texture2D Icon(Texture2D texture)

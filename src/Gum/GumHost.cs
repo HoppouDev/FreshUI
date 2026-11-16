@@ -238,6 +238,10 @@ public static class GumHost
         return at.Visible && (at == OverlayRoot || at == GumService.Default.Root);
     }
 
+    /// <summary>Whether (<paramref name="x"/>, <paramref name="y"/>), in UI pixels, is within the element's area.</summary>
+    public static bool Contains(GraphicalUiElement element, float x, float y) =>
+        x >= element.AbsoluteLeft && x < element.AbsoluteLeft + element.AbsoluteWidth && y >= element.AbsoluteTop && y < element.AbsoluteTop + element.AbsoluteHeight;
+
     /// <summary>Draws the HUD's Gum layer within the game's sprite batch (the retained layer, in a world).</summary>
     public static void Draw(SpriteBatch batch)
     {

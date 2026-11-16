@@ -171,11 +171,11 @@ internal sealed class AchievementsScreen : ContainerRuntime, IGumScreenUpdate
         }
         Gum.Wireframe.ICursor cursor = FrameworkElement.MainCursor;
         float x = cursor.XRespectingGumZoomAndBounds(), y = cursor.YRespectingGumZoomAndBounds();
-        bool inList = Contains(_list.Visual, x, y);
+        bool inList = GumHost.Contains(_list.Visual, x, y);
         foreach (Row row in _rows)
         {
             if (row.Panel.Parent != null)
-                row.Update(inList && Contains(row.Panel, x, y));
+                row.Update(inList && GumHost.Contains(row.Panel, x, y));
         }
         // On the title menu, Esc and B (the inventory key) go back; in game the game closes the fancy UI.
         if (Main.gameMenu)
@@ -189,9 +189,6 @@ internal sealed class AchievementsScreen : ContainerRuntime, IGumScreenUpdate
         }
     }
 
-    private static bool Contains(GraphicalUiElement element, float x, float y) =>
-        x >= element.AbsoluteLeft && x < element.AbsoluteLeft + element.AbsoluteWidth && y >= element.AbsoluteTop && y < element.AbsoluteTop + element.AbsoluteHeight;
-
     /// <summary>An achievement's row.</summary>
     private sealed class Row
     {
@@ -201,7 +198,7 @@ internal sealed class AchievementsScreen : ContainerRuntime, IGumScreenUpdate
         private readonly TextRuntime _name, _description, _count;
         private readonly FreshProgressBar _progress = new() { Width = ProgressWidth };
         private readonly Rectangle _unlocked;
-        private bool? _lit;
+        private (bool Hovered, bool Locked)? _shown;
 
         public Row(Achievement achievement)
         {
@@ -284,9 +281,9 @@ internal sealed class AchievementsScreen : ContainerRuntime, IGumScreenUpdate
                 if (_count.Text != count)
                     _count.Text = count;
             }
-            if (_lit == hovered && !tracked)
+            if (_shown == (hovered, locked) && !tracked)
                 return;
-            _lit = hovered;
+            _shown = (hovered, locked);
             Color name = Color.Lerp(locked ? Color.Silver : Color.Gold, Color.White, hovered ? 0.5f : 0);
             _name.Color = _count.Color = name;
             _description.Color = hovered ? Color.White : locked ? Color.DarkGray : Color.Silver;

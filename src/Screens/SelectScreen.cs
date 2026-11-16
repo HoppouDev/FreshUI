@@ -122,19 +122,16 @@ internal abstract class SelectScreen : ContainerRuntime, IGumScreenUpdate
     {
         Gum.Wireframe.ICursor cursor = FrameworkElement.MainCursor;
         float x = cursor.XRespectingGumZoomAndBounds(), y = cursor.YRespectingGumZoomAndBounds();
-        bool inList = Contains(List.Visual, x, y);
+        bool inList = GumHost.Contains(List.Visual, x, y);
         object? focus = InteractiveGue.CurrentInputReceiver;
         foreach (FreshPanel row in _rows)
         {
-            bool lit = inList && Contains(row, x, y) || focus is FrameworkElement { Visual.Parent: var parent } && parent == row;
+            bool lit = inList && GumHost.Contains(row, x, y) || focus is FrameworkElement { Visual.Parent: var parent } && parent == row;
             Color border = lit ? FreshStyle.Gold : Color.Black;
             if (row.BorderColor != border)
                 (row.BorderColor, row.BackgroundColor) = (border, lit ? FreshStyle.Button : FreshStyle.Panel);
         }
     }
-
-    private static bool Contains(GraphicalUiElement element, float x, float y) =>
-        x >= element.AbsoluteLeft && x < element.AbsoluteLeft + element.AbsoluteWidth && y >= element.AbsoluteTop && y < element.AbsoluteTop + element.AbsoluteHeight;
 
     /// <summary>Clears the rows (before adding them again).</summary>
     protected void ClearRows()

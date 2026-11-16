@@ -29,6 +29,7 @@ internal sealed class JourneyPowersWindow : ContainerRuntime
         typeof(UICreativePowersMenu).GetMethod("SetupGamepadPoints", BindingFlags.NonPublic | BindingFlags.Instance)!);
 
     private readonly GameUiMirror _mirror = new() { FollowsGameCursor = true, PanelsTakeMouse = true };
+    private uint _updatedAt = uint.MaxValue;
 
     public JourneyPowersWindow()
     {
@@ -53,7 +54,12 @@ internal sealed class JourneyPowersWindow : ContainerRuntime
         _mirror.Source = menu;
         if (menu == null)
             return;
-        _mirror.Update();
+        // Present runs every frame; the menu's own work (its updates, A's click) once per game update, as its interface's.
+        if (_updatedAt != Main.GameUpdateCount)
+        {
+            _updatedAt = Main.GameUpdateCount;
+            _mirror.Update();
+        }
         SetupGamepadPoints(menu);
     }
 

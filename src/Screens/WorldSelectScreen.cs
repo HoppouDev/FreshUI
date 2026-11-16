@@ -111,9 +111,22 @@ internal sealed class WorldSelectScreen : SelectScreen
         }
         if (data.WorldGeneratorVersion != 0)
             Icon(row, ref x, "Images/UI/ButtonSeed", Language.GetTextValue("UI.CopySeed", data.GetFullSeedText(allowCropping: true)), () => Act(item, "SeedButtonClick"));
-        Icon(row, ref x, "Images/UI/ButtonRename", Language.GetTextValue("UI.Rename"), () => Act(item, "RenameButtonClick"));
+        Icon(row, ref x, "Images/UI/ButtonRename", Language.GetTextValue("UI.Rename"), () => Rename(data));
         if (!data.IsFavorite)
             Delete(row, () => Act(item, "DeleteButtonClick"));
+    }
+
+    // As the game's rename (UIWorldListItem.RenameButtonClick), without its reordering of the list it's in (FreshUI's
+    // rows aren't in one: the screen rebuilds them when the world's name changes).
+    private static void Rename(WorldFileData data)
+    {
+        SoundEngine.PlaySound(10);
+        Main.clrInput();
+        Main.MenuUI.SetState(new UIVirtualKeyboard(Lang.menu[48].Value, data.GetWorldName(), name =>
+        {
+            Main.menuMode = 10;
+            data.Rename(name.Trim());
+        }, Main.GoToWorldSelect, 0, allowEmpty: true, 27));
     }
 
     // One of the game's row handlers, as a click on its button (some set the button's image, so it's given one).

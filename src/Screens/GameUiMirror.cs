@@ -496,6 +496,19 @@ internal sealed class GameUiMirror : ContainerRuntime
             bool shown = !(bool)_hideSelf.GetValue(_box)!;
             if (_panel.Visible != shown)
                 _panel.Visible = shown;
+            // The game's box shows its panel only where it has one (a search field's is the field around it).
+            bool framed = _box.BackgroundColor.A > 0;
+            Color fill = framed ? FreshStyle.Button : Color.Transparent, border = framed ? Color.Black : Color.Transparent;
+            if (_panel.BackgroundColor != fill)
+                (_panel.BackgroundColor, _panel.BorderColor) = (fill, border);
+            // Left-aligned text (a search field's) starts a little in; centred text stays centred.
+            bool left = _box.TextHAlign < 0.25f;
+            if (left != (_text.XOrigin == RenderingLibrary.Graphics.HorizontalAlignment.Left))
+            {
+                _text.XUnits = left ? Gum.Converters.GeneralUnitType.PixelsFromSmall : Gum.Converters.GeneralUnitType.PixelsFromMiddle;
+                _text.XOrigin = left ? RenderingLibrary.Graphics.HorizontalAlignment.Left : RenderingLibrary.Graphics.HorizontalAlignment.Center;
+                _text.X = left ? 4 : 0;
+            }
             string text = _box.Text ?? "";
             // As the game's box sets it each draw: what's typed goes at the end.
             _cursor.SetValue(_box, text.Length);

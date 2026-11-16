@@ -49,7 +49,28 @@ public static class GumGamepad
         // The mouse clears the gamepad's focus, but not a text field's, which a click gives it to type in.
         else if (!PlayerInput.UsingGamepad && focused is FrameworkElement control and not TextBoxBase)
             control.IsFocused = false;
+        ScrollWithRightStick(focused);
         FollowFocus();
+    }
+
+    // UI pixels a second the right stick scrolls at full tilt.
+    private const float StickScrollSpeed = 360;
+
+    // The right stick scrolls the scroll area the focus is in (a list's row); a focused scroll area scrolls itself (Gum's).
+    private static void ScrollWithRightStick(object? focused)
+    {
+        float tilt = PlayerInput.GamepadThumbstickRight.Y;
+        if (!PlayerInput.UsingGamepad || MathF.Abs(tilt) < 0.2f || focused is not FrameworkElement { Visual: GraphicalUiElement visual })
+            return;
+        for (var parent = visual.Parent as GraphicalUiElement; parent != null; parent = parent.Parent as GraphicalUiElement)
+        {
+            if (parent is InteractiveGue { FormsControlAsObject: FreshScrollViewer viewer })
+            {
+                // The game updates 60 times a second.
+                viewer.VerticalScrollBarValue = Math.Clamp(viewer.VerticalScrollBarValue + tilt * StickScrollSpeed / 60, 0, viewer.VerticalScrollBarMaximum);
+                return;
+            }
+        }
     }
 
     private static void FollowFocus()
